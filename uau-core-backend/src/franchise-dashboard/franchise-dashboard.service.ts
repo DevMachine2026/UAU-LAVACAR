@@ -90,9 +90,12 @@ export class FranchiseDashboardService {
 
   async getCustomers(filters?: { unitId?: string; name?: string; status?: string }) {
     const where: Record<string, unknown> = {};
-    if (filters?.unitId) where.user = { defaultUnitId: filters.unitId };
-    if (filters?.status) {
-      where.user = { ...(where.user as object ?? {}), status: filters.status };
+    if (filters?.unitId || filters?.status || filters?.name) {
+      where.user = {
+        ...(filters.unitId ? { defaultUnitId: filters.unitId } : {}),
+        ...(filters.status ? { status: filters.status } : {}),
+        ...(filters.name ? { name: { contains: filters.name, mode: 'insensitive' } } : {}),
+      };
     }
 
     return this.prisma.customer.findMany({
