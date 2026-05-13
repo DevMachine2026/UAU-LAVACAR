@@ -2,16 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
-body {
-  min-height: 100%;
+@layer base {
+  html,
+  body {
+    @apply min-h-screen bg-[#f5f7fa] text-uau-black antialiased selection:bg-uau-green selection:text-white;
+  }
 }
 
-body {
-  background: #f5f7fa;
-  color: #101828;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
-
-* {
-  box-sizing: border-box;
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-uau-gray/30 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-uau-gray/50;
 }
