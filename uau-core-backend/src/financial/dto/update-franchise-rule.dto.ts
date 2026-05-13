@@ -1,15 +1,29 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+// uau-core-backend/src/financial/dto/update-franchise-rule.dto.ts
+import { IsOptional, IsNumber } from 'class-validator';
 
 export class UpdateFranchiseRuleDto {
-  @IsNumber()
   @IsOptional()
+  @IsNumber()
+  franchiseRevenuePercent?: number;
+
+  @IsOptional()
+  @IsNumber()
+  uauRoyaltyPercent?: number;
+
+  @IsOptional()
+  @IsNumber()
+  marketingFundPercent?: number;
+
+  // Campos legados aceitos por compatibilidade
+  @IsOptional()
+  @IsNumber()
   repassePercent?: number;
 
-  @IsNumber()
   @IsOptional()
+  @IsNumber()
   royaltyPercent?: number;
 
-  @IsNumber()
   @IsOptional()
+  @IsNumber()
   marketingPercent?: number;
 }
