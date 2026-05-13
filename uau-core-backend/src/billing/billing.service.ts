@@ -42,4 +42,15 @@ export class BillingService {
       throw new NotFoundException('Fatura não encontrada');
     });
   }
+
+  async findByCustomer(userId: string) {
+    const customer = await this.prisma.customer.findFirst({ where: { userId } });
+    if (!customer) return [];
+    return this.prisma.billingHistory.findMany({
+      where: { customerId: customer.id },
+      include: { subscription: { include: { plan: { select: { name: true } } } } },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+  }
 }

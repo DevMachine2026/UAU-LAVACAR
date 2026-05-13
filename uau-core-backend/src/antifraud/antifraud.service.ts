@@ -8,72 +8,103 @@ import { UserStatus } from '@prisma/client';
 export class AntifraudService {
   constructor(private prisma: PrismaService) {}
 
-  async createFlag(createDto: CreateFlagDto) {
-    const flag = await this.prisma.antiFraudFlag.create({
-      data: createDto,
-    });
-
-    // Se for CRITICAL, já bloqueia ou marca o usuário como SUSPECT automaticamente
-    if (createDto.severity === 'CRITICAL') {
-      await this.prisma.user.update({
-        where: { id: createDto.userId },
-        data: { status: UserStatus.SUSPECT },
-      });
+  async createFlag(dto: CreateFlagDto) {
+    const flag = await this.prisma.antiFraudFlag.create({ data: dto });
+    if (dto.severity === 'CRITICAL') {
+      await this.prisma.user.update({ where: { id: dto.userId }, data: { status: UserStatus.SUSPECT } });
     }
-
     return flag;
   }
 
-  async findAllFlags() {
+  async findAllFlags(filters?: { status?: string; severity?: string; type?: string }) {
+    const where: Record<string, unknown> = {};
+    if (filters?.status) where.status = filters.status;
+    if (filters?.severity) where.severity = filters.severity;
+    if (filters?.type) where.type = filters.type;
+
     return this.prisma.antiFraudFlag.findMany({
-      include: {
-        user: { select: { name: true, email: true, status: true } },
-      },
+      where,
+      include: { user: { select: { name: true, email: true, status: true } } },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async resolveFlag(id: string, updateDto: UpdateFlagDto) {
+  async findFlag(id: string) {
+    const flag = await this.prisma.antiFraudFlag.findUnique({
+      where: { id },
+      include: { user: { select: { name: true, email: true, status: true } } },
+    });
+    if (!flag) throw new NotFoundException('Flag não encontrada');
+    return flag;
+  }
+
+  async reviewFlag(id: string, payload: { status: string; reason?: string }) {
     const flag = await this.prisma.antiFraudFlag.findUnique({ where: { id } });
     if (!flag) throw new NotFoundException('Flag não encontrada');
 
     return this.prisma.$transaction(async (tx) => {
-      const updatedFlag = await tx.antiFraudFlag.update({
+      const updated = await tx.antiFraudFlag.update({
         where: { id },
         data: {
-          status: updateDto.status,
-          reviewedBy: updateDto.reviewedBy,
+          status: payload.status as never,
+          reason: payload.reason,
           reviewedAt: new Date(),
         },
       });
 
-      // Se o status for BLOCKED, reflete no usuário
-      if (updateDto.status === 'BLOCKED') {
-        await tx.user.update({
-          where: { id: flag.userId },
-          data: { status: UserStatus.BLOCKED },
-        });
-      } else if (updateDto.status === 'DISMISSED') {
-        // Volta pra ativo se foi falso positivo
-        await tx.user.update({
-          where: { id: flag.userId },
-          data: { status: UserStatus.ACTIVE },
-        });
+      if (payload.status === 'BLOCKED') {
+        await tx.user.update({ where: { id: flag.userId }, data: { status: UserStatus.BLOCKED } });
+      } else if (payload.status === 'DISMISSED') {
+        await tx.user.update({ where: { id: flag.userId }, data: { status: UserStatus.ACTIVE } });
       }
 
-      return updatedFlag;
+      return updated;
     });
   }
 
-  async logSecurityEvent(userId: string, event: string, ip?: string, userAgent?: string, metadata?: any) {
+  async resolveFlag(id: string, dto: UpdateFlagDto) {
+    return this.reviewFlag(id, { status: dto.status as string, reason: dto.reviewedBy });
+  }
+
+  async markUserSuspect(userId: string, reason: string) {
+    await this.prisma.user.update({ where: { id: userId }, data: { status: UserStatus.SUSPECT } });
+    await this.logSecurityEvent(userId, 'USER_MARKED_SUSPECT', undefined, undefined, { reason });
+    return { ok: true };
+  }
+
+  async blockUser(userId: string, reason: string) {
+    await this.prisma.user.update({ where: { id: userId }, data: { status: UserStatus.BLOCKED } });
+    await this.logSecurityEvent(userId, 'USER_BLOCKED', undefined, undefined, { reason });
+    return { ok: true };
+  }
+
+  async unblockUser(userId: string, reason: string) {
+    await this.prisma.user.update({ where: { id: userId }, data: { status: UserStatus.ACTIVE } });
+    await this.logSecurityEvent(userId, 'USER_UNBLOCKED', undefined, undefined, { reason });
+    return { ok: true };
+  }
+
+  async getSecurityLogs(filters?: { eventType?: string; userId?: string; startDate?: string; endDate?: string }) {
+    const where: Record<string, unknown> = {};
+    if (filters?.userId) where.userId = filters.userId;
+    if (filters?.eventType) where.event = filters.eventType;
+    if (filters?.startDate || filters?.endDate) {
+      where.createdAt = {
+        ...(filters.startDate ? { gte: new Date(filters.startDate) } : {}),
+        ...(filters.endDate ? { lte: new Date(filters.endDate) } : {}),
+      };
+    }
+
+    return this.prisma.securityLog.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    });
+  }
+
+  async logSecurityEvent(userId: string, event: string, ip?: string, userAgent?: string, metadata?: unknown) {
     return this.prisma.securityLog.create({
-      data: {
-        userId,
-        event,
-        ip,
-        userAgent,
-        metadata: metadata || {},
-      },
+      data: { userId, event, ip, userAgent, metadata: (metadata as object) ?? {} },
     });
   }
 }

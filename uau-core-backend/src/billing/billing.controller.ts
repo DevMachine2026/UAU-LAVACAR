@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Query } from '@nestjs/common';
 import { BillingService } from './billing.service';
 import { CreateBillingDto } from './dto/create-billing.dto';
 import { UpdateBillingDto } from './dto/update-billing.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('billing')
 @ApiBearerAuth()
@@ -24,6 +24,14 @@ export class BillingController {
   @ApiOperation({ summary: 'Lista todo o histórico de cobranças' })
   findAll() {
     return this.billingService.findAll();
+  }
+
+  @Get('my-history')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.CUSTOMER)
+  @ApiQuery({ name: 'userId', required: true })
+  @ApiOperation({ summary: 'Histórico de cobranças de um cliente' })
+  findByCustomer(@Query('userId') userId: string) {
+    return this.billingService.findByCustomer(userId);
   }
 
   @Get(':id')
