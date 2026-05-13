@@ -1,10 +1,11 @@
-import { ButtonHTMLAttributes } from "react";
+import { ReactNode } from "react";
 import { motion, HTMLMotionProps } from "framer-motion";
 import { cn } from "@/utils/cn";
 
-export interface ButtonProps extends HTMLMotionProps<"button"> {
+export interface ButtonProps extends Omit<HTMLMotionProps<"button">, "children"> {
   variant?: "primary" | "ghost";
   isLoading?: boolean;
+  children?: ReactNode;
 }
 
 export function Button({ className, variant = "primary", isLoading, children, ...props }: ButtonProps) {
