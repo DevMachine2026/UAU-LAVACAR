@@ -20,6 +20,9 @@ import { AnprModule } from './anpr/anpr.module';
 import { FinancialModule } from './financial/financial.module';
 import { AntifraudModule } from './antifraud/antifraud.module';
 import { ReferralsModule } from './referrals/referrals.module';
+import { AdminDashboardModule } from './admin-dashboard/admin-dashboard.module';
+import { FranchiseDashboardModule } from './franchise-dashboard/franchise-dashboard.module';
+import { PartnerDashboardModule } from './partner-dashboard/partner-dashboard.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -45,6 +48,9 @@ import { RolesGuard } from './common/guards/roles.guard';
     FinancialModule,
     AntifraudModule,
     ReferralsModule,
+    AdminDashboardModule,
+    FranchiseDashboardModule,
+    PartnerDashboardModule,
   ],
   controllers: [],
   providers: [
