@@ -1,11 +1,23 @@
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsNumber } from 'class-validator';
+
+export class CloseShiftReadingDto {
+  @IsString()
+  fieldId: string;
+
+  @IsNumber()
+  closingValue: number;
+}
 
 export class CloseShiftDto {
-  @IsNumber()
-  @IsNotEmpty()
-  finalBalance: number;
+  @IsOptional()
+  @IsArray()
+  closingReadings?: CloseShiftReadingDto[];
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  notes: string;
+  closingNotes?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }

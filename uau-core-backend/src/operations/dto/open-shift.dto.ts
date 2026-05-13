@@ -1,15 +1,22 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsNumber } from 'class-validator';
+
+export class OpenShiftReadingDto {
+  @IsString()
+  fieldId: string;
+
+  @IsNumber()
+  openingValue: number;
+}
 
 export class OpenShiftDto {
   @IsString()
-  @IsNotEmpty()
-  franchiseUnitId: string;
+  unitId: string;
 
-  @IsString()
-  @IsNotEmpty()
-  operatorId: string; // ID do usuário que está operando o caixa
-
-  @IsNumber()
   @IsOptional()
-  initialBalance?: number;
+  @IsArray()
+  openingReadings?: OpenShiftReadingDto[];
+
+  @IsOptional()
+  @IsString()
+  openingNotes?: string;
 }
