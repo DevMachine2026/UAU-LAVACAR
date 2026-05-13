@@ -1,0 +1,42 @@
+import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
+import { CustomersService } from './customers.service';
+import { CreateCustomerDto } from './dto/create-customer.dto';
+import { UpdateCustomerDto } from './dto/update-customer.dto';
+import { Roles } from '../common/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+
+@ApiTags('customers')
+@ApiBearerAuth()
+@Controller('customers')
+export class CustomersController {
+  constructor(private readonly customersService: CustomersService) {}
+
+  @Post()
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.OPERATOR)
+  @ApiOperation({ summary: 'Cadastra um novo cliente' })
+  create(@Body() createDto: CreateCustomerDto) {
+    return this.customersService.create(createDto);
+  }
+
+  @Get()
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.OPERATOR)
+  @ApiOperation({ summary: 'Lista todos os clientes' })
+  findAll() {
+    return this.customersService.findAll();
+  }
+
+  @Get(':id')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.OPERATOR, UserRole.CUSTOMER)
+  @ApiOperation({ summary: 'Busca um cliente pelo ID' })
+  findOne(@Param('id') id: string) {
+    return this.customersService.findOne(id);
+  }
+
+  @Put(':id')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER)
+  @ApiOperation({ summary: 'Atualiza os dados ou status de um cliente' })
+  update(@Param('id') id: string, @Body() updateDto: UpdateCustomerDto) {
+    return this.customersService.update(id, updateDto);
+  }
+}

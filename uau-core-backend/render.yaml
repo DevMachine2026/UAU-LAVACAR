@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: uau-core-backend
+    env: docker
+    region: ohio
+    plan: starter
+    branch: main
+    dockerCommand: "npx prisma migrate deploy && npm run start:prod"
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false # Configurar no dashboard do Render
+      - key: DIRECT_URL
+        sync: false # Configurar no dashboard do Render
+      - key: JWT_SECRET
+        sync: false # Configurar no dashboard do Render
+      - key: ASAAS_WEBHOOK_TOKEN
+        sync: false # Configurar no dashboard do Render
