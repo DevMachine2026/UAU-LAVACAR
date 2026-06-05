@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CameraEventDto } from './dto/camera-event.dto';
 
@@ -6,27 +6,50 @@ import { CameraEventDto } from './dto/camera-event.dto';
 export class AnprService {
   private readonly logger = new Logger(AnprService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async processEvent(eventDto: CameraEventDto) {
-    this.logger.log(`Recebida leitura de placa: ${eventDto.plate} da câmera: ${eventDto.cameraId}`);
+    const { cameraId, plate } = eventDto;
+    this.logger.log(`Recebida leitura de placa: ${plate} da câmera: ${cameraId}`);
 
-    // 1. Identificar de qual unidade é essa câmera (Simulação: precisamos ter um cadastro de câmeras)
-    // Como simplificação, vamos assumir que recebemos o franchiseUnitId na request ou buscamos no banco.
-    // Para efeito de demonstração, logamos o evento no banco.
+    const camera = await this.prisma.anprCamera.findUnique({
+      where: { id: cameraId },
+    });
+
+    if (!camera) {
+      await this.prisma.securityLog.create({
+        data: {
+          event: 'ANPR_UNAUTHORIZED_CAMERA',
+          metadata: { cameraId, plate },
+        },
+      });
+      this.logger.warn(`Câmera não autorizada ou inexistente: ${cameraId}`);
+      throw new NotFoundException(`Câmera não encontrada: ${cameraId}`);
+    }
+
+    if (!camera.isActive) {
+      await this.prisma.securityLog.create({
+        data: {
+          event: 'ANPR_INACTIVE_CAMERA',
+          metadata: { cameraId, plate, unitId: camera.unitId },
+        },
+      });
+      this.logger.warn(`Câmera inativa tentou enviar evento: ${cameraId}`);
+      throw new NotFoundException(`Câmera inativa: ${cameraId}`);
+    }
 
     const event = await this.prisma.anprEvent.create({
       data: {
-        cameraId: eventDto.cameraId,
-        plate: eventDto.plate,
+        cameraId,
+        plate,
         confidence: eventDto.confidence ? parseFloat(eventDto.confidence) : null,
-        unitId: 'TODO_MAP_CAMERA_TO_UNIT', // Ideal: buscar a unidade correspondente
+        unitId: camera.unitId,
       },
     });
 
     // 2. Tentar encontrar o veículo pela placa
     const vehicle = await this.prisma.vehicle.findUnique({
-      where: { plate: eventDto.plate },
+      where: { plate },
       include: { customer: true },
     });
 
@@ -34,7 +57,7 @@ export class AnprService {
       this.logger.log(`Veículo reconhecido! ID: ${vehicle.id}, Cliente: ${vehicle.customerId}`);
       // Futuro: Se tiver assinatura ativa, pode criar um DailyWash automático ou colocar numa Fila Virtual.
     } else {
-      this.logger.log(`Placa ${eventDto.plate} não encontrada na base de clientes.`);
+      this.logger.log(`Placa ${plate} não encontrada na base de clientes.`);
       // Futuro: Registrar como avulso na Fila Virtual
     }
 

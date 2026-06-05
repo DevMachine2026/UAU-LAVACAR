@@ -33,49 +33,56 @@ export type AnprSummary = {
   eventsByStatus?: Record<string, number>;
 };
 
-export type CameraPayload = Omit<AnprCamera, "id">;
-
 function unwrap<T>(envelope: ApiEnvelope<T>) {
   if (!envelope.success) throw new Error(envelope.error.message);
   return envelope.data;
 }
 
+function buildSummaryFromEvents(events: AnprEvent[]): AnprSummary {
+  const eventsByStatus: Record<string, number> = {};
+  for (const event of events) {
+    const status = event.status ?? "UNKNOWN";
+    eventsByStatus[status] = (eventsByStatus[status] ?? 0) + 1;
+  }
+
+  return {
+    totalEvents: events.length,
+    authorized: eventsByStatus.AUTHORIZED ?? 0,
+    blocked: eventsByStatus.BLOCKED ?? 0,
+    avulso: eventsByStatus.AVULSO ?? 0,
+    unknown: eventsByStatus.UNKNOWN ?? 0,
+    suspect: eventsByStatus.SUSPECT ?? 0,
+    eventsByStatus,
+  };
+}
+
+/** Backend ainda não expõe CRUD de câmeras; retorna lista vazia para não quebrar o painel. */
 export async function getAnprCameras() {
-  const response = await api.get<ApiEnvelope<AnprCamera[]>>("/anpr/cameras");
-  return unwrap(response.data);
+  return [] as AnprCamera[];
 }
 
-export async function createAnprCamera(payload: CameraPayload) {
-  const response = await api.post<ApiEnvelope<AnprCamera>>("/anpr/cameras", payload);
-  return unwrap(response.data);
-}
-
-export async function updateAnprCamera(id: string, payload: CameraPayload) {
-  const response = await api.put<ApiEnvelope<AnprCamera>>(`/anpr/cameras/${id}`, payload);
-  return unwrap(response.data);
-}
-
-export async function setAnprCameraActive(id: string, active: boolean) {
-  const response = await api.patch<ApiEnvelope<AnprCamera>>(`/anpr/cameras/${id}/${active ? "activate" : "deactivate"}`);
-  return unwrap(response.data);
-}
-
-export async function simulateAnprEvent(payload: { unitId: string; plate: string; cameraId?: string }) {
-  const response = await api.post<ApiEnvelope<AnprEvent>>("/anpr/events/simulate", payload);
-  return unwrap(response.data);
-}
-
-export async function getAnprEvent(id: string) {
-  const response = await api.get<ApiEnvelope<AnprEvent>>(`/anpr/events/${id}`);
-  return unwrap(response.data);
+export async function simulateAnprEvent(payload: { unitId: string; plate: string; cameraId: string }) {
+  const response = await api.post<ApiEnvelope<{ eventId?: string; recognized?: boolean }>>("/anpr/webhook", {
+    cameraId: payload.cameraId,
+    plate: payload.plate,
+    confidence: "99",
+  });
+  const result = unwrap(response.data);
+  return {
+    id: result.eventId ?? `sim-${Date.now()}`,
+    unitId: payload.unitId,
+    cameraId: payload.cameraId,
+    plate: payload.plate,
+    status: result.recognized ? "AUTHORIZED" : "UNKNOWN",
+  } satisfies AnprEvent;
 }
 
 export async function getLatestAnprEvents(unitId: string) {
-  const response = await api.get<ApiEnvelope<AnprEvent[]>>(`/anpr/unit/${unitId}/latest-events`);
+  const response = await api.get<ApiEnvelope<AnprEvent[]>>(`/anpr/events/${unitId}`);
   return unwrap(response.data);
 }
 
 export async function getAnprSummary(unitId: string) {
-  const response = await api.get<ApiEnvelope<AnprSummary>>(`/anpr/unit/${unitId}/summary`);
-  return unwrap(response.data);
+  const events = await getLatestAnprEvents(unitId);
+  return buildSummaryFromEvents(events);
 }

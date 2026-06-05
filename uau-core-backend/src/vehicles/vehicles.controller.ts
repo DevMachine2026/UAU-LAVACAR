@@ -2,8 +2,9 @@ import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
 import { VehiclesService } from './vehicles.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
+import { User, UserRole } from '@prisma/client';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('vehicles')
@@ -15,15 +16,15 @@ export class VehiclesController {
   @Post()
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.OPERATOR, UserRole.CUSTOMER)
   @ApiOperation({ summary: 'Cadastra um novo veículo' })
-  create(@Body() createDto: CreateVehicleDto) {
-    return this.vehiclesService.create(createDto);
+  create(@Body() createDto: CreateVehicleDto, @CurrentUser() user: User) {
+    return this.vehiclesService.create(createDto, user);
   }
 
   @Get()
-  @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Lista todos os veículos' })
-  findAll() {
-    return this.vehiclesService.findAll();
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.OPERATOR, UserRole.CUSTOMER)
+  @ApiOperation({ summary: 'Lista veículos (todos para staff; apenas do cliente para CUSTOMER)' })
+  findAll(@CurrentUser() user: User) {
+    return this.vehiclesService.findAll(user);
   }
 
   @Get(':id')

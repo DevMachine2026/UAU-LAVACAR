@@ -4,11 +4,11 @@ Este guia prepara o deploy em STAGING. Nao execute deploy real sem credenciais, 
 
 ## Estrutura oficial
 
-- Backend oficial: `uau-clube-api/uau-core-backend`
+- Backend oficial: `uau-core-backend` (na raiz do monorepo)
 - Web Dashboard: `uau-web-dashboard`
 - Mobile: `uau-mobile-app`
 
-Nao use a pasta raiz `uau-core-backend` para backend.
+Nao use a pasta obsoleta `uau-clube-api` para backend.
 
 URLs finais placeholder para staging:
 
@@ -36,7 +36,7 @@ Requisitos:
 Exemplo local com Docker Compose:
 
 ```bash
-cd uau-clube-api/uau-core-backend
+cd uau-core-backend
 docker compose -f docker-compose.staging.yml up -d postgres
 ```
 
@@ -45,7 +45,7 @@ docker compose -f docker-compose.staging.yml up -d postgres
 Copiar o exemplo:
 
 ```bash
-cd uau-clube-api/uau-core-backend
+cd uau-core-backend
 cp .env.staging.example .env.staging
 ```
 
@@ -70,7 +70,7 @@ Staging deve usar Asaas sandbox e Swagger habilitado.
 ## 3. Rodar migrations
 
 ```bash
-cd uau-clube-api/uau-core-backend
+cd uau-core-backend
 npm ci
 npm run prisma:generate
 npm run prisma:deploy
@@ -81,7 +81,7 @@ npm run prisma:deploy
 ## 4. Seed staging
 
 ```bash
-cd uau-clube-api/uau-core-backend
+cd uau-core-backend
 npm run seed
 ```
 
@@ -92,7 +92,7 @@ Validar o Super Admin de staging definido nas envs.
 Build e start sem Docker:
 
 ```bash
-cd uau-clube-api/uau-core-backend
+cd uau-core-backend
 npm run build:prod
 npm run start:prod
 ```
@@ -100,7 +100,7 @@ npm run start:prod
 Com Docker Compose staging:
 
 ```bash
-cd uau-clube-api/uau-core-backend
+cd uau-core-backend
 docker compose -f docker-compose.staging.yml up -d --build
 ```
 

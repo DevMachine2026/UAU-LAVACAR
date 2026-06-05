@@ -8,14 +8,19 @@ import { MetricCard } from "@/components/MetricCard";
 import { Section } from "@/components/Section";
 import { MetricGrid } from "@/features/shared/MetricGrid";
 import { SimpleList } from "@/features/shared/SimpleList";
-import { getEndpoint } from "@/features/shared/dashboard.api";
+import {
+  getPartnerAlerts,
+  getPartnerFinancial,
+  getPartnerOverview,
+  getPartnerTransactions,
+} from "@/features/partner-dashboard/partner-dashboard.api";
 import { asRecord, getNumber, normalizeList } from "@/utils/data";
 
 export default function PartnerPage() {
-  const overview = useQuery({ queryKey: ["partner", "overview"], queryFn: () => getEndpoint("/partner-dashboard/overview") });
-  const financial = useQuery({ queryKey: ["partner", "financial"], queryFn: () => getEndpoint("/partner-dashboard/financial") });
-  const transactions = useQuery({ queryKey: ["partner", "transactions"], queryFn: () => getEndpoint("/partner-dashboard/transactions") });
-  const alerts = useQuery({ queryKey: ["partner", "alerts"], queryFn: () => getEndpoint("/partner-dashboard/alerts") });
+  const overview = useQuery({ queryKey: ["partner", "overview"], queryFn: getPartnerOverview });
+  const financial = useQuery({ queryKey: ["partner", "financial"], queryFn: getPartnerFinancial });
+  const transactions = useQuery({ queryKey: ["partner", "transactions"], queryFn: getPartnerTransactions });
+  const alerts = useQuery({ queryKey: ["partner", "alerts"], queryFn: getPartnerAlerts });
   const overviewData = asRecord(overview.data);
   const financialData = asRecord(financial.data);
 

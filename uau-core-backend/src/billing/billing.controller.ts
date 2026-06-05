@@ -2,8 +2,9 @@ import { Controller, Get, Post, Body, Param, Put, Query } from '@nestjs/common';
 import { BillingService } from './billing.service';
 import { CreateBillingDto } from './dto/create-billing.dto';
 import { UpdateBillingDto } from './dto/update-billing.dto';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
+import { User, UserRole } from '@prisma/client';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('billing')
@@ -26,10 +27,24 @@ export class BillingController {
     return this.billingService.findAll();
   }
 
+  @Get('my-current')
+  @Roles(UserRole.CUSTOMER)
+  @ApiOperation({ summary: 'Cobrança pendente atual do cliente autenticado (mobile)' })
+  findMyCurrent(@CurrentUser() user: User) {
+    return this.billingService.findCurrentByUserId(user.id);
+  }
+
   @Get('my-history')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.CUSTOMER)
+  @Roles(UserRole.CUSTOMER)
+  @ApiOperation({ summary: 'Histórico de cobranças do cliente autenticado (mobile)' })
+  findMyHistory(@CurrentUser() user: User) {
+    return this.billingService.findByCustomer(user.id);
+  }
+
+  @Get('customer-history')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER)
   @ApiQuery({ name: 'userId', required: true })
-  @ApiOperation({ summary: 'Histórico de cobranças de um cliente' })
+  @ApiOperation({ summary: 'Histórico de cobranças por userId (admin)' })
   findByCustomer(@Query('userId') userId: string) {
     return this.billingService.findByCustomer(userId);
   }

@@ -32,7 +32,7 @@ Este guia prepara o go-live controlado. Nao execute deploy automatico sem creden
 Diretorio oficial:
 
 ```bash
-cd uau-clube-api/uau-core-backend
+cd uau-core-backend
 ```
 
 Passos:

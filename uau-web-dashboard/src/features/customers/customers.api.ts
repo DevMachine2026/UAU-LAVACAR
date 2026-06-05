@@ -14,6 +14,8 @@ export type CustomerFilters = {
 
 export type Customer = {
   id: string;
+  userId?: string;
+  user?: { id: string; name?: string; email?: string; status?: string };
   name?: string;
   fullName?: string;
   email?: string;
@@ -82,10 +84,13 @@ export type BillingHistoryItem = {
 
 export type Wallet = {
   userId?: string;
+  balance?: number | string;
+  promoBalance?: number | string;
   availableBalance?: number;
   promotionalBalance?: number;
   blockedBalance?: number;
   totalBalance?: number;
+  movements?: WalletStatementItem[];
 };
 
 export type WalletStatementItem = {
@@ -160,45 +165,82 @@ export async function getVehicles(userId?: string) {
   return unwrap(response.data);
 }
 
-export async function getWallet(userId: string) {
-  const response = await api.get<ApiEnvelope<Wallet>>(`/wallet/${userId}`);
-  return unwrap(response.data);
+export async function getWallet(customerId: string) {
+  const response = await api.get<ApiEnvelope<Wallet>>(`/wallet/customer/${customerId}`);
+  const wallet = unwrap(response.data);
+  const balance = Number(wallet.balance ?? 0);
+  const promoBalance = Number(wallet.promoBalance ?? 0);
+  const blockedBalance = Number(wallet.blockedBalance ?? 0);
+
+  return {
+    ...wallet,
+    balance,
+    promoBalance,
+    blockedBalance,
+    availableBalance: balance,
+    promotionalBalance: promoBalance,
+    totalBalance: balance + promoBalance + blockedBalance,
+  };
 }
 
-export async function getWalletStatement(userId: string) {
-  const response = await api.get<ApiEnvelope<ListResult<WalletStatementItem>>>(`/wallet/${userId}/statement`);
-  return unwrap(response.data);
+export async function getWalletStatement(customerId: string) {
+  const wallet = await getWallet(customerId);
+  const movements = (wallet as Wallet & { movements?: WalletStatementItem[] }).movements ?? [];
+  return listItems(movements);
 }
 
-export async function getBillingHistory(userId: string) {
-  const response = await api.get<ApiEnvelope<ListResult<BillingHistoryItem>>>("/billing/my-history", { params: { userId } });
-  return unwrap(response.data);
+export async function getBillingHistory(customerId: string) {
+  const customer = await getCustomer(customerId);
+  const userId = (customer as Customer & { userId?: string; user?: { id: string } }).userId ?? customer.user?.id;
+  if (!userId) return [];
+
+  const response = await api.get<ApiEnvelope<ListResult<BillingHistoryItem> | BillingHistoryItem[]>>(
+    "/billing/customer-history",
+    { params: { userId } },
+  );
+  return listItems(unwrap(response.data));
 }
 
-export async function getWashHistory(userId: string) {
-  const response = await api.get<ApiEnvelope<ListResult<WashHistoryItem>>>("/operational/my-attendances", { params: { userId } });
-  return unwrap(response.data);
+export async function getWashHistory(customerId: string) {
+  const customer = await getCustomer(customerId);
+  const userId = (customer as Customer & { userId?: string; user?: { id: string } }).userId ?? customer.user?.id;
+  if (!userId) return [];
+
+  const response = await api.get<ApiEnvelope<ListResult<WashHistoryItem> | WashHistoryItem[]>>(
+    "/operational/my-attendances",
+    { params: { userId } },
+  );
+  return listItems(unwrap(response.data));
 }
 
 export async function getFranchiseCustomers(filters?: CustomerFilters) {
-  const response = await api.get<ApiEnvelope<ListResult<Customer>>>("/franchise-dashboard/customers", { params: filters });
-  return unwrap(response.data);
+  const response = await api.get<ApiEnvelope<ListResult<Customer> | Customer[]>>(
+    "/franchise-dashboard/customers",
+    { params: filters },
+  );
+  return listItems(unwrap(response.data));
+}
+
+function resolveUserId(customer: Customer) {
+  return customer.userId ?? customer.user?.id;
 }
 
 export async function getReferralSummary(userId: string) {
   try {
-    const response = await api.get<ApiEnvelope<ReferralSummary>>(`/referrals/user/${userId}`);
+    const response = await api.get<ApiEnvelope<ReferralSummary>>(`/referrals/summary/${userId}`);
     return unwrap(response.data);
   } catch {
     return null;
   }
 }
 
-export async function getReferralTree(userId: string) {
-  try {
-    const response = await api.get<ApiEnvelope<ReferralTree>>(`/referrals/user/${userId}/tree`);
-    return unwrap(response.data);
-  } catch {
-    return null;
-  }
+export async function getReferralSummaryForCustomer(customerId: string) {
+  const customer = await getCustomer(customerId);
+  const userId = resolveUserId(customer);
+  if (!userId) return null;
+  return getReferralSummary(userId);
+}
+
+export async function getReferralTreeForCustomer(_customerId: string) {
+  return null;
 }

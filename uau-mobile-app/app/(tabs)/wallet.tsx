@@ -36,14 +36,17 @@ export default function WalletScreen() {
             <Text className="text-sm text-uau-gray">Saldo disponivel</Text>
             <MoneyText
               className="mt-2 text-3xl font-bold text-uau-black"
-              value={getNumber(wallet, ["availableBalance", "totalBalance"], 0)}
+              value={getNumber(wallet, ["availableBalance", "balance", "totalBalance"], 0)}
             />
           </Card>
 
           <View className="flex-row gap-3">
             <Card>
               <Text className="text-sm text-uau-gray">Promocional</Text>
-              <MoneyText className="mt-2 text-xl font-bold text-uau-black" value={getNumber(wallet, ["promotionalBalance"], 0)} />
+              <MoneyText
+                className="mt-2 text-xl font-bold text-uau-black"
+                value={getNumber(wallet, ["promotionalBalance", "promoBalance"], 0)}
+              />
             </Card>
             <Card>
               <Text className="text-sm text-uau-gray">Bloqueado</Text>

@@ -14,14 +14,14 @@ Este guia prepara o deploy. Ele nao executa deploy automaticamente.
 
 ## 1. Backend
 
-Diretorio oficial do backend: `uau-clube-api/uau-core-backend`.
+Diretorio oficial do backend: `uau-core-backend` (na raiz do monorepo).
 
-Nao use a pasta raiz `uau-core-backend` para deploy, build, migrations ou seed. Ela nao contem o backend funcional.
+Nao use a pasta obsoleta `uau-clube-api` para deploy, build, migrations ou seed.
 
 Antes de executar qualquer comando de backend:
 
 ```bash
-cd uau-clube-api/uau-core-backend
+cd uau-core-backend
 ```
 
 1. Instalar dependencias:
@@ -98,19 +98,19 @@ npm run start
 
 ## 3. Docker
 
-O backend oficial em `uau-clube-api/uau-core-backend` possui `Dockerfile` e `docker-compose.yml`.
+O backend oficial em `uau-core-backend` possui `Dockerfile` e `docker-compose.yml`.
 
 Build local:
 
 ```bash
-cd uau-clube-api/uau-core-backend
+cd uau-core-backend
 docker build -t uau-core-backend .
 ```
 
 Banco local:
 
 ```bash
-cd uau-clube-api/uau-core-backend
+cd uau-core-backend
 docker compose up -d postgres
 ```
 

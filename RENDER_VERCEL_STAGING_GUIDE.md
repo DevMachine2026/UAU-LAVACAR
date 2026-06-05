@@ -14,7 +14,7 @@ URLs placeholder:
 2. Clique em `New +`.
 3. Clique em `Blueprint`.
 4. Conecte sua conta GitHub se ainda nao estiver conectada.
-5. Selecione o repositorio `uau-clube-api`.
+5. Selecione o repositorio do monorepo UAU+ (ex.: `UAU-LAVACAR`).
 6. Render deve detectar o arquivo:
 
 ```text
@@ -53,7 +53,7 @@ Se nao usar blueprint:
 
 1. Clique em `New +`.
 2. Clique em `Web Service`.
-3. Selecione o repositorio `uau-clube-api`.
+3. Selecione o repositorio do monorepo UAU+ (ex.: `UAU-LAVACAR`).
 4. Configure:
 
 ```text
@@ -66,7 +66,13 @@ Start Command: npm run start:prod
 
 5. Em `Environment`, configure as variaveis abaixo.
 
-Se voce estiver usando um repositorio maior que tenha `uau-clube-api` dentro dele, use `uau-clube-api/uau-core-backend` como `Root Directory`. Neste workspace atual, o repositorio Git detectado e `uau-clube-api`, entao o root correto no Render e `uau-core-backend`.
+No monorepo atual, o backend NestJS fica na raiz em `uau-core-backend/`. Configure no Render:
+
+```text
+Root Directory: uau-core-backend
+```
+
+A pasta `uau-clube-api` esta obsoleta e vazia; nao use como root directory.
 
 ## 4. Configurar envs no Render
 
@@ -242,7 +248,7 @@ No seu computador:
 PowerShell:
 
 ```powershell
-cd uau-clube-api/uau-core-backend
+cd uau-core-backend
 $env:E2E_BASE_URL="https://api-staging.seudominio.com/api/v1"
 $env:SUPER_ADMIN_EMAIL="admin-staging@uauplus.local"
 $env:SUPER_ADMIN_PASSWORD="<senha staging>"

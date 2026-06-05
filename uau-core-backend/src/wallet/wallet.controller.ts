@@ -1,8 +1,9 @@
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { WalletService } from './wallet.service';
 import { CreateMovementDto } from './dto/create-movement.dto';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
+import { User, UserRole } from '@prisma/client';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('wallet')
@@ -10,6 +11,20 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 @Controller('wallet')
 export class WalletController {
   constructor(private readonly walletService: WalletService) {}
+
+  @Get('me')
+  @Roles(UserRole.CUSTOMER)
+  @ApiOperation({ summary: 'Carteira do cliente autenticado (mobile)' })
+  getMyWallet(@CurrentUser() user: User) {
+    return this.walletService.getWalletForUser(user.id);
+  }
+
+  @Get('me/statement')
+  @Roles(UserRole.CUSTOMER)
+  @ApiOperation({ summary: 'Extrato da carteira do cliente autenticado (mobile)' })
+  getMyStatement(@CurrentUser() user: User) {
+    return this.walletService.getStatementForUser(user.id);
+  }
 
   @Get('customer/:customerId')
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.OPERATOR, UserRole.CUSTOMER)

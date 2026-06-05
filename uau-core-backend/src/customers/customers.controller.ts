@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
+import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -12,9 +13,9 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
+  @Public()
   @Post()
-  @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Cadastra um novo cliente' })
+  @ApiOperation({ summary: 'Cadastra um novo cliente (registro público via app mobile)' })
   create(@Body() createDto: CreateCustomerDto) {
     return this.customersService.create(createDto);
   }

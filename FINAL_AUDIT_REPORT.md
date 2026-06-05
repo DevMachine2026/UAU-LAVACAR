@@ -4,18 +4,18 @@ Data: 2026-05-09
 
 ## Escopo auditado
 
-- Backend real: `uau-clube-api/uau-core-backend`
-- Pasta adicional encontrada: `uau-core-backend`
+- Backend real: `uau-core-backend` (na raiz do monorepo)
+- Pasta obsoleta: `uau-clube-api` (vazia)
 - Mobile: `uau-mobile-app`
 - Web Dashboard: `uau-web-dashboard`
 
-Observacao estrutural: a pasta raiz `uau-core-backend` nao contem o codigo NestJS; ela continha apenas `.env`. O backend funcional esta em `uau-clube-api/uau-core-backend`. Foi criado `.gitignore`, `.env.example` e `README_DO_NOT_USE.md` na pasta raiz `uau-core-backend` para reduzir risco de commit acidental. A estrutura oficial tambem esta documentada em `PROJECT_STRUCTURE.md`.
+Observacao estrutural (auditoria 2026-05-09): na epoca, o backend estava documentado em `uau-clube-api/uau-core-backend`. **Atualizacao 2026-06-04:** o backend oficial e ativo e `uau-core-backend` na raiz do monorepo; `uau-clube-api` esta obsoleta/vazia. Ver `PROJECT_STRUCTURE.md` e `uau-clube-api/README_DO_NOT_USE.md`.
 
 ## Validacoes executadas
 
 ### Backend
 
-Diretorio: `uau-clube-api/uau-core-backend`
+Diretorio: `uau-core-backend`
 
 - `npm run build`: passou.
 - `npx tsc --noEmit`: passou.
@@ -71,7 +71,6 @@ Diretorio: `uau-web-dashboard`
 
 Atualizado:
 
-- `uau-clube-api/uau-core-backend/.gitignore`
 - `uau-core-backend/.gitignore`
 - `uau-mobile-app/.gitignore`
 - `uau-web-dashboard/.gitignore`
@@ -151,8 +150,8 @@ Observacao: `npm audit fix --force` sugeriu alteracao breaking inadequada. Recom
 
 ## Pendencias antes de producao
 
-- Manter a orientacao oficial do Modulo 40A: backend de deploy somente em `uau-clube-api/uau-core-backend`; nunca usar a pasta raiz `uau-core-backend`.
-- Criar endpoint HTTP dedicado de health check se ainda nao existir.
+- Manter a orientacao oficial: backend de deploy somente em `uau-core-backend`; nunca usar `uau-clube-api`.
+- Endpoint HTTP `GET /api/v1/health` implementado para health check (Render e load balancers).
 - Em producao, usar `npx prisma migrate deploy`, nao `prisma migrate dev`.
 - Rodar smoke test com API e banco ativos.
 - Resolver ou aceitar formalmente as vulnerabilidades npm antes do go-live.
@@ -165,7 +164,7 @@ Observacao: `npm audit fix --force` sugeriu alteracao breaking inadequada. Recom
 
 ## Ordem recomendada de deploy
 
-1. Corrigir/decidir estrutura oficial do backend.
+1. Estrutura oficial do backend consolidada em `uau-core-backend` (concluido em 2026-06-04).
 2. Provisionar PostgreSQL com backup.
 3. Configurar secrets em ambiente seguro.
 4. Deploy backend em homologacao.

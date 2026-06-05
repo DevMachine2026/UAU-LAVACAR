@@ -8,14 +8,19 @@ import { MetricCard } from "@/components/MetricCard";
 import { Section } from "@/components/Section";
 import { MetricGrid } from "@/features/shared/MetricGrid";
 import { SimpleList } from "@/features/shared/SimpleList";
-import { getEndpoint } from "@/features/shared/dashboard.api";
+import {
+  getFranchiseAlerts,
+  getFranchiseFinancial,
+  getFranchiseOperations,
+  getFranchiseOverview,
+} from "@/features/franchise-dashboard/franchise-dashboard.api";
 import { asRecord, getNumber, normalizeList } from "@/utils/data";
 
 export default function FranchisePage() {
-  const overview = useQuery({ queryKey: ["franchise", "overview"], queryFn: () => getEndpoint("/franchise-dashboard/overview") });
-  const financial = useQuery({ queryKey: ["franchise", "financial"], queryFn: () => getEndpoint("/franchise-dashboard/financial") });
-  const operations = useQuery({ queryKey: ["franchise", "operations"], queryFn: () => getEndpoint("/franchise-dashboard/operations") });
-  const alerts = useQuery({ queryKey: ["franchise", "alerts"], queryFn: () => getEndpoint("/franchise-dashboard/alerts") });
+  const overview = useQuery({ queryKey: ["franchise", "overview"], queryFn: () => getFranchiseOverview() });
+  const financial = useQuery({ queryKey: ["franchise", "financial"], queryFn: () => getFranchiseFinancial() });
+  const operations = useQuery({ queryKey: ["franchise", "operations"], queryFn: () => getFranchiseOperations() });
+  const alerts = useQuery({ queryKey: ["franchise", "alerts"], queryFn: () => getFranchiseAlerts() });
   const overviewData = asRecord(overview.data);
   const financialData = asRecord(financial.data);
   const operationsData = asRecord(operations.data);

@@ -372,10 +372,11 @@ model Campaign {
 // ─── Customer & Vehicles ───────────────────────────────────────────────────
 
 model Customer {
-  id     String @id @default(cuid())
-  userId String @unique
-  cpf    String? @unique
-  phone  String?
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  cpf             String? @unique
+  phone           String?
+  asaasCustomerId String? @unique
 
   user         User           @relation(fields: [userId], references: [id])
   vehicles     Vehicle[]
@@ -433,15 +434,19 @@ model Subscription {
 }
 
 model BillingHistory {
-  id             String        @id @default(cuid())
-  customerId     String
-  subscriptionId String?
-  amount         Decimal       @db.Decimal(10, 2)
-  status         BillingStatus @default(PENDING)
-  asaasId        String?
-  dueDate        DateTime?
-  paidAt         DateTime?
-  description    String?
+  id               String        @id @default(cuid())
+  customerId       String
+  subscriptionId   String?
+  amount           Decimal       @db.Decimal(10, 2)
+  status           BillingStatus @default(PENDING)
+  asaasId          String?
+  dueDate          DateTime?
+  paidAt           DateTime?
+  description      String?
+  invoiceUrl       String?
+  pixQrCode        String?       @db.Text
+  pixCopyPaste     String?       @db.Text
+  bankSlipBarCode  String?
 
   customer     Customer      @relation(fields: [customerId], references: [id])
   subscription Subscription? @relation(fields: [subscriptionId], references: [id])

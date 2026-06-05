@@ -46,11 +46,60 @@ export class BillingService {
   async findByCustomer(userId: string) {
     const customer = await this.prisma.customer.findFirst({ where: { userId } });
     if (!customer) return [];
-    return this.prisma.billingHistory.findMany({
+    const items = await this.prisma.billingHistory.findMany({
       where: { customerId: customer.id },
       include: { subscription: { include: { plan: { select: { name: true } } } } },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
+    return items.map((item) => this.mapBillingForMobile(item));
+  }
+
+  async findCurrentByUserId(userId: string) {
+    const customer = await this.prisma.customer.findFirst({ where: { userId } });
+    if (!customer) return null;
+
+    const billing = await this.prisma.billingHistory.findFirst({
+      where: {
+        customerId: customer.id,
+        status: { in: ['PENDING', 'OVERDUE'] },
+      },
+      include: { subscription: { include: { plan: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return billing ? this.mapBillingForMobile(billing) : null;
+  }
+
+  private mapBillingForMobile(
+    billing: {
+      id: string;
+      amount: { toString(): string } | number | string;
+      status: string;
+      asaasId: string | null;
+      dueDate: Date | null;
+      invoiceUrl: string | null;
+      pixQrCode: string | null;
+      pixCopyPaste: string | null;
+      subscription?: { status: string; plan?: { name: string } | null } | null;
+      [key: string]: unknown;
+    },
+  ) {
+    const amount = Number(billing.amount);
+
+    return {
+      ...billing,
+      amount,
+      baseAmount: amount,
+      totalAmount: amount,
+      gatewayAmount: amount,
+      asaasPayment: {
+        id: billing.asaasId,
+        status: billing.status,
+        invoiceUrl: billing.invoiceUrl,
+        pixQrCode: billing.pixQrCode,
+        pixCopyPaste: billing.pixCopyPaste,
+      },
+    };
   }
 }

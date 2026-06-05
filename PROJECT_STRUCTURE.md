@@ -5,40 +5,40 @@ Este arquivo define a estrutura oficial do projeto antes do deploy.
 ## Backend oficial
 
 ```text
-uau-clube-api/uau-core-backend
+uau-core-backend
 ```
 
-Use este diretorio para:
+O backend NestJS ativo fica **diretamente na raiz do repositório**, em `uau-core-backend/`. Use este diretório para:
 
-- instalar dependencias do backend;
+- instalar dependências do backend;
 - rodar Prisma;
 - rodar migrations;
 - rodar seed;
 - gerar OpenAPI;
 - rodar build;
-- executar deploy da API.
+- executar deploy da API (Render, Docker, etc.).
 
 Comandos de backend devem ser executados a partir de:
 
 ```bash
-cd uau-clube-api/uau-core-backend
+cd uau-core-backend
 ```
 
-## Pasta nao oficial
+## Pasta obsoleta
 
 ```text
-uau-core-backend
+uau-clube-api
 ```
 
-Esta pasta na raiz nao contem o backend funcional. Ela nao deve ser usada para deploy, build, migrations ou seed.
+A pasta `uau-clube-api` está **obsoleta e vazia** no monorepo atual. Ela existia em uma organização anterior do repositório e **não deve** ser usada para build, migrations, seed ou deploy.
 
 Um aviso foi adicionado em:
 
 ```text
-uau-core-backend/README_DO_NOT_USE.md
+uau-clube-api/README_DO_NOT_USE.md
 ```
 
-Nenhuma pasta foi movida ou apagada neste modulo.
+Nenhuma pasta foi movida ou apagada neste módulo.
 
 ## Mobile oficial
 
@@ -46,7 +46,7 @@ Nenhuma pasta foi movida ou apagada neste modulo.
 uau-mobile-app
 ```
 
-Use este diretorio para o app mobile do assinante/cliente.
+Use este diretório para o app mobile do assinante/cliente.
 
 ## Web Dashboard oficial
 
@@ -54,9 +54,9 @@ Use este diretorio para o app mobile do assinante/cliente.
 uau-web-dashboard
 ```
 
-Use este diretorio para os dashboards Super Admin, franqueado, parceiro e operador.
+Use este diretório para os dashboards Super Admin, franqueado, parceiro e operador.
 
-## Documentacao de producao
+## Documentação de produção
 
 Arquivos oficiais na raiz:
 
@@ -70,7 +70,7 @@ PROJECT_STRUCTURE.md
 
 ## Regra operacional
 
-Antes de qualquer deploy, confirme o diretorio atual com:
+Antes de qualquer deploy, confirme o diretório atual com:
 
 ```bash
 pwd
@@ -82,8 +82,8 @@ ou, no PowerShell:
 Get-Location
 ```
 
-O deploy do backend so deve continuar se o caminho terminar em:
+O deploy do backend só deve continuar se o caminho terminar em:
 
 ```text
-uau-clube-api/uau-core-backend
+uau-core-backend
 ```

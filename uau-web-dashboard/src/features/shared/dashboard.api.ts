@@ -1,6 +1,7 @@
 import { api } from "@/api/client";
 import { ApiEnvelope } from "@/api/types";
 
+/** @deprecated Prefira os módulos em features/*-dashboard/*-dashboard.api.ts */
 export type DashboardData = Record<string, unknown>;
 
 function unwrap<T>(envelope: ApiEnvelope<T>) {

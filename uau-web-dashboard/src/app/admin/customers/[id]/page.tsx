@@ -30,8 +30,8 @@ import {
   blockCustomer,
   getBillingHistory,
   getCustomer,
-  getReferralSummary,
-  getReferralTree,
+  getReferralSummaryForCustomer,
+  getReferralTreeForCustomer,
   getVehicles,
   getWallet,
   getWalletStatement,
@@ -64,8 +64,14 @@ export default function AdminCustomerDetailPage() {
   const statement = useQuery({ queryKey: ["customer-wallet-statement", customerId], queryFn: () => getWalletStatement(customerId) });
   const billing = useQuery({ queryKey: ["customer-billing", customerId], queryFn: () => getBillingHistory(customerId) });
   const washes = useQuery({ queryKey: ["customer-washes", customerId], queryFn: () => getWashHistory(customerId) });
-  const referrals = useQuery({ queryKey: ["customer-referrals", customerId], queryFn: () => getReferralSummary(customerId) });
-  const referralTree = useQuery({ queryKey: ["customer-referral-tree", customerId], queryFn: () => getReferralTree(customerId) });
+  const referrals = useQuery({
+    queryKey: ["customer-referrals", customerId],
+    queryFn: () => getReferralSummaryForCustomer(customerId),
+  });
+  const referralTree = useQuery({
+    queryKey: ["customer-referral-tree", customerId],
+    queryFn: () => getReferralTreeForCustomer(customerId),
+  });
   const units = useQuery({ queryKey: ["units"], queryFn: getUnits });
 
   const saveProfile = useMutation({

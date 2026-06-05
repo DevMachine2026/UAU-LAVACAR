@@ -32,41 +32,37 @@ function unwrap<T>(envelope: ApiEnvelope<T>) {
 }
 
 export async function getVehicleSizeCategories() {
-  const response = await api.get<ApiEnvelope<VehicleSizeCategory[]>>("/vehicle-size-categories");
+  const response = await api.get<ApiEnvelope<VehicleSizeCategory[]>>("/vehicle-sizes");
   return unwrap(response.data);
 }
 
 export async function createVehicleSizeCategory(payload: VehicleSizeCategoryPayload) {
-  const response = await api.post<ApiEnvelope<VehicleSizeCategory>>("/vehicle-size-categories", payload);
+  const response = await api.post<ApiEnvelope<VehicleSizeCategory>>("/vehicle-sizes", payload);
   return unwrap(response.data);
 }
 
-export async function updateVehicleSizeCategory(id: string, payload: VehicleSizeCategoryPayload) {
-  const response = await api.put<ApiEnvelope<VehicleSizeCategory>>(`/vehicle-size-categories/${id}`, payload);
+export async function updateVehicleSizeCategory(id: string, payload: Partial<VehicleSizeCategoryPayload>) {
+  const response = await api.put<ApiEnvelope<VehicleSizeCategory>>(`/vehicle-sizes/${id}`, payload);
   return unwrap(response.data);
 }
 
 export async function setVehicleSizeCategoryActive(id: string, active: boolean) {
-  const response = await api.patch<ApiEnvelope<VehicleSizeCategory>>(`/vehicle-size-categories/${id}/${active ? "activate" : "deactivate"}`);
-  return unwrap(response.data);
+  return updateVehicleSizeCategory(id, { isActive: active });
 }
 
+/** Regras marca/modelo ainda não possuem controller dedicado no backend. */
 export async function getVehicleModelSizeRules() {
-  const response = await api.get<ApiEnvelope<VehicleModelSizeRule[]>>("/vehicle-model-size-rules");
-  return unwrap(response.data);
+  return [] as VehicleModelSizeRule[];
 }
 
-export async function createVehicleModelSizeRule(payload: VehicleModelSizeRulePayload) {
-  const response = await api.post<ApiEnvelope<VehicleModelSizeRule>>("/vehicle-model-size-rules", payload);
-  return unwrap(response.data);
+export async function createVehicleModelSizeRule(_payload: VehicleModelSizeRulePayload) {
+  throw new Error("Cadastro de regras marca/modelo ainda não disponível na API.");
 }
 
-export async function updateVehicleModelSizeRule(id: string, payload: VehicleModelSizeRulePayload) {
-  const response = await api.put<ApiEnvelope<VehicleModelSizeRule>>(`/vehicle-model-size-rules/${id}`, payload);
-  return unwrap(response.data);
+export async function updateVehicleModelSizeRule(_id: string, _payload: VehicleModelSizeRulePayload) {
+  throw new Error("Atualização de regras marca/modelo ainda não disponível na API.");
 }
 
-export async function setVehicleModelSizeRuleActive(id: string, active: boolean) {
-  const response = await api.patch<ApiEnvelope<VehicleModelSizeRule>>(`/vehicle-model-size-rules/${id}/${active ? "activate" : "deactivate"}`);
-  return unwrap(response.data);
+export async function setVehicleModelSizeRuleActive(_id: string, _active: boolean) {
+  throw new Error("Ativação de regras marca/modelo ainda não disponível na API.");
 }

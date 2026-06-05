@@ -88,11 +88,23 @@ export const useAuthStore = create<AuthState>((set) => ({
       return;
     }
 
+    const cachedUser = await SecureStore.getItemAsync(USER_KEY);
+    if (!cachedUser) {
+      await clearSession();
+      set({ accessToken: null, user: null, isAuthenticated: false, isLoading: false });
+      return;
+    }
+
     try {
-      set({ accessToken, isAuthenticated: true });
-      const user = await getMe();
-      await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
+      const user = JSON.parse(cachedUser) as ApiUser;
       set({ accessToken, user, isAuthenticated: true, isLoading: false });
+      try {
+        const fresh = await getMe();
+        await SecureStore.setItemAsync(USER_KEY, JSON.stringify(fresh));
+        set({ user: fresh });
+      } catch {
+        // Mantém usuário em cache até existir rota de perfil no backend.
+      }
     } catch {
       await clearSession();
       set({ accessToken: null, user: null, isAuthenticated: false, isLoading: false });

@@ -2,7 +2,7 @@
 
 ## Backend
 
-O backend principal auditado esta em `uau-clube-api/uau-core-backend`. Ele usa NestJS, Prisma e PostgreSQL, com prefixo global `api/v1`, validação global de DTOs, CORS configuravel, Helmet, rate limit simples para login/webhooks e OpenAPI/Swagger.
+O backend principal esta em `uau-core-backend` (na raiz do monorepo). Ele usa NestJS, Prisma e PostgreSQL, com prefixo global `api/v1`, validação global de DTOs, CORS configuravel, Helmet, rate limit simples para login/webhooks e OpenAPI/Swagger. A pasta `uau-clube-api` esta obsoleta e vazia.
 
 Modulos cobertos pelos ciclos recentes:
 

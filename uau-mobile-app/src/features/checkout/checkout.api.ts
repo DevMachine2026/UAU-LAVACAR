@@ -32,11 +32,23 @@ export type CheckoutConfirmResult = {
   pixCopyPaste?: string | null;
   dueDate?: string | null;
   value?: number | string;
+  planAmount?: number | string;
+  gatewayAmount?: number | string;
+  promotionalCashbackUsed?: number | string;
+  realCashbackUsed?: number | string;
+  totalCashbackUsed?: number | string;
   billingCycle?: {
     id?: string;
+    status?: string;
     pixQrCode?: string | null;
     pixCopyPaste?: string | null;
     gatewayAmount?: number | string;
+    invoiceUrl?: string | null;
+  };
+  subscription?: {
+    id?: string;
+    status?: string;
+    plan?: { name?: string };
   };
   [key: string]: unknown;
 };

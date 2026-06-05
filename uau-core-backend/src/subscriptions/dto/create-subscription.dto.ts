@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateSubscriptionDto {
   @IsString()
@@ -11,5 +11,17 @@ export class CreateSubscriptionDto {
 
   @IsString()
   @IsOptional()
-  paymentMethodId?: string; // Para integração com Asaas
+  paymentMethodId?: string;
+
+  @IsString()
+  @IsOptional()
+  vehicleId?: string;
+
+  @IsNumber()
+  @IsOptional()
+  recurringAmount?: number;
+
+  @IsNumber()
+  @IsOptional()
+  firstChargeAmount?: number;
 }

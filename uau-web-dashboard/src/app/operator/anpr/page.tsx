@@ -29,7 +29,10 @@ export default function OperatorAnprPage() {
   const events = useQuery({ queryKey: ["anpr-events", unitId], queryFn: () => getLatestAnprEvents(unitId), enabled: Boolean(unitId), refetchInterval: 15000 });
 
   const simulate = useMutation({
-    mutationFn: () => simulateAnprEvent({ unitId, cameraId: cameraId || undefined, plate: normalizePlate(plate) }),
+    mutationFn: () => {
+      if (!cameraId) throw new Error("Informe o ID da camera cadastrada no ANPR.");
+      return simulateAnprEvent({ unitId, cameraId, plate: normalizePlate(plate) });
+    },
     onSuccess: () => {
       setNotice("Leitura simulada.");
       setError("");
@@ -41,7 +44,6 @@ export default function OperatorAnprPage() {
   });
 
   const unitOptions = (units.data ?? []).map((unit) => ({ label: unit.name, value: unit.id }));
-  const cameraOptions = (cameras.data ?? []).filter((camera) => !unitId || camera.unitId === unitId).map((camera) => ({ label: camera.name, value: camera.id }));
   const byStatus = summary.data?.eventsByStatus ?? {};
 
   return (
@@ -55,7 +57,12 @@ export default function OperatorAnprPage() {
           <Card>
             <div className="grid gap-4 md:grid-cols-2">
               <SelectField label="Unidade" options={unitOptions} value={unitId} onChange={(event) => setUnitId(event.target.value)} />
-              <SelectField label="Camera" options={cameraOptions} value={cameraId} onChange={(event) => setCameraId(event.target.value)} />
+              <FormField
+                label="ID da camera (cadastro ANPR)"
+                value={cameraId}
+                onChange={(event) => setCameraId(event.target.value)}
+                placeholder="cuid da camera em anpr_cameras"
+              />
             </div>
           </Card>
 
@@ -74,7 +81,13 @@ export default function OperatorAnprPage() {
                 <p className="mb-4 text-lg font-bold text-uau-black">Simular leitura</p>
                 <div className="grid gap-4 md:grid-cols-[1fr_auto]">
                   <FormField label="Placa" value={plate} onChange={(event) => setPlate(event.target.value.toUpperCase())} />
-                  <Button className="self-end" disabled={!plate || simulate.isPending} onClick={() => simulate.mutate()}>Simular</Button>
+                  <Button
+                    className="self-end"
+                    disabled={!plate || !cameraId || simulate.isPending}
+                    onClick={() => simulate.mutate()}
+                  >
+                    Simular
+                  </Button>
                 </div>
               </Card>
 

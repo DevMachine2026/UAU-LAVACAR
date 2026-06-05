@@ -51,8 +51,15 @@ export async function setStateActive(id: string, active: boolean) {
 }
 
 export async function getCities() {
-  const response = await api.get<ApiEnvelope<CityItem[]>>("/cities");
-  return unwrap(response.data);
+  const states = await getStates();
+  const cityGroups = await Promise.all(
+    states.map(async (state) => {
+      const response = await api.get<ApiEnvelope<CityItem[]>>(`/states/${state.id}/cities`);
+      const cities = unwrap(response.data);
+      return cities.map((city) => ({ ...city, stateId: city.stateId ?? state.id, state }));
+    }),
+  );
+  return cityGroups.flat();
 }
 
 export async function createCity(payload: CityPayload) {

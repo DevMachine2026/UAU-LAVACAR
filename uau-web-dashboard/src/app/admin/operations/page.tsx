@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { ErrorState, LoadingState } from "@/components/State";
-import { getEndpoint } from "@/features/shared/dashboard.api";
+import { getAdminAnpr, getAdminOperations } from "@/features/admin-dashboard/admin-dashboard.api";
 import { MetricGrid } from "@/features/shared/MetricGrid";
 import { ClosureCard, OperationMetricCard, ShiftCard } from "@/features/operations/components";
 import { getClosures, getShifts } from "@/features/operations/operations.api";
@@ -14,8 +14,8 @@ import { ProtectedRoute } from "@/layout/ProtectedRoute";
 import { asArray, asRecord, getNumber } from "@/utils/data";
 
 export default function AdminOperationsPage() {
-  const operations = useQuery({ queryKey: ["admin-operations"], queryFn: () => getEndpoint("/admin-dashboard/operations") });
-  const anpr = useQuery({ queryKey: ["admin-anpr"], queryFn: () => getEndpoint("/admin-dashboard/anpr") });
+  const operations = useQuery({ queryKey: ["admin-operations"], queryFn: getAdminOperations });
+  const anpr = useQuery({ queryKey: ["admin-anpr"], queryFn: getAdminAnpr });
   const shifts = useQuery({ queryKey: ["admin-operations-shifts"], queryFn: () => getShifts() });
   const closures = useQuery({ queryKey: ["admin-operations-closures"], queryFn: () => getClosures() });
   const op = asRecord(operations.data);

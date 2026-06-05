@@ -105,14 +105,14 @@ export default function HomeScreen() {
               <Text className="text-sm text-uau-gray">Cashback total</Text>
               <MoneyText
                 className="mt-2 text-2xl font-bold text-uau-black"
-                value={getNumber(wallet, ["totalBalance", "availableBalance"], 0)}
+                value={getNumber(wallet, ["totalBalance", "availableBalance", "balance"], 0)}
               />
             </Card>
             <Card>
               <Text className="text-sm text-uau-gray">Promocional</Text>
               <MoneyText
                 className="mt-2 text-2xl font-bold text-uau-black"
-                value={getNumber(wallet, ["promotionalBalance"], 0)}
+                value={getNumber(wallet, ["promotionalBalance", "promoBalance"], 0)}
               />
             </Card>
           </View>

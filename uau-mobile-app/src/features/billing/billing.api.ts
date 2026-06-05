@@ -39,6 +39,16 @@ function unwrap<T>(response: ApiEnvelope<T>) {
   return response.data;
 }
 
+function normalizeBillingHistory(value: unknown): BillingCycle[] {
+  if (Array.isArray(value)) return value as BillingCycle[];
+  if (value && typeof value === "object") {
+    const record = value as { items?: BillingCycle[]; data?: BillingCycle[] };
+    if (Array.isArray(record.items)) return record.items;
+    if (Array.isArray(record.data)) return record.data;
+  }
+  return [];
+}
+
 export async function getMyCurrentBilling() {
   const response = await api.get<ApiEnvelope<BillingCycle | null>>("/billing/my-current");
   return unwrap(response.data);
@@ -48,5 +58,5 @@ export async function getMyBillingHistory() {
   const response = await api.get<ApiEnvelope<BillingCycle[] | { items?: BillingCycle[]; data?: BillingCycle[] }>>(
     "/billing/my-history"
   );
-  return unwrap(response.data);
+  return normalizeBillingHistory(unwrap(response.data));
 }

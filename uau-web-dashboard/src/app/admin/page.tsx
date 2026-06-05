@@ -8,13 +8,17 @@ import { MetricCard } from "@/components/MetricCard";
 import { Section } from "@/components/Section";
 import { MetricGrid } from "@/features/shared/MetricGrid";
 import { SimpleList } from "@/features/shared/SimpleList";
-import { getEndpoint } from "@/features/shared/dashboard.api";
+import {
+  getAdminAlerts,
+  getAdminFinancial,
+  getAdminOverview,
+} from "@/features/admin-dashboard/admin-dashboard.api";
 import { asRecord, getNumber, normalizeList } from "@/utils/data";
 
 export default function AdminPage() {
-  const overview = useQuery({ queryKey: ["admin", "overview"], queryFn: () => getEndpoint("/admin-dashboard/overview") });
-  const financial = useQuery({ queryKey: ["admin", "financial"], queryFn: () => getEndpoint("/admin-dashboard/financial") });
-  const alerts = useQuery({ queryKey: ["admin", "alerts"], queryFn: () => getEndpoint("/admin-dashboard/alerts") });
+  const overview = useQuery({ queryKey: ["admin", "overview"], queryFn: getAdminOverview });
+  const financial = useQuery({ queryKey: ["admin", "financial"], queryFn: getAdminFinancial });
+  const alerts = useQuery({ queryKey: ["admin", "alerts"], queryFn: getAdminAlerts });
   const overviewData = asRecord(overview.data);
   const financialData = asRecord(financial.data);
 

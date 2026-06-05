@@ -3,6 +3,8 @@ import { ApiEnvelope } from "@/api/types";
 
 export type Wallet = {
   id?: string;
+  balance?: number | string;
+  promoBalance?: number | string;
   availableBalance?: number | string;
   promotionalBalance?: number | string;
   blockedBalance?: number | string;
@@ -33,9 +35,19 @@ export async function getMyWallet() {
   return unwrap(response.data);
 }
 
+function normalizeStatement(value: unknown): WalletStatementItem[] {
+  if (Array.isArray(value)) return value as WalletStatementItem[];
+  if (value && typeof value === "object") {
+    const record = value as { items?: WalletStatementItem[]; data?: WalletStatementItem[] };
+    if (Array.isArray(record.items)) return record.items;
+    if (Array.isArray(record.data)) return record.data;
+  }
+  return [];
+}
+
 export async function getMyStatement() {
   const response = await api.get<ApiEnvelope<WalletStatementItem[] | { items?: WalletStatementItem[]; data?: WalletStatementItem[] }>>(
     "/wallet/me/statement"
   );
-  return unwrap(response.data);
+  return normalizeStatement(unwrap(response.data));
 }

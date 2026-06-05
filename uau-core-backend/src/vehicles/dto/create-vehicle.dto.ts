@@ -2,8 +2,8 @@ import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-val
 
 export class CreateVehicleDto {
   @IsString()
-  @IsNotEmpty()
-  customerId: string;
+  @IsOptional()
+  customerId?: string;
 
   @IsString()
   @IsNotEmpty()

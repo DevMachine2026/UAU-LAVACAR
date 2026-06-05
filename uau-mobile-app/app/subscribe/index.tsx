@@ -10,13 +10,8 @@ import { ErrorState } from "@/components/ErrorState";
 import { Input } from "@/components/Input";
 import { Loading } from "@/components/Loading";
 import { Screen } from "@/components/Screen";
-import {
-  CheckoutConfirmResult,
-  CheckoutPreview,
-  SubscriptionCheckoutPayload,
-  confirmSubscription,
-  previewSubscription
-} from "@/features/checkout/checkout.api";
+import { CheckoutConfirmResult, CheckoutPreview, SubscriptionCheckoutPayload } from "@/features/checkout/checkout.api";
+import { useSubscriptionConfirm, useSubscriptionPreview } from "@/features/checkout/checkout.hooks";
 import { getCities, getFranchiseUnits, getStates, LocationItem } from "@/features/locations/locations.api";
 import { getPlans, Plan } from "@/features/plans/plans.api";
 import { CheckoutSummary } from "@/features/subscribe/CheckoutSummary";
@@ -82,8 +77,8 @@ export default function SubscribeScreen() {
       void queryClient.invalidateQueries({ queryKey: ["vehicles", "me"] });
     }
   });
-  const previewMutation = useMutation({ mutationFn: previewSubscription });
-  const confirmMutation = useMutation({ mutationFn: confirmSubscription });
+  const previewMutation = useSubscriptionPreview();
+  const confirmMutation = useSubscriptionConfirm();
 
   const isLoading =
     statesQuery.isLoading || citiesQuery.isLoading || unitsQuery.isLoading || plansQuery.isLoading || vehiclesQuery.isLoading;
@@ -360,13 +355,14 @@ function SuccessContent({
   const pixCopyPaste = getString(record, ["pixCopyPaste"]) || getString(billingCycle, ["pixCopyPaste"]);
   const pixQrCode = getString(record, ["pixQrCode"]) || getString(billingCycle, ["pixQrCode"]);
   const paymentMethod = getString(record, ["paymentMethod"], "");
+  const gatewayAmount = getNumber(record, ["gatewayAmount"], getNumber(billingCycle, ["gatewayAmount"], getNumber(record, ["value"], 0)));
 
   return (
     <Card>
       <View className="gap-3">
         <Text className="text-xl font-bold text-uau-black">Tudo certo por aqui.</Text>
-        {getNumber(record, ["value"], 0) > 0 ? (
-          <Text className="text-sm text-uau-gray">Valor gateway: {getNumber(record, ["value"], 0)}</Text>
+        {gatewayAmount > 0 ? (
+          <Text className="text-sm text-uau-gray">Valor a pagar (gateway): {gatewayAmount}</Text>
         ) : null}
         {paymentMethod ? <Text className="text-sm text-uau-gray">Metodo: {paymentMethod}</Text> : null}
         {pixQrCode || pixCopyPaste ? (

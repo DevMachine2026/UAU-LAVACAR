@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { ErrorState, LoadingState } from "@/components/State";
-import { getEndpoint } from "@/features/shared/dashboard.api";
+import { getFranchiseAnpr, getFranchiseOperations } from "@/features/franchise-dashboard/franchise-dashboard.api";
 import { MetricGrid } from "@/features/shared/MetricGrid";
 import { ClosureCard, OperationMetricCard, ShiftCard } from "@/features/operations/components";
 import { getClosures, getShifts } from "@/features/operations/operations.api";
@@ -14,8 +14,8 @@ import { ProtectedRoute } from "@/layout/ProtectedRoute";
 import { asArray, asRecord, getNumber } from "@/utils/data";
 
 export default function FranchiseOperationsPage() {
-  const operations = useQuery({ queryKey: ["franchise-operations-page"], queryFn: () => getEndpoint("/franchise-dashboard/operations") });
-  const anpr = useQuery({ queryKey: ["franchise-anpr"], queryFn: () => getEndpoint("/franchise-dashboard/anpr") });
+  const operations = useQuery({ queryKey: ["franchise-operations-page"], queryFn: () => getFranchiseOperations() });
+  const anpr = useQuery({ queryKey: ["franchise-anpr"], queryFn: () => getFranchiseAnpr() });
   const shifts = useQuery({ queryKey: ["franchise-operations-shifts"], queryFn: () => getShifts() });
   const closures = useQuery({ queryKey: ["franchise-operations-closures"], queryFn: () => getClosures() });
   const op = asRecord(operations.data);

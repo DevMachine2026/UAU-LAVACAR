@@ -4,9 +4,9 @@ Data da auditoria: 2026-05-09
 
 ## Backend
 
-- [x] Diretorio oficial do backend definido: `uau-clube-api/uau-core-backend`.
-- [ ] Nao usar a pasta raiz `uau-core-backend` para deploy, build, migrations ou seed.
-- [ ] Antes de executar comandos de backend, confirmar que o terminal esta em `uau-clube-api/uau-core-backend`.
+- [x] Diretorio oficial do backend definido: `uau-core-backend` (na raiz do monorepo).
+- [ ] Nao usar a pasta obsoleta `uau-clube-api` para deploy, build, migrations ou seed.
+- [ ] Antes de executar comandos de backend, confirmar que o terminal esta em `uau-core-backend`.
 - [ ] Configurar variaveis obrigatorias em ambiente seguro:
   - `NODE_ENV=production`
   - `PORT`
@@ -84,7 +84,7 @@ Data da auditoria: 2026-05-09
 Executar a partir do backend oficial:
 
 ```bash
-cd uau-clube-api/uau-core-backend
+cd uau-core-backend
 ```
 
 ```bash

@@ -23,9 +23,33 @@ export async function getStates() {
   return unwrap(response.data);
 }
 
+export async function getCitiesByState(stateId: string) {
+  const response = await api.get<ApiEnvelope<LocationItem[] | { items?: LocationItem[]; data?: LocationItem[] }>>(
+    `/states/${stateId}/cities`
+  );
+  const cities = unwrap(response.data);
+  return normalizeList(cities).map((city) => ({
+    ...asRecord(city),
+    stateId: asRecord(city).stateId ?? stateId
+  })) as LocationItem[];
+}
+
+function normalizeList<T>(value: unknown): T[] {
+  if (Array.isArray(value)) return value as T[];
+  const record = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  const items = record.items ?? record.data;
+  return Array.isArray(items) ? (items as T[]) : [];
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+}
+
+/** Agrega cidades de todos os estados (API não expõe GET /cities). */
 export async function getCities() {
-  const response = await api.get<ApiEnvelope<LocationItem[] | { items?: LocationItem[]; data?: LocationItem[] }>>("/cities");
-  return unwrap(response.data);
+  const states = normalizeList<LocationItem>(await getStates());
+  const cityGroups = await Promise.all(states.map((state) => getCitiesByState(state.id)));
+  return cityGroups.flat();
 }
 
 export async function getFranchiseUnits() {
