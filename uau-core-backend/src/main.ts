@@ -12,14 +12,22 @@ async function bootstrap() {
   // Prefixo global para todas as rotas (ex: /api/v1/auth/login)
   app.setGlobalPrefix('api/v1');
 
-  // Segurança básica
-  app.use(helmet());
-
-  // CORS (Configurado via variáveis de ambiente em produção)
-  const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',')
+  // CORS deve vir antes do helmet para garantir os headers corretos
+  const rawOrigins = process.env.ALLOWED_ORIGINS;
+  const corsOrigin = rawOrigins
+    ? rawOrigins.trim() === '*'
+      ? '*'
+      : rawOrigins.split(',').map((o) => o.trim())
     : '*';
-  app.enableCors({ origin: allowedOrigins });
+  app.enableCors({
+    origin: corsOrigin,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type,Authorization',
+    credentials: false,
+  });
+
+  // Segurança básica
+  app.use(helmet({ crossOriginResourcePolicy: false }));
 
   // Validação global de DTOs
   app.useGlobalPipes(
