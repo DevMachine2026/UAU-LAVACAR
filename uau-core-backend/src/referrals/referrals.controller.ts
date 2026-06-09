@@ -1,8 +1,9 @@
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { ReferralsService } from './referrals.service';
 import { CreateReferralDto } from './dto/create-referral.dto';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
+import { User, UserRole } from '@prisma/client';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('referrals')
@@ -16,6 +17,20 @@ export class ReferralsController {
   @ApiOperation({ summary: 'Registra uma nova indicação' })
   createReferral(@Body() createDto: CreateReferralDto) {
     return this.referralsService.createReferral(createDto);
+  }
+
+  @Get('me')
+  @Roles(UserRole.CUSTOMER)
+  @ApiOperation({ summary: 'Rede de indicações do cliente autenticado (mobile)' })
+  getMyNetwork(@CurrentUser() user: User) {
+    return this.referralsService.getMyNetwork(user.id);
+  }
+
+  @Get('me/tree')
+  @Roles(UserRole.CUSTOMER)
+  @ApiOperation({ summary: 'Árvore de indicações do cliente autenticado (mobile)' })
+  getMyTree(@CurrentUser() user: User) {
+    return this.referralsService.getMyTree(user.id);
   }
 
   @Get('summary/:userId')

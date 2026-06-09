@@ -2,8 +2,10 @@ import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
 import { PartnersService } from './partners.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
 import { UpdatePartnerDto } from './dto/update-partner.dto';
+import { PartnerQrDto, PartnerTransactionDto } from './dto/partner-transaction.dto';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
+import { User, UserRole } from '@prisma/client';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('partners')
@@ -36,5 +38,27 @@ export class PartnersController {
   @ApiOperation({ summary: 'Atualiza um parceiro' })
   update(@Param('id') id: string, @Body() updateDto: UpdatePartnerDto) {
     return this.partnersService.update(id, updateDto);
+  }
+
+  @Post(':id/transactions/preview')
+  @Roles(UserRole.CUSTOMER, UserRole.PARTNER, UserRole.FRANCHISE_OWNER, UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Calcula preview de transação com parceiro (mobile)' })
+  previewTransaction(@Param('id') id: string, @Body() dto: PartnerTransactionDto) {
+    return this.partnersService.previewTransaction(id, dto);
+  }
+
+  @Post(':id/transactions/confirm')
+  @Roles(UserRole.CUSTOMER, UserRole.PARTNER, UserRole.FRANCHISE_OWNER, UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Confirma transação com parceiro e aplica cashback (mobile)' })
+  confirmTransaction(@Param('id') id: string, @Body() dto: PartnerTransactionDto) {
+    return this.partnersService.confirmTransaction(id, dto);
+  }
+
+  @Post(':id/transactions/create-qr')
+  @Roles(UserRole.CUSTOMER, UserRole.PARTNER, UserRole.FRANCHISE_OWNER, UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Gera QR code para transação com parceiro (mobile)' })
+  createQr(@Param('id') id: string, @Body() dto: PartnerQrDto, @CurrentUser() user: User) {
+    const payload = { ...dto, customerUserId: dto.customerUserId ?? user.id };
+    return this.partnersService.createQr(id, payload);
   }
 }

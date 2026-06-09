@@ -125,6 +125,7 @@ model User {
   securityLogs  SecurityLog[]
   referralsMade  Referral[]    @relation("ReferrerUser")
   referralsReceived Referral[] @relation("ReferredUser")
+  notifications  Notification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -345,7 +346,8 @@ model Partner {
   state State @relation(fields: [stateId], references: [id])
   city  City  @relation(fields: [cityId], references: [id])
 
-  financialLedger FinancialLedger[]
+  financialLedger      FinancialLedger[]
+  partnerTransactions  PartnerTransaction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -377,13 +379,15 @@ model Customer {
   cpf             String? @unique
   phone           String?
   asaasCustomerId String? @unique
+  referralCode    String? @unique
 
-  user         User           @relation(fields: [userId], references: [id])
-  vehicles     Vehicle[]
-  subscriptions Subscription[]
-  wallet       Wallet?
-  billingHistory BillingHistory[]
-  attendances  Attendance[]
+  user                User                 @relation(fields: [userId], references: [id])
+  vehicles            Vehicle[]
+  subscriptions       Subscription[]
+  wallet              Wallet?
+  billingHistory      BillingHistory[]
+  attendances         Attendance[]
+  partnerTransactions PartnerTransaction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -400,6 +404,7 @@ model Vehicle {
   year           Int?
   sizeCategoryId String?
   isActive       Boolean @default(true)
+  isPrimary      Boolean @default(false)
 
   customer     Customer             @relation(fields: [customerId], references: [id])
   sizeCategory VehicleSizeCategory? @relation(fields: [sizeCategoryId], references: [id])
@@ -696,4 +701,46 @@ model Referral {
   createdAt DateTime @default(now())
 
   @@map("referrals")
+}
+
+// ─── Notifications ─────────────────────────────────────────────────────────
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  type      String?
+  readAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+// ─── Partner Transactions ──────────────────────────────────────────────────
+
+model PartnerTransaction {
+  id                String  @id @default(cuid())
+  partnerId         String
+  customerId        String
+  grossAmount       Decimal @db.Decimal(10, 2)
+  cashbackUsed      Decimal @default(0) @db.Decimal(10, 2)
+  gatewayAmount     Decimal @db.Decimal(10, 2)
+  generatedCashback Decimal @default(0) @db.Decimal(10, 2)
+  customerCashback  Decimal @default(0) @db.Decimal(10, 2)
+  uauCommission     Decimal @default(0) @db.Decimal(10, 2)
+  status            String  @default("PENDING")
+  paymentMethod     String?
+  qrPayload         String? @db.Text
+
+  partner  Partner  @relation(fields: [partnerId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("partner_transactions")
 }

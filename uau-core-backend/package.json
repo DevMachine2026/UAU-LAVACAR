@@ -17,6 +17,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "seed": "ts-node -r tsconfig-paths/register prisma/seed.ts",
     "openapi:export": "ts-node -r tsconfig-paths/register scripts/export-openapi.ts",
+    "migrate:from-old-db": "ts-node -r tsconfig-paths/register scripts/migrate-from-old-db.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -49,6 +50,8 @@
     "@types/node": "^22.10.7",
     "@types/nodemailer": "^8.0.0",
     "@types/passport-jwt": "^4.0.1",
+    "@types/pg": "^8.20.0",
+    "pg": "^8.21.0",
     "prisma": "^5.22.0",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",

@@ -35,4 +35,19 @@ export class CampaignsService {
       throw new NotFoundException('Campanha não encontrada');
     });
   }
+
+  async trackView(id: string, userId: string) {
+    await this.findOne(id);
+    return { success: true, event: 'view', campaignId: id, userId };
+  }
+
+  async trackClick(id: string, userId: string) {
+    await this.findOne(id);
+    return { success: true, event: 'click', campaignId: id, userId };
+  }
+
+  async trackDismiss(id: string, userId: string) {
+    await this.findOne(id);
+    return { success: true, event: 'dismiss', campaignId: id, userId };
+  }
 }

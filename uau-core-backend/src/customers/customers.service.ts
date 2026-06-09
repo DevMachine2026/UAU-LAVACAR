@@ -3,7 +3,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 import { UserRole } from '@prisma/client';
+
+function generateReferralCode(): string {
+  return 'UAU-' + randomBytes(3).toString('hex').toUpperCase();
+}
 
 @Injectable()
 export class CustomersService {
@@ -43,6 +48,7 @@ export class CustomersService {
           userId: user.id,
           cpf: createDto.cpf,
           phone: createDto.phone,
+          referralCode: generateReferralCode(),
         },
       });
 

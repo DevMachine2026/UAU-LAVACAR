@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Patch } from '@nestjs/common';
 import { VehiclesService } from './vehicles.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
@@ -39,5 +39,26 @@ export class VehiclesController {
   @ApiOperation({ summary: 'Atualiza os dados de um veículo' })
   update(@Param('id') id: string, @Body() updateDto: UpdateVehicleDto) {
     return this.vehiclesService.update(id, updateDto);
+  }
+
+  @Patch(':id/activate')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.CUSTOMER)
+  @ApiOperation({ summary: 'Ativa um veículo (mobile)' })
+  activate(@Param('id') id: string) {
+    return this.vehiclesService.activate(id);
+  }
+
+  @Patch(':id/deactivate')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.CUSTOMER)
+  @ApiOperation({ summary: 'Desativa um veículo (mobile)' })
+  deactivate(@Param('id') id: string) {
+    return this.vehiclesService.deactivate(id);
+  }
+
+  @Patch(':id/set-primary')
+  @Roles(UserRole.CUSTOMER)
+  @ApiOperation({ summary: 'Define veículo como principal do cliente (mobile)' })
+  setPrimary(@Param('id') id: string) {
+    return this.vehiclesService.setPrimary(id);
   }
 }

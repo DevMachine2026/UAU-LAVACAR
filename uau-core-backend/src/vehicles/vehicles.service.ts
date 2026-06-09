@@ -86,4 +86,25 @@ export class VehiclesService {
       throw new NotFoundException('Veículo não encontrado');
     });
   }
+
+  async activate(id: string) {
+    return this.prisma.vehicle.update({ where: { id }, data: { isActive: true } })
+      .catch(() => { throw new NotFoundException('Veículo não encontrado'); });
+  }
+
+  async deactivate(id: string) {
+    return this.prisma.vehicle.update({ where: { id }, data: { isActive: false, isPrimary: false } })
+      .catch(() => { throw new NotFoundException('Veículo não encontrado'); });
+  }
+
+  async setPrimary(id: string) {
+    const vehicle = await this.prisma.vehicle.findUnique({ where: { id }, select: { customerId: true, isActive: true } });
+    if (!vehicle) throw new NotFoundException('Veículo não encontrado');
+    if (!vehicle.isActive) throw new BadRequestException('Não é possível tornar primário um veículo inativo');
+
+    return this.prisma.$transaction([
+      this.prisma.vehicle.updateMany({ where: { customerId: vehicle.customerId }, data: { isPrimary: false } }),
+      this.prisma.vehicle.update({ where: { id }, data: { isPrimary: true } }),
+    ]).then(([, updated]) => updated);
+  }
 }
