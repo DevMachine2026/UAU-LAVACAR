@@ -10,6 +10,10 @@ export class EnvironmentVariables {
   @IsNotEmpty()
   ANPR_WEBHOOK_SECRET!: string;
 
+  @IsString()
+  @IsNotEmpty()
+  ALLOWED_ORIGINS!: string;
+
   @IsOptional()
   @IsString()
   MAILER_HOST?: string;
