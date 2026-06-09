@@ -6,6 +6,10 @@ export class EnvironmentVariables {
   @IsNotEmpty()
   JWT_SECRET!: string;
 
+  @IsString()
+  @IsNotEmpty()
+  ANPR_WEBHOOK_SECRET!: string;
+
   @IsOptional()
   @IsString()
   MAILER_HOST?: string;
