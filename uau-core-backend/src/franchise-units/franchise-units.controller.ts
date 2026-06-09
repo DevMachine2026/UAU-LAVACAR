@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Put } from '@nestjs/common';
 import { FranchiseUnitsService } from './franchise-units.service';
 import { CreateFranchiseUnitDto } from './dto/create-franchise-unit.dto';
 import { UpdateFranchiseUnitDto } from './dto/update-franchise-unit.dto';
@@ -36,5 +36,19 @@ export class FranchiseUnitsController {
   @ApiOperation({ summary: 'Atualiza uma unidade' })
   update(@Param('id') id: string, @Body() updateDto: UpdateFranchiseUnitDto) {
     return this.unitsService.update(id, updateDto);
+  }
+
+  @Patch(':id/activate')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Ativa uma unidade franqueada' })
+  activate(@Param('id') id: string) {
+    return this.unitsService.activate(id);
+  }
+
+  @Patch(':id/deactivate')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Desativa uma unidade franqueada' })
+  deactivate(@Param('id') id: string) {
+    return this.unitsService.deactivate(id);
   }
 }

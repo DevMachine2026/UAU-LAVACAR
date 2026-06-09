@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Put } from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -39,5 +39,26 @@ export class CustomersController {
   @ApiOperation({ summary: 'Atualiza os dados ou status de um cliente' })
   update(@Param('id') id: string, @Body() updateDto: UpdateCustomerDto) {
     return this.customersService.update(id, updateDto);
+  }
+
+  @Patch(':id/activate')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER)
+  @ApiOperation({ summary: 'Ativa um cliente' })
+  activate(@Param('id') id: string) {
+    return this.customersService.activate(id);
+  }
+
+  @Patch(':id/block')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER)
+  @ApiOperation({ summary: 'Bloqueia um cliente' })
+  block(@Param('id') id: string) {
+    return this.customersService.block(id);
+  }
+
+  @Patch(':id/mark-suspect')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER)
+  @ApiOperation({ summary: 'Marca um cliente como suspeito' })
+  markSuspect(@Param('id') id: string) {
+    return this.customersService.markSuspect(id);
   }
 }

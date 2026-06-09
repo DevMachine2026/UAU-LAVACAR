@@ -4,7 +4,7 @@ import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
-import { UserRole } from '@prisma/client';
+import { UserRole, UserStatus } from '@prisma/client';
 
 function generateReferralCode(): string {
   return 'UAU-' + randomBytes(3).toString('hex').toUpperCase();
@@ -83,6 +83,33 @@ export class CustomersService {
     });
     if (!customer) throw new NotFoundException('Cliente não encontrado');
     return customer;
+  }
+
+  async activate(id: string) {
+    const customer = await this.findOne(id);
+    return this.prisma.user.update({
+      where: { id: customer.userId },
+      data: { status: UserStatus.ACTIVE },
+      select: { id: true, status: true },
+    });
+  }
+
+  async block(id: string) {
+    const customer = await this.findOne(id);
+    return this.prisma.user.update({
+      where: { id: customer.userId },
+      data: { status: UserStatus.BLOCKED },
+      select: { id: true, status: true },
+    });
+  }
+
+  async markSuspect(id: string) {
+    const customer = await this.findOne(id);
+    return this.prisma.user.update({
+      where: { id: customer.userId },
+      data: { status: UserStatus.SUSPECT },
+      select: { id: true, status: true },
+    });
   }
 
   async update(id: string, updateDto: UpdateCustomerDto) {

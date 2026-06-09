@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Put } from '@nestjs/common';
 import { PartnersService } from './partners.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
 import { UpdatePartnerDto } from './dto/update-partner.dto';
@@ -38,6 +38,20 @@ export class PartnersController {
   @ApiOperation({ summary: 'Atualiza um parceiro' })
   update(@Param('id') id: string, @Body() updateDto: UpdatePartnerDto) {
     return this.partnersService.update(id, updateDto);
+  }
+
+  @Patch(':id/activate')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER)
+  @ApiOperation({ summary: 'Ativa um parceiro' })
+  activate(@Param('id') id: string) {
+    return this.partnersService.activate(id);
+  }
+
+  @Patch(':id/deactivate')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER)
+  @ApiOperation({ summary: 'Desativa um parceiro' })
+  deactivate(@Param('id') id: string) {
+    return this.partnersService.deactivate(id);
   }
 
   @Post(':id/transactions/preview')

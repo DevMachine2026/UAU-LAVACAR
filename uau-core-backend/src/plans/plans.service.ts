@@ -42,4 +42,20 @@ export class PlansService {
       throw new NotFoundException('Plano não encontrado');
     });
   }
+
+  async activate(id: string) {
+    return this.prisma.plan.update({
+      where: { id },
+      data: { isActive: true },
+      select: { id: true, isActive: true },
+    }).catch(() => { throw new NotFoundException('Plano não encontrado'); });
+  }
+
+  async deactivate(id: string) {
+    return this.prisma.plan.update({
+      where: { id },
+      data: { isActive: false },
+      select: { id: true, isActive: true },
+    }).catch(() => { throw new NotFoundException('Plano não encontrado'); });
+  }
 }

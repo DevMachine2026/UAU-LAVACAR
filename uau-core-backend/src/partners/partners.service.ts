@@ -44,6 +44,22 @@ export class PartnersService {
     });
   }
 
+  async activate(id: string) {
+    return this.prisma.partner.update({
+      where: { id },
+      data: { isActive: true },
+      select: { id: true, isActive: true },
+    }).catch(() => { throw new NotFoundException('Parceiro não encontrado'); });
+  }
+
+  async deactivate(id: string) {
+    return this.prisma.partner.update({
+      where: { id },
+      data: { isActive: false },
+      select: { id: true, isActive: true },
+    }).catch(() => { throw new NotFoundException('Parceiro não encontrado'); });
+  }
+
   // ── Partner Transactions ────────────────────────────────────────────────
 
   private async resolveCustomer(customerUserId?: string) {

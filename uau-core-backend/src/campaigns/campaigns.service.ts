@@ -50,4 +50,59 @@ export class CampaignsService {
     await this.findOne(id);
     return { success: true, event: 'dismiss', campaignId: id, userId };
   }
+
+  async activate(id: string) {
+    return this.prisma.campaign.update({
+      where: { id },
+      data: { isActive: true },
+      select: { id: true, isActive: true },
+    }).catch(() => { throw new NotFoundException('Campanha não encontrada'); });
+  }
+
+  async deactivate(id: string) {
+    return this.prisma.campaign.update({
+      where: { id },
+      data: { isActive: false },
+      select: { id: true, isActive: true },
+    }).catch(() => { throw new NotFoundException('Campanha não encontrada'); });
+  }
+
+  async getMetrics(id: string) {
+    const campaign = await this.findOne(id);
+    // Tracking de views/cliques/conversões ainda não é persistido — contadores zerados por ora
+    return {
+      campaignId: campaign.id,
+      name: campaign.name,
+      isActive: campaign.isActive,
+      startAt: campaign.startAt,
+      endAt: campaign.endAt,
+      views: 0,
+      clicks: 0,
+      dismissals: 0,
+      conversions: 0,
+      customersReached: 0,
+    };
+  }
+
+  async findActive() {
+    const now = new Date();
+    return this.prisma.campaign.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { startAt: null },
+          { startAt: { lte: now } },
+        ],
+        AND: [
+          {
+            OR: [
+              { endAt: null },
+              { endAt: { gte: now } },
+            ],
+          },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 }

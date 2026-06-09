@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Put } from '@nestjs/common';
 import { PlansService } from './plans.service';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
@@ -36,5 +36,19 @@ export class PlansController {
   @ApiOperation({ summary: 'Atualiza um plano' })
   update(@Param('id') id: string, @Body() updateDto: UpdatePlanDto) {
     return this.plansService.update(id, updateDto);
+  }
+
+  @Patch(':id/activate')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Ativa um plano' })
+  activate(@Param('id') id: string) {
+    return this.plansService.activate(id);
+  }
+
+  @Patch(':id/deactivate')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Desativa um plano' })
+  deactivate(@Param('id') id: string) {
+    return this.plansService.deactivate(id);
   }
 }

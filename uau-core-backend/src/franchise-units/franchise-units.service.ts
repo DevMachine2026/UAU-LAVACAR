@@ -42,4 +42,20 @@ export class FranchiseUnitsService {
       throw new NotFoundException('Unidade não encontrada');
     });
   }
+
+  async activate(id: string) {
+    return this.prisma.franchiseUnit.update({
+      where: { id },
+      data: { isActive: true },
+      select: { id: true, isActive: true },
+    }).catch(() => { throw new NotFoundException('Unidade não encontrada'); });
+  }
+
+  async deactivate(id: string) {
+    return this.prisma.franchiseUnit.update({
+      where: { id },
+      data: { isActive: false },
+      select: { id: true, isActive: true },
+    }).catch(() => { throw new NotFoundException('Unidade não encontrada'); });
+  }
 }
