@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Headers, UnauthorizedException } from '@nestjs/common';
 import { AnprService } from './anpr.service';
 import { CameraEventDto } from './dto/camera-event.dto';
 import { Public } from '../common/decorators/public.decorator';
@@ -11,10 +11,17 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 export class AnprController {
   constructor(private readonly anprService: AnprService) {}
 
-  @Public() // Webhooks das câmeras geralmente não enviam Bearer token, usam auth basica ou IP filter
+  @Public()
   @Post('webhook')
   @ApiOperation({ summary: 'Recebe eventos das câmeras LPR/ANPR' })
-  async handleWebhook(@Body() eventDto: CameraEventDto) {
+  async handleWebhook(
+    @Headers('x-anpr-secret') headerSecret: string,
+    @Body() eventDto: CameraEventDto,
+  ) {
+    const expectedSecret = process.env.ANPR_WEBHOOK_SECRET;
+    if (!expectedSecret || headerSecret !== expectedSecret) {
+      throw new UnauthorizedException('Webhook secret inválido');
+    }
     return this.anprService.processEvent(eventDto);
   }
 

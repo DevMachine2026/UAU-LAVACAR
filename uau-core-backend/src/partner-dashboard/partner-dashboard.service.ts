@@ -1,15 +1,29 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
+import { User, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class PartnerDashboardService {
   constructor(private prisma: PrismaService) {}
 
-  async getOverview() {
+  private async resolvePartnerId(user: User): Promise<string | null> {
+    if (user.role !== UserRole.PARTNER) return null;
+    const partner = await this.prisma.partner.findFirst({
+      where: { ownerUserId: user.id },
+      select: { id: true },
+    });
+    if (!partner) throw new ForbiddenException('Parceiro não encontrado para este usuário');
+    return partner.id;
+  }
+
+  async getOverview(user: User) {
+    const partnerId = await this.resolvePartnerId(user);
+    const partnerFilter = partnerId ? { partnerId } : {};
+
     const [activePartners, totalTransactions, customersServed] = await Promise.all([
-      this.prisma.partner.count({ where: { isActive: true } }),
-      this.prisma.financialLedger.count({ where: { origin: 'PARTNER_TRANSACTION' } }),
-      this.prisma.walletMovement.count({ where: { origin: 'PARTNER_TRANSACTION' } }),
+      this.prisma.partner.count({ where: { isActive: true, ...partnerFilter } }),
+      this.prisma.financialLedger.count({ where: { origin: 'PARTNER_TRANSACTION', ...partnerFilter } }),
+      this.prisma.partnerTransaction.count({ where: partnerId ? { partnerId } : {} }),
     ]);
 
     return {
@@ -22,37 +36,44 @@ export class PartnerDashboardService {
     };
   }
 
-  async getFinancial() {
-    const [ledgerAgg, cashbackAgg] = await Promise.all([
+  async getFinancial(user: User) {
+    const partnerId = await this.resolvePartnerId(user);
+    const partnerFilter = partnerId ? { partnerId } : {};
+
+    const [ledgerAgg, txAgg] = await Promise.all([
       this.prisma.financialLedger.aggregate({
-        where: { origin: 'PARTNER_TRANSACTION', type: 'CREDIT' },
+        where: { origin: 'PARTNER_TRANSACTION', type: 'CREDIT', ...partnerFilter },
         _sum: { amount: true },
       }),
-      this.prisma.walletMovement.aggregate({
-        where: { origin: 'PARTNER_TRANSACTION', type: 'DEBIT' },
-        _sum: { amount: true },
+      this.prisma.partnerTransaction.aggregate({
+        where: partnerId ? { partnerId } : {},
+        _sum: { cashbackUsed: true },
       }),
     ]);
 
     return {
       grossSales: 0,
       gatewayAmount: 0,
-      cashbackAcceptedAsDiscount: Number(cashbackAgg._sum.amount ?? 0),
+      cashbackAcceptedAsDiscount: Number(txAgg._sum.cashbackUsed ?? 0),
       cashbackGenerated: 0,
       uauCommissionAmount: Number(ledgerAgg._sum.amount ?? 0),
     };
   }
 
-  async getTransactions() {
+  async getTransactions(user: User) {
+    const partnerId = await this.resolvePartnerId(user);
+    const partnerFilter = partnerId ? { partnerId } : {};
+
     return this.prisma.financialLedger.findMany({
-      where: { origin: 'PARTNER_TRANSACTION' },
+      where: { origin: 'PARTNER_TRANSACTION', ...partnerFilter },
       include: { partner: { select: { id: true, name: true } } },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
   }
 
-  async getAlerts() {
+  async getAlerts(user: User) {
+    await this.resolvePartnerId(user);
     const alerts: string[] = [];
     return alerts;
   }

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { User, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
@@ -65,20 +65,24 @@ export class VehiclesService {
     return customerId;
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, user?: User) {
     const vehicle = await this.prisma.vehicle.findUnique({
       where: { id },
       include: {
-        customer: { select: { user: { select: { name: true, email: true } }, phone: true, cpf: true } },
+        customer: { select: { userId: true, user: { select: { name: true, email: true } }, phone: true, cpf: true } },
         sizeCategory: true,
         dailyWashes: { take: 5, orderBy: { date: 'desc' } },
       },
     });
     if (!vehicle) throw new NotFoundException('Veículo não encontrado');
+    if (user?.role === UserRole.CUSTOMER && vehicle.customer.userId !== user.id) {
+      throw new ForbiddenException('Acesso negado');
+    }
     return vehicle;
   }
 
-  async update(id: string, updateDto: UpdateVehicleDto) {
+  async update(id: string, updateDto: UpdateVehicleDto, user?: User) {
+    if (user?.role === UserRole.CUSTOMER) await this.assertCustomerOwnership(id, user);
     return this.prisma.vehicle.update({
       where: { id },
       data: updateDto,
@@ -87,24 +91,41 @@ export class VehiclesService {
     });
   }
 
-  async activate(id: string) {
+  async activate(id: string, user?: User) {
+    if (user?.role === UserRole.CUSTOMER) await this.assertCustomerOwnership(id, user);
     return this.prisma.vehicle.update({ where: { id }, data: { isActive: true } })
       .catch(() => { throw new NotFoundException('Veículo não encontrado'); });
   }
 
-  async deactivate(id: string) {
+  async deactivate(id: string, user?: User) {
+    if (user?.role === UserRole.CUSTOMER) await this.assertCustomerOwnership(id, user);
     return this.prisma.vehicle.update({ where: { id }, data: { isActive: false, isPrimary: false } })
       .catch(() => { throw new NotFoundException('Veículo não encontrado'); });
   }
 
-  async setPrimary(id: string) {
-    const vehicle = await this.prisma.vehicle.findUnique({ where: { id }, select: { customerId: true, isActive: true } });
+  async setPrimary(id: string, user?: User) {
+    const vehicle = await this.prisma.vehicle.findUnique({
+      where: { id },
+      select: { customerId: true, isActive: true, customer: { select: { userId: true } } },
+    });
     if (!vehicle) throw new NotFoundException('Veículo não encontrado');
     if (!vehicle.isActive) throw new BadRequestException('Não é possível tornar primário um veículo inativo');
+    if (user?.role === UserRole.CUSTOMER && vehicle.customer.userId !== user.id) {
+      throw new ForbiddenException('Acesso negado');
+    }
 
     return this.prisma.$transaction([
       this.prisma.vehicle.updateMany({ where: { customerId: vehicle.customerId }, data: { isPrimary: false } }),
       this.prisma.vehicle.update({ where: { id }, data: { isPrimary: true } }),
     ]).then(([, updated]) => updated);
+  }
+
+  private async assertCustomerOwnership(vehicleId: string, user: User) {
+    const vehicle = await this.prisma.vehicle.findUnique({
+      where: { id: vehicleId },
+      select: { customer: { select: { userId: true } } },
+    });
+    if (!vehicle) throw new NotFoundException('Veículo não encontrado');
+    if (vehicle.customer.userId !== user.id) throw new ForbiddenException('Acesso negado');
   }
 }

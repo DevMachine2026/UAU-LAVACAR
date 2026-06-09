@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { User, UserRole } from '@prisma/client';
 import { AsaasService } from '../asaas/asaas.service';
 import { AsaasBillingType } from '../asaas/asaas.types';
 import { resolvePlanAmount } from '../plans/plan-pricing.util';
@@ -160,16 +161,19 @@ export class SubscriptionsService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, user?: User) {
     const subscription = await this.prisma.subscription.findUnique({
       where: { id },
       include: {
-        customer: { select: { user: { select: { name: true, email: true } }, cpf: true, phone: true } },
+        customer: { select: { userId: true, user: { select: { name: true, email: true } }, cpf: true, phone: true } },
         plan: true,
         billingHistory: { orderBy: { dueDate: 'desc' } },
       },
     });
     if (!subscription) throw new NotFoundException('Assinatura não encontrada');
+    if (user?.role === UserRole.CUSTOMER && subscription.customer?.userId !== user.id) {
+      throw new ForbiddenException('Acesso negado');
+    }
     return subscription;
   }
 

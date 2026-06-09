@@ -14,11 +14,12 @@ async function bootstrap() {
 
   // CORS deve vir antes do helmet para garantir os headers corretos
   const rawOrigins = process.env.ALLOWED_ORIGINS;
-  const corsOrigin = rawOrigins
-    ? rawOrigins.trim() === '*'
-      ? '*'
-      : rawOrigins.split(',').map((o) => o.trim())
-    : '*';
+  if (!rawOrigins) {
+    throw new Error('ALLOWED_ORIGINS must be set. Use * for all origins or a comma-separated list.');
+  }
+  const corsOrigin = rawOrigins.trim() === '*'
+    ? '*'
+    : rawOrigins.split(',').map((o) => o.trim());
   app.enableCors({
     origin: corsOrigin,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',

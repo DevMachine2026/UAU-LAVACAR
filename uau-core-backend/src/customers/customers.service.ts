@@ -31,7 +31,7 @@ export class CustomersService {
       throw new ConflictException('CPF já está em uso');
     }
 
-    const passwordHash = await bcrypt.hash(createDto.password || createDto.cpf, 10);
+    const passwordHash = await bcrypt.hash(createDto.password, 10);
 
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({

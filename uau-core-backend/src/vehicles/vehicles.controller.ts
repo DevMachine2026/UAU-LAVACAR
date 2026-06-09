@@ -30,35 +30,35 @@ export class VehiclesController {
   @Get(':id')
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.OPERATOR, UserRole.CUSTOMER)
   @ApiOperation({ summary: 'Busca um veículo pelo ID' })
-  findOne(@Param('id') id: string) {
-    return this.vehiclesService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.vehiclesService.findOne(id, user);
   }
 
   @Put(':id')
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.CUSTOMER)
   @ApiOperation({ summary: 'Atualiza os dados de um veículo' })
-  update(@Param('id') id: string, @Body() updateDto: UpdateVehicleDto) {
-    return this.vehiclesService.update(id, updateDto);
+  update(@Param('id') id: string, @Body() updateDto: UpdateVehicleDto, @CurrentUser() user: User) {
+    return this.vehiclesService.update(id, updateDto, user);
   }
 
   @Patch(':id/activate')
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.CUSTOMER)
   @ApiOperation({ summary: 'Ativa um veículo (mobile)' })
-  activate(@Param('id') id: string) {
-    return this.vehiclesService.activate(id);
+  activate(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.vehiclesService.activate(id, user);
   }
 
   @Patch(':id/deactivate')
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.CUSTOMER)
   @ApiOperation({ summary: 'Desativa um veículo (mobile)' })
-  deactivate(@Param('id') id: string) {
-    return this.vehiclesService.deactivate(id);
+  deactivate(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.vehiclesService.deactivate(id, user);
   }
 
   @Patch(':id/set-primary')
   @Roles(UserRole.CUSTOMER)
   @ApiOperation({ summary: 'Define veículo como principal do cliente (mobile)' })
-  setPrimary(@Param('id') id: string) {
-    return this.vehiclesService.setPrimary(id);
+  setPrimary(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.vehiclesService.setPrimary(id, user);
   }
 }

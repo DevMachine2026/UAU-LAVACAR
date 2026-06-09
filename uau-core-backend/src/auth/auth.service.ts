@@ -1,4 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { randomInt } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login.dto';
@@ -46,7 +47,7 @@ export class AuthService {
     // Sempre retorna sucesso para não revelar se o e-mail existe
     if (!user) return { resetToken: '' };
 
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = randomInt(100000, 1000000).toString();
     const codeHash = await bcrypt.hash(code, 10);
 
     const resetToken = this.jwtService.sign(

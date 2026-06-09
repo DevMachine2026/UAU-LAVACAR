@@ -2,8 +2,9 @@ import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
+import { User, UserRole } from '@prisma/client';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('subscriptions')
@@ -29,8 +30,8 @@ export class SubscriptionsController {
   @Get(':id')
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.CUSTOMER)
   @ApiOperation({ summary: 'Busca uma assinatura pelo ID' })
-  findOne(@Param('id') id: string) {
-    return this.subscriptionsService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.subscriptionsService.findOne(id, user);
   }
 
   @Put(':id')

@@ -1,7 +1,8 @@
 import { Controller, Get } from '@nestjs/common';
 import { PartnerDashboardService } from './partner-dashboard.service';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
+import { User, UserRole } from '@prisma/client';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('partner-dashboard')
@@ -13,20 +14,20 @@ export class PartnerDashboardController {
   @Get('overview')
   @Roles(UserRole.SUPER_ADMIN, UserRole.PARTNER)
   @ApiOperation({ summary: 'Overview do portal parceiro' })
-  getOverview() { return this.svc.getOverview(); }
+  getOverview(@CurrentUser() user: User) { return this.svc.getOverview(user); }
 
   @Get('financial')
   @Roles(UserRole.SUPER_ADMIN, UserRole.PARTNER)
   @ApiOperation({ summary: 'KPIs financeiros do parceiro' })
-  getFinancial() { return this.svc.getFinancial(); }
+  getFinancial(@CurrentUser() user: User) { return this.svc.getFinancial(user); }
 
   @Get('transactions')
   @Roles(UserRole.SUPER_ADMIN, UserRole.PARTNER)
   @ApiOperation({ summary: 'Últimas transações do parceiro' })
-  getTransactions() { return this.svc.getTransactions(); }
+  getTransactions(@CurrentUser() user: User) { return this.svc.getTransactions(user); }
 
   @Get('alerts')
   @Roles(UserRole.SUPER_ADMIN, UserRole.PARTNER)
   @ApiOperation({ summary: 'Alertas do parceiro' })
-  getAlerts() { return this.svc.getAlerts(); }
+  getAlerts(@CurrentUser() user: User) { return this.svc.getAlerts(user); }
 }

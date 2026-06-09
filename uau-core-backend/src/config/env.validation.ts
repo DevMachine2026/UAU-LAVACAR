@@ -1,7 +1,11 @@
 import { plainToInstance, Type } from 'class-transformer';
-import { IsNumber, IsOptional, IsString, validateSync } from 'class-validator';
+import { IsNumber, IsNotEmpty, IsOptional, IsString, validateSync } from 'class-validator';
 
 export class EnvironmentVariables {
+  @IsString()
+  @IsNotEmpty()
+  JWT_SECRET!: string;
+
   @IsOptional()
   @IsString()
   MAILER_HOST?: string;

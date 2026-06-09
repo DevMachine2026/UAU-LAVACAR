@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { User, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBillingDto } from './dto/create-billing.dto';
 import { UpdateBillingDto } from './dto/update-billing.dto';
@@ -22,15 +23,15 @@ export class BillingService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, user?: User) {
     const billing = await this.prisma.billingHistory.findUnique({
       where: { id },
-      include: {
-        customer: true,
-        subscription: true,
-      },
+      include: { customer: true, subscription: true },
     });
     if (!billing) throw new NotFoundException('Fatura não encontrada');
+    if (user?.role === UserRole.CUSTOMER && billing.customer?.userId !== user.id) {
+      throw new ForbiddenException('Acesso negado');
+    }
     return billing;
   }
 

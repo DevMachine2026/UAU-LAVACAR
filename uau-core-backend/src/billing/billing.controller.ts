@@ -52,8 +52,8 @@ export class BillingController {
   @Get(':id')
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.CUSTOMER)
   @ApiOperation({ summary: 'Busca uma cobrança pelo ID' })
-  findOne(@Param('id') id: string) {
-    return this.billingService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.billingService.findOne(id, user);
   }
 
   @Put(':id')

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { validate } from './config/env.validation';
 import mailerConfig from './config/mailer.config';
@@ -41,6 +42,12 @@ import { RolesGuard } from './common/guards/roles.guard';
       validate,
       load: [mailerConfig],
     }),
+    ThrottlerModule.forRootAsync({
+      useFactory: () => ([{
+        ttl: parseInt(process.env.RATE_LIMIT_TTL ?? '60000'),
+        limit: parseInt(process.env.RATE_LIMIT_MAX ?? '100'),
+      }]),
+    }),
     MailerModule,
     PrismaModule,
     AuthModule,
@@ -71,6 +78,10 @@ import { RolesGuard } from './common/guards/roles.guard';
   ],
   controllers: [AppController],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
