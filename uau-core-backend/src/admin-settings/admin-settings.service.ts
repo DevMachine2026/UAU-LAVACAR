@@ -27,4 +27,18 @@ export class AdminSettingsService {
       create: { key, value: updateDto.value },
     });
   }
+
+  async upsertBulk(settings: Record<string, string>) {
+    const entries = Object.entries(settings);
+    const results = await Promise.all(
+      entries.map(([key, value]) =>
+        this.prisma.adminSetting.upsert({
+          where: { key },
+          update: { value },
+          create: { key, value },
+        }),
+      ),
+    );
+    return results;
+  }
 }

@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { AdminSettingsModule } from './admin-settings/admin-settings.module';
 import { StatesModule } from './states/states.module';
+import { CitiesModule } from './cities/cities.module';
 import { FranchiseUnitsModule } from './franchise-units/franchise-units.module';
 import { VehicleSizesModule } from './vehicle-sizes/vehicle-sizes.module';
 import { PlansModule } from './plans/plans.module';
@@ -54,6 +55,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     UsersModule,
     AdminSettingsModule,
     StatesModule,
+    CitiesModule,
     FranchiseUnitsModule,
     VehicleSizesModule,
     PlansModule,

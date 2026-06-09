@@ -1,6 +1,7 @@
 import { Controller, Get, Body, Param, Put } from '@nestjs/common';
 import { AdminSettingsService } from './admin-settings.service';
 import { UpdateAdminSettingDto } from './dto/update-admin-setting.dto';
+import { BulkUpdateAdminSettingDto } from './dto/bulk-update-admin-setting.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -22,6 +23,12 @@ export class AdminSettingsController {
   @ApiOperation({ summary: 'Busca uma configuração específica' })
   findOne(@Param('key') key: string) {
     return this.adminSettingsService.findOne(key);
+  }
+
+  @Put()
+  @ApiOperation({ summary: 'Atualiza ou cria múltiplas configurações de uma vez (bulk)' })
+  upsertBulk(@Body() dto: BulkUpdateAdminSettingDto) {
+    return this.adminSettingsService.upsertBulk(dto.settings);
   }
 
   @Put(':key')
