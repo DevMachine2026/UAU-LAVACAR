@@ -4,14 +4,30 @@ const SESSION_COOKIE = '__uau_session'
 const MAX_AGE = 60 * 60 * 24 * 7
 
 export async function POST(request: NextRequest) {
-  const { email, password } = await request.json()
+  let email: string, password: string
+  try {
+    ;({ email, password } = await request.json())
+  } catch {
+    return NextResponse.json(
+      { success: false, error: { message: 'Invalid request body' } },
+      { status: 400 }
+    )
+  }
 
   const backendUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1'
-  const backendResponse = await fetch(`${backendUrl}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  })
+  let backendResponse: Response
+  try {
+    backendResponse = await fetch(`${backendUrl}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+  } catch {
+    return NextResponse.json(
+      { success: false, error: { message: 'Serviço de autenticação indisponível' } },
+      { status: 503 }
+    )
+  }
 
   const envelope = await backendResponse.json()
 
