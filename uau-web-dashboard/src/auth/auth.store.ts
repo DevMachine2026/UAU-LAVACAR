@@ -1,32 +1,29 @@
-"use client";
+'use client'
 
-import { create } from "zustand";
-import { ApiUser } from "@/api/types";
-import { configureAuthSession } from "@/auth/auth-session";
-import { loginRequest } from "@/auth/auth.api";
-
-const TOKEN_KEY = "uau.web.accessToken";
-const USER_KEY = "uau.web.user";
+import { create } from 'zustand'
+import { ApiUser } from '@/api/types'
+import { configureAuthSession } from '@/auth/auth-session'
+import { loginRequest } from '@/auth/auth.api'
 
 type AuthState = {
-  accessToken: string | null;
-  user: ApiUser | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<ApiUser>;
-  logout: () => void;
-  restoreSession: () => void;
-};
-
-function roleHome(role?: string) {
-  if (role === "SUPER_ADMIN") return "/admin";
-  if (role === "FRANCHISE_OWNER") return "/franchise";
-  if (role === "PARTNER") return "/partner";
-  if (role === "OPERATOR") return "/operator";
-  return "/login";
+  accessToken: string | null
+  user: ApiUser | null
+  isAuthenticated: boolean
+  isLoading: boolean
+  login: (email: string, password: string) => Promise<ApiUser>
+  logout: () => void
+  restoreSession: () => Promise<void>
 }
 
-export const getRoleHome = roleHome;
+function roleHome(role?: string) {
+  if (role === 'SUPER_ADMIN') return '/admin'
+  if (role === 'FRANCHISE_OWNER') return '/franchise'
+  if (role === 'PARTNER') return '/partner'
+  if (role === 'OPERATOR') return '/operator'
+  return '/login'
+}
+
+export const getRoleHome = roleHome
 
 export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
@@ -35,35 +32,44 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
 
   async login(email, password) {
-    set({ isLoading: true });
+    set({ isLoading: true })
     try {
-      const result = await loginRequest(email, password);
-      localStorage.setItem(TOKEN_KEY, result.accessToken);
-      localStorage.setItem(USER_KEY, JSON.stringify(result.user));
-      set({ accessToken: result.accessToken, user: result.user, isAuthenticated: true, isLoading: false });
-      return result.user;
+      const result = await loginRequest(email, password)
+      set({ accessToken: result.accessToken, user: result.user, isAuthenticated: true, isLoading: false })
+      return result.user
     } catch (error) {
-      set({ isLoading: false });
-      throw error;
+      set({ isLoading: false })
+      throw error
     }
   },
 
   logout() {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    set({ accessToken: null, user: null, isAuthenticated: false, isLoading: false });
-    window.location.href = "/login";
+    fetch('/api/auth', { method: 'DELETE' }).catch(() => {})
+    set({ accessToken: null, user: null, isAuthenticated: false, isLoading: false })
+    window.location.href = '/login'
   },
 
-  restoreSession() {
-    const accessToken = localStorage.getItem(TOKEN_KEY);
-    const userJson = localStorage.getItem(USER_KEY);
-    const user = userJson ? (JSON.parse(userJson) as ApiUser) : null;
-    set({ accessToken, user, isAuthenticated: Boolean(accessToken && user), isLoading: false });
-  }
-}));
+  async restoreSession() {
+    try {
+      const response = await fetch('/api/auth/session')
+      if (!response.ok) {
+        set({ isLoading: false })
+        return
+      }
+      const envelope = await response.json()
+      if (!envelope.success) {
+        set({ isLoading: false })
+        return
+      }
+      const { accessToken, user } = envelope.data
+      set({ accessToken, user, isAuthenticated: true, isLoading: false })
+    } catch {
+      set({ isLoading: false })
+    }
+  },
+}))
 
 configureAuthSession({
   getAccessToken: () => useAuthStore.getState().accessToken,
-  onUnauthorized: () => useAuthStore.getState().logout()
-});
+  onUnauthorized: () => useAuthStore.getState().logout(),
+})
