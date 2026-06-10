@@ -30,4 +30,14 @@ export class PartnerDashboardController {
   @Roles(UserRole.SUPER_ADMIN, UserRole.PARTNER)
   @ApiOperation({ summary: 'Alertas do parceiro' })
   getAlerts(@CurrentUser() user: User) { return this.svc.getAlerts(user); }
+
+  @Get('campaigns')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.PARTNER)
+  @ApiOperation({ summary: 'Campanhas ativas do parceiro autenticado' })
+  getCampaigns(@CurrentUser() user: User) { return this.svc.getCampaigns(user); }
+
+  @Get('customers')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.PARTNER)
+  @ApiOperation({ summary: 'Clientes que transacionaram com o parceiro autenticado' })
+  getCustomers(@CurrentUser() user: User) { return this.svc.getCustomers(user); }
 }
