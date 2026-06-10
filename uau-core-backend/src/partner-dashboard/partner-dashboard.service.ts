@@ -86,8 +86,10 @@ export class PartnerDashboardService {
       where: {
         ...(partnerId ? { OR: [{ partnerId }, { partnerId: null }] } : {}),
         isActive: true,
-        OR: [{ startAt: null }, { startAt: { lte: now } }],
-        AND: [{ OR: [{ endAt: null }, { endAt: { gte: now } }] }],
+        AND: [
+          { OR: [{ startAt: null }, { startAt: { lte: now } }] },
+          { OR: [{ endAt: null }, { endAt: { gte: now } }] },
+        ],
       },
       orderBy: { createdAt: 'desc' },
       take: 50,

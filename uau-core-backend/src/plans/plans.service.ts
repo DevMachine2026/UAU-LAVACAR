@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
@@ -72,6 +72,14 @@ export class PlansService {
     return this.prisma.planVehicleSizePrice.create({
       data: { planId, ...dto },
       include: { sizeCategory: true },
+    }).catch((e: { code?: string }) => {
+      if (e?.code === 'P2002') {
+        throw new ConflictException('Já existe um preço cadastrado para este porte neste plano');
+      }
+      if (e?.code === 'P2003') {
+        throw new BadRequestException('Categoria de porte não encontrada');
+      }
+      throw e;
     });
   }
 
