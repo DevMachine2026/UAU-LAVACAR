@@ -11,7 +11,7 @@ type AuthState = {
   isAuthenticated: boolean
   isLoading: boolean
   login: (email: string, password: string) => Promise<ApiUser>
-  logout: () => void
+  logout: () => Promise<void>
   restoreSession: () => Promise<void>
 }
 
@@ -43,8 +43,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  logout() {
-    fetch('/api/auth', { method: 'DELETE' }).catch(() => {})
+  async logout() {
+    await fetch('/api/auth', { method: 'DELETE' }).catch(() => {})
     set({ accessToken: null, user: null, isAuthenticated: false, isLoading: false })
     window.location.href = '/login'
   },
