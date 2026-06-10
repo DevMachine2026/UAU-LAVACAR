@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { User, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -115,9 +115,12 @@ export class FranchiseDashboardService {
   }
 
   async getPartners(user: User) {
-    // SUPER_ADMIN sees all active partners; FRANCHISE_OWNER sees only partners linked to their default unit
+    if (user.role === UserRole.FRANCHISE_OWNER && !user.defaultUnitId) {
+      throw new ForbiddenException('Usuário sem unidade padrão atribuída');
+    }
+
     const where =
-      user.role === UserRole.FRANCHISE_OWNER && user.defaultUnitId
+      user.role === UserRole.FRANCHISE_OWNER
         ? { unitId: user.defaultUnitId, isActive: true }
         : { isActive: true };
 
