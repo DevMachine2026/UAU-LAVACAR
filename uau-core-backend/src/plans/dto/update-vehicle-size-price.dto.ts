@@ -1,14 +1,8 @@
-import { IsBoolean, IsNumber, IsOptional } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { OmitType, PartialType } from '@nestjs/swagger';
+import { CreateVehicleSizePriceDto } from './create-vehicle-size-price.dto';
 
-export class UpdateVehicleSizePriceDto {
-  @ApiPropertyOptional({ description: 'Novo preço para este porte', example: 59.90 })
-  @IsNumber()
-  @IsOptional()
-  price?: number;
-
-  @ApiPropertyOptional()
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
-}
+// sizeCategoryId is intentionally excluded — a price entry cannot be re-pointed
+// to a different size category after creation; create a new entry instead.
+export class UpdateVehicleSizePriceDto extends PartialType(
+  OmitType(CreateVehicleSizePriceDto, ['sizeCategoryId'] as const),
+) {}

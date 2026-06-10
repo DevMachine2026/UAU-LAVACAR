@@ -77,17 +77,23 @@ export class PlansService {
 
   async updateVehicleSizePrice(planId: string, id: string, dto: UpdateVehicleSizePriceDto) {
     await this.findOne(planId);
+    const existing = await this.prisma.planVehicleSizePrice.findUnique({ where: { id } });
+    if (!existing || existing.planId !== planId) {
+      throw new NotFoundException('Preço por porte não encontrado');
+    }
     return this.prisma.planVehicleSizePrice.update({
       where: { id },
       data: dto,
       include: { sizeCategory: true },
-    }).catch(() => { throw new NotFoundException('Preço por porte não encontrado'); });
+    });
   }
 
   async removeVehicleSizePrice(planId: string, id: string) {
     await this.findOne(planId);
-    return this.prisma.planVehicleSizePrice.delete({ where: { id } }).catch(() => {
+    const existing = await this.prisma.planVehicleSizePrice.findUnique({ where: { id } });
+    if (!existing || existing.planId !== planId) {
       throw new NotFoundException('Preço por porte não encontrado');
-    });
+    }
+    return this.prisma.planVehicleSizePrice.delete({ where: { id } });
   }
 }

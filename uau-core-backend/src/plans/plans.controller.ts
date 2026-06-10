@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Patch, Put, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Put, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { PlansService } from './plans.service';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
@@ -96,6 +96,7 @@ export class PlansController {
 
   @Delete(':planId/vehicle-size-prices/:id')
   @Roles(UserRole.SUPER_ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Remove preço por porte de veículo' })
   removeVehicleSizePrice(
     @Param('planId') planId: string,
