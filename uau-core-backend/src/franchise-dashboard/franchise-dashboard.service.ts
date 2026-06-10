@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { User, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -110,6 +111,23 @@ export class FranchiseDashboardService {
       },
       orderBy: { createdAt: 'desc' },
       take: 100,
+    });
+  }
+
+  async getPartners(user: User) {
+    // SUPER_ADMIN sees all active partners; FRANCHISE_OWNER sees only partners linked to their default unit
+    const where =
+      user.role === UserRole.FRANCHISE_OWNER && user.defaultUnitId
+        ? { unitId: user.defaultUnitId, isActive: true }
+        : { isActive: true };
+
+    return this.prisma.partner.findMany({
+      where,
+      include: {
+        state: { select: { id: true, name: true, code: true } },
+        city: { select: { id: true, name: true } },
+      },
+      orderBy: { name: 'asc' },
     });
   }
 }

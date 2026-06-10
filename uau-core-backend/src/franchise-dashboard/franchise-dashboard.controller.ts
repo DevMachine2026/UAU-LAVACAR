@@ -1,7 +1,8 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { FranchiseDashboardService } from './franchise-dashboard.service';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
+import { User, UserRole } from '@prisma/client';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('franchise-dashboard')
@@ -52,5 +53,12 @@ export class FranchiseDashboardController {
     @Query('status') status?: string,
   ) {
     return this.svc.getCustomers({ unitId, name, status });
+  }
+
+  @Get('partners')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER)
+  @ApiOperation({ summary: 'Parceiros associados à franquia do usuário autenticado' })
+  getPartners(@CurrentUser() user: User) {
+    return this.svc.getPartners(user);
   }
 }
