@@ -1,14 +1,17 @@
-import { api } from "@/api/client";
-import { ApiEnvelope, LoginResponse } from "@/api/types";
+import { ApiEnvelope, LoginResponse } from '@/api/types'
 
-function unwrap<T>(envelope: ApiEnvelope<T>): T {
+export async function loginRequest(email: string, password: string): Promise<LoginResponse> {
+  const response = await fetch('/api/auth', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+
+  const envelope: ApiEnvelope<LoginResponse> = await response.json()
+
   if (!envelope.success) {
-    throw new Error(envelope.error.message);
+    throw new Error(envelope.error.message)
   }
-  return envelope.data;
-}
 
-export async function loginRequest(email: string, password: string) {
-  const response = await api.post<ApiEnvelope<LoginResponse>>("/auth/login", { email, password });
-  return unwrap(response.data);
+  return envelope.data
 }
