@@ -348,6 +348,7 @@ model Partner {
 
   financialLedger      FinancialLedger[]
   partnerTransactions  PartnerTransaction[]
+  campaigns            Campaign[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -364,6 +365,9 @@ model Campaign {
   isActive    Boolean   @default(true)
   startAt     DateTime?
   endAt       DateTime?
+  partnerId   String?
+
+  partner   Partner?  @relation(fields: [partnerId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
