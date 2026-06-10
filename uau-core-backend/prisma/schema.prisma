@@ -372,6 +372,7 @@ model Campaign {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([partnerId])
   @@map("campaigns")
 }
 
@@ -746,5 +747,6 @@ model PartnerTransaction {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([partnerId])
   @@map("partner_transactions")
 }

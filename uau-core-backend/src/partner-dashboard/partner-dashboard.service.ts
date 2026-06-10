@@ -84,28 +84,23 @@ export class PartnerDashboardService {
 
     return this.prisma.campaign.findMany({
       where: {
-        ...(partnerId ? { partnerId } : {}),
+        ...(partnerId ? { OR: [{ partnerId }, { partnerId: null }] } : {}),
         isActive: true,
         OR: [{ startAt: null }, { startAt: { lte: now } }],
         AND: [{ OR: [{ endAt: null }, { endAt: { gte: now } }] }],
       },
       orderBy: { createdAt: 'desc' },
+      take: 50,
     });
   }
 
   async getCustomers(user: User) {
     const partnerId = await this.resolvePartnerId(user);
 
-    const txRows = await this.prisma.partnerTransaction.findMany({
-      where: partnerId ? { partnerId } : {},
-      select: { customerId: true },
-      distinct: ['customerId'],
-    });
-
-    const customerIds = txRows.map((r) => r.customerId);
-
     return this.prisma.customer.findMany({
-      where: { id: { in: customerIds } },
+      where: partnerId
+        ? { partnerTransactions: { some: { partnerId } } }
+        : { partnerTransactions: { some: {} } },
       include: {
         user: { select: { id: true, name: true, email: true, status: true } },
         subscriptions: {
