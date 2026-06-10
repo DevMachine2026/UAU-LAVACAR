@@ -30,6 +30,26 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   MAILER_PASS?: string;
+
+  @IsOptional()
+  @IsString()
+  MAILER_FROM?: string;
+
+  @IsOptional()
+  @IsString()
+  MAILER_REJECT_UNAUTHORIZED?: string;
+
+  @IsOptional()
+  @IsString()
+  ASAAS_API_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  ASAAS_BASE_URL?: string;
+
+  @IsOptional()
+  @IsString()
+  ASAAS_ENVIRONMENT?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

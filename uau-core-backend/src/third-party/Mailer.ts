@@ -49,7 +49,7 @@ export class Mailer implements OnModuleInit {
 
     if (!secure) {
       transportOptions.tls = {
-        rejectUnauthorized: false,
+        rejectUnauthorized: this.config.get<boolean>('mailer.rejectUnauthorized') ?? true,
       };
     }
 

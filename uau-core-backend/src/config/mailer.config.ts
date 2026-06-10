@@ -6,4 +6,5 @@ export default registerAs('mailer', () => ({
   user: process.env.MAILER_USER,
   pass: process.env.MAILER_PASS,
   from: process.env.MAILER_FROM,
+  rejectUnauthorized: process.env.MAILER_REJECT_UNAUTHORIZED !== 'false',
 }));

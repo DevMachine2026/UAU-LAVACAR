@@ -1,10 +1,13 @@
 import axios, { AxiosError } from "axios";
 import { getAuthAccessToken, handleUnauthorizedSession } from "@/auth/auth-session";
 
-const defaultBaseUrl = "http://localhost:3000/api/v1";
+const baseURL = process.env.EXPO_PUBLIC_API_URL;
+if (!baseURL) {
+  throw new Error("EXPO_PUBLIC_API_URL não configurado. Crie um arquivo .env na raiz do projeto com essa variável.");
+}
 
 export const api = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL ?? defaultBaseUrl,
+  baseURL,
   timeout: 15000,
   headers: {
     "Content-Type": "application/json"
