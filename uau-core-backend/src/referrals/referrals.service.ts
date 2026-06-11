@@ -52,48 +52,54 @@ export class ReferralsService {
     });
     if (!customer) throw new NotFoundException('Cliente não encontrado');
 
-    // Linha 1: indicados diretamente por este usuário
-    const line1Refs = await this.prisma.referral.findMany({
-      where: { referrerId: userId },
-      include: {
-        referred: {
-          select: { id: true, name: true, createdAt: true },
-        },
-      },
-    });
+    type NetworkRow = { id: string; name: string; createdAt: Date; line: number };
 
-    // Linha 2: indicados pelos da linha 1
-    const line1Ids = line1Refs.map(r => r.referredId);
-    const line2Refs = line1Ids.length > 0
-      ? await this.prisma.referral.findMany({
-          where: { referrerId: { in: line1Ids } },
-          include: { referred: { select: { id: true, name: true, createdAt: true } } },
-        })
-      : [];
+    // Single CTE — resolves all 3 lines in one query
+    const rows = await this.prisma.$queryRaw<NetworkRow[]>`
+      WITH
+        line1 AS (
+          SELECT u.id, u."name", u."createdAt", 1 AS line
+          FROM referrals r
+          JOIN users u ON u.id = r."referredId"
+          WHERE r."referrerId" = ${userId}
+        ),
+        line2 AS (
+          SELECT u.id, u."name", u."createdAt", 2 AS line
+          FROM referrals r
+          JOIN users u ON u.id = r."referredId"
+          WHERE r."referrerId" IN (SELECT id FROM line1)
+        ),
+        line3 AS (
+          SELECT u.id, u."name", u."createdAt", 3 AS line
+          FROM referrals r
+          JOIN users u ON u.id = r."referredId"
+          WHERE r."referrerId" IN (SELECT id FROM line2)
+        )
+      SELECT * FROM line1
+      UNION ALL
+      SELECT * FROM line2
+      UNION ALL
+      SELECT * FROM line3
+    `;
 
-    // Linha 3: indicados pelos da linha 2
-    const line2Ids = line2Refs.map(r => r.referredId);
-    const line3Refs = line2Ids.length > 0
-      ? await this.prisma.referral.findMany({
-          where: { referrerId: { in: line2Ids } },
-          include: { referred: { select: { id: true, name: true, createdAt: true } } },
-        })
-      : [];
+    const line1 = rows.filter(r => r.line === 1);
+    const line2 = rows.filter(r => r.line === 2);
+    const line3 = rows.filter(r => r.line === 3);
 
-    const isQualified = line1Refs.length >= 3;
+    const isQualified = line1.length >= 3;
 
     return {
       referralCode: customer.referralCode,
       isQualified,
       qualificationStatus: isQualified ? 'QUALIFIED' : 'PENDING',
-      line1: line1Refs.map(r => r.referred),
-      line2: line2Refs.map(r => r.referred),
-      line3: line3Refs.map(r => r.referred),
+      line1: line1.map(({ id, name, createdAt }) => ({ id, name, createdAt })),
+      line2: line2.map(({ id, name, createdAt }) => ({ id, name, createdAt })),
+      line3: line3.map(({ id, name, createdAt }) => ({ id, name, createdAt })),
       totals: {
-        line1: line1Refs.length,
-        line2: line2Refs.length,
-        line3: line3Refs.length,
-        total: line1Refs.length + line2Refs.length + line3Refs.length,
+        line1: line1.length,
+        line2: line2.length,
+        line3: line3.length,
+        total: rows.length,
       },
     };
   }
@@ -113,7 +119,7 @@ export class ReferralsService {
           u."name",
           CAST(0 AS INTEGER)  AS depth,
           NULL::text          AS "parentId"
-        FROM "User" u
+        FROM users u
         WHERE u.id = ${userId}
 
         UNION ALL
@@ -124,7 +130,7 @@ export class ReferralsService {
           CAST(t.depth + 1 AS INTEGER),
           r."referrerId" AS "parentId"
         FROM referrals r
-        JOIN "User" u ON u.id = r."referredId"
+        JOIN users u ON u.id = r."referredId"
         JOIN tree    t ON r."referrerId" = t.id
         WHERE t.depth < ${MAX_TREE_DEPTH}
       )
