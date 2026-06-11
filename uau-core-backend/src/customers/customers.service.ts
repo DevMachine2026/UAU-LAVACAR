@@ -1,10 +1,12 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateCustomerDto } from './dto/create-customer.dto';
-import { UpdateCustomerDto } from './dto/update-customer.dto';
+import { Prisma, UserRole, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
-import { UserRole, UserStatus } from '@prisma/client';
+import { paginate } from '../common/dto/pagination.dto';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateCustomerDto } from './dto/create-customer.dto';
+import { ListCustomersDto } from './dto/list-customers.dto';
+import { UpdateCustomerDto } from './dto/update-customer.dto';
 
 function generateReferralCode(): string {
   return 'UAU-' + randomBytes(3).toString('hex').toUpperCase();
@@ -61,14 +63,37 @@ export class CustomersService {
     });
   }
 
-  async findAll() {
-    return this.prisma.customer.findMany({
-      include: {
-        user: { select: { name: true, email: true, status: true } },
-        vehicles: true,
-        subscriptions: { where: { status: 'ACTIVE' } },
-      },
-    });
+  async findAll(dto: ListCustomersDto) {
+    const { page, limit, search, status } = dto;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.CustomerWhereInput = {
+      ...(status && { user: { status } }),
+      ...(search && {
+        OR: [
+          { user: { name: { contains: search, mode: 'insensitive' } } },
+          { user: { email: { contains: search, mode: 'insensitive' } } },
+          { cpf: { contains: search } },
+        ],
+      }),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.customer.findMany({
+        where,
+        include: {
+          user: { select: { name: true, email: true, status: true } },
+          vehicles: true,
+          subscriptions: { where: { status: 'ACTIVE' } },
+        },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.customer.count({ where }),
+    ]);
+
+    return paginate(data, total, page, limit);
   }
 
   async findOne(id: string) {

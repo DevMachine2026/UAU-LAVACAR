@@ -18,7 +18,6 @@ export default function ProfileScreen() {
           <Text className="mt-1 text-sm text-uau-gray">Role: {user?.role}</Text>
           {user?.status ? <Text className="mt-1 text-sm text-uau-gray">Status: {user.status}</Text> : null}
           {user?.phone ? <Text className="mt-1 text-sm text-uau-gray">Telefone: {user.phone}</Text> : null}
-          <Text className="mt-3 text-xs text-uau-gray">ID: {user?.id}</Text>
         </Card>
         <Button onPress={() => void logout()} title="Sair" variant="ghost" />
       </View>

@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Param, Put, Query } from '@nestjs/common';
 import { BillingService } from './billing.service';
 import { CreateBillingDto } from './dto/create-billing.dto';
+import { ListBillingDto } from './dto/list-billing.dto';
 import { UpdateBillingDto } from './dto/update-billing.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -22,9 +23,9 @@ export class BillingController {
 
   @Get()
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER)
-  @ApiOperation({ summary: 'Lista todo o histórico de cobranças' })
-  findAll() {
-    return this.billingService.findAll();
+  @ApiOperation({ summary: 'Lista histórico de cobranças com paginação e filtros' })
+  findAll(@Query() dto: ListBillingDto) {
+    return this.billingService.findAll(dto);
   }
 
   @Get('my-current')

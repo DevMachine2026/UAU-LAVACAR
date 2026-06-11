@@ -241,6 +241,14 @@ export async function getReferralSummaryForCustomer(customerId: string) {
   return getReferralSummary(userId);
 }
 
-export async function getReferralTreeForCustomer(_customerId: string) {
-  return null;
+export async function getReferralTreeForCustomer(customerId: string): Promise<ReferralTree | null> {
+  const customer = await getCustomer(customerId);
+  const userId = resolveUserId(customer);
+  if (!userId) return null;
+  try {
+    const response = await api.get<ApiEnvelope<ReferralTree>>(`/referrals/tree/${userId}`);
+    return unwrap(response.data);
+  } catch {
+    return null;
+  }
 }

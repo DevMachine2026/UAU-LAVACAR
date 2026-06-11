@@ -73,6 +73,29 @@ export type PlateCheck = {
 export type ShiftFilters = { unitId?: string; status?: string; date?: string };
 export type ClosureFilters = { unitId?: string; status?: string; date?: string };
 
+export type OpenShiftPayload = {
+  unitId: string;
+  openingReadings?: { fieldId: string; openingValue: number }[];
+  openingNotes?: string;
+};
+
+export type CreateManualAttendancePayload = {
+  shiftId: string;
+  plate: string;
+  type?: string;
+  paymentMethod?: string;
+  amountPaid?: number;
+  cashbackUsed?: number;
+  status?: string;
+  notes?: string;
+};
+
+export type CloseShiftPayload = {
+  closingReadings?: { fieldId: string; closingValue: number }[];
+  closingNotes?: string;
+  notes?: string;
+};
+
 function unwrap<T>(envelope: ApiEnvelope<T>) {
   if (!envelope.success) throw new Error(envelope.error.message);
   return envelope.data;
@@ -83,7 +106,7 @@ export async function getReadingFields() {
   return unwrap(response.data);
 }
 
-export async function openShift(payload: unknown) {
+export async function openShift(payload: OpenShiftPayload) {
   const response = await api.post<ApiEnvelope<Shift>>("/operational/shifts/open", payload);
   return unwrap(response.data);
 }
@@ -103,7 +126,7 @@ export async function getLiveSummary(shiftId: string) {
   return unwrap(response.data);
 }
 
-export async function createManualAttendance(payload: unknown) {
+export async function createManualAttendance(payload: CreateManualAttendancePayload) {
   const response = await api.post<ApiEnvelope<Attendance>>("/operational/attendances/manual", payload);
   return unwrap(response.data);
 }
@@ -118,7 +141,7 @@ export async function cancelAttendance(id: string) {
   return unwrap(response.data);
 }
 
-export async function closeShift(shiftId: string, payload: unknown) {
+export async function closeShift(shiftId: string, payload: CloseShiftPayload) {
   const response = await api.post<ApiEnvelope<Closure>>(`/operational/shifts/${shiftId}/close`, payload);
   return unwrap(response.data);
 }

@@ -425,6 +425,7 @@ model Customer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([createdAt])
   @@map("customers")
 }
 
@@ -503,6 +504,7 @@ model BillingHistory {
   @@index([subscriptionId])
   @@index([status])
   @@index([createdAt])
+  @@index([dueDate])
   @@map("billing_history")
 }
 

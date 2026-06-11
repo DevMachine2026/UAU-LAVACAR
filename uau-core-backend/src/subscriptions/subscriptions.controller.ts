@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Query } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
+import { ListSubscriptionsDto } from './dto/list-subscriptions.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -16,15 +17,15 @@ export class SubscriptionsController {
   @Post()
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.CUSTOMER)
   @ApiOperation({ summary: 'Cria uma nova assinatura (Checkout)' })
-  create(@Body() createDto: CreateSubscriptionDto) {
-    return this.subscriptionsService.create(createDto);
+  create(@Body() createDto: CreateSubscriptionDto, @CurrentUser() user: User) {
+    return this.subscriptionsService.create(createDto, user);
   }
 
   @Get()
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER)
-  @ApiOperation({ summary: 'Lista todas as assinaturas' })
-  findAll() {
-    return this.subscriptionsService.findAll();
+  @ApiOperation({ summary: 'Lista assinaturas com paginação e filtros' })
+  findAll(@Query() dto: ListSubscriptionsDto) {
+    return this.subscriptionsService.findAll(dto);
   }
 
   @Get(':id')

@@ -1,10 +1,12 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { User, UserRole } from '@prisma/client';
+import { Prisma, User, UserRole } from '@prisma/client';
 import { AsaasService } from '../asaas/asaas.service';
 import { AsaasBillingType } from '../asaas/asaas.types';
+import { paginate } from '../common/dto/pagination.dto';
 import { resolvePlanAmount } from '../plans/plan-pricing.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
+import { ListSubscriptionsDto } from './dto/list-subscriptions.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 
 @Injectable()
@@ -14,10 +16,12 @@ export class SubscriptionsService {
     private readonly asaasService: AsaasService,
   ) {}
 
-  async create(createDto: CreateSubscriptionDto) {
+  async create(createDto: CreateSubscriptionDto, user?: User) {
+    const resolvedCustomerId = await this.resolveCustomerId(createDto.customerId, user);
+
     return this.prisma.$transaction(async (tx) => {
       const customer = await tx.customer.findUnique({
-        where: { id: createDto.customerId },
+        where: { id: resolvedCustomerId },
         include: { user: true },
       });
 
@@ -106,7 +110,7 @@ export class SubscriptionsService {
 
       const subscription = await tx.subscription.create({
         data: {
-          customerId: createDto.customerId,
+          customerId: resolvedCustomerId,
           planId: createDto.planId,
           status: 'PENDING',
           asaasId: asaasSubscription.id,
@@ -119,7 +123,7 @@ export class SubscriptionsService {
 
       const billing = await tx.billingHistory.create({
         data: {
-          customerId: createDto.customerId,
+          customerId: resolvedCustomerId,
           subscriptionId: subscription.id,
           amount: firstChargeAmount,
           status: 'PENDING',
@@ -151,14 +155,30 @@ export class SubscriptionsService {
     });
   }
 
-  async findAll() {
-    return this.prisma.subscription.findMany({
-      include: {
-        customer: { select: { user: { select: { name: true } }, cpf: true } },
-        plan: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(dto: ListSubscriptionsDto) {
+    const { page, limit, customerId, status } = dto;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.SubscriptionWhereInput = {
+      ...(customerId && { customerId }),
+      ...(status && { status }),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.subscription.findMany({
+        where,
+        include: {
+          customer: { select: { user: { select: { name: true } }, cpf: true } },
+          plan: true,
+        },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.subscription.count({ where }),
+    ]);
+
+    return paginate(data, total, page, limit);
   }
 
   async findOne(id: string, user?: User) {
@@ -186,6 +206,18 @@ export class SubscriptionsService {
       .catch(() => {
         throw new NotFoundException('Assinatura não encontrada');
       });
+  }
+
+  private async resolveCustomerId(customerId: string, user?: User): Promise<string> {
+    if (user?.role === UserRole.CUSTOMER) {
+      const customer = await this.prisma.customer.findUnique({
+        where: { userId: user.id },
+        select: { id: true },
+      });
+      if (!customer) throw new NotFoundException('Cliente não encontrado para este usuário');
+      return customer.id;
+    }
+    return customerId;
   }
 
   private resolveBillingType(paymentMethodId?: string): AsaasBillingType {

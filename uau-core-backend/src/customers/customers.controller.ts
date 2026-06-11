@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Body, Param, Patch, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Put, Query } from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
+import { ListCustomersDto } from './dto/list-customers.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -22,9 +23,9 @@ export class CustomersController {
 
   @Get()
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Lista todos os clientes' })
-  findAll() {
-    return this.customersService.findAll();
+  @ApiOperation({ summary: 'Lista clientes com paginação e filtros' })
+  findAll(@Query() dto: ListCustomersDto) {
+    return this.customersService.findAll(dto);
   }
 
   @Get(':id')

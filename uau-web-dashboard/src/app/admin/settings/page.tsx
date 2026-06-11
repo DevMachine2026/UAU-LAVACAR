@@ -1,9 +1,11 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
+import { Toast } from "@/components/Toast";
 import { ErrorState, LoadingState } from "@/components/State";
 import { DashboardLayout } from "@/layout/DashboardLayout";
 import { ProtectedRoute } from "@/layout/ProtectedRoute";
@@ -32,15 +34,19 @@ const LABELS: Record<string, string> = {
 };
 
 export default function AdminSettingsPage() {
-  const [form, setForm] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const settings = useQuery({ queryKey: ["admin-settings"], queryFn: getAdminSettings });
 
-  useEffect(() => {
-    if (!settings.data) return;
-    setForm(Object.fromEntries(Object.entries(settings.data).map(([key, value]) => [key, String(value)])));
-  }, [settings.data]);
+  const formValues = useMemo(
+    () =>
+      settings.data
+        ? Object.fromEntries(Object.entries(settings.data).map(([k, v]) => [k, String(v)]))
+        : undefined,
+    [settings.data],
+  );
+  const { watch, setValue, reset } = useForm<Record<string, string>>({ values: formValues });
+  const form = watch();
 
   const save = useMutation({
     mutationFn: () => {
@@ -52,7 +58,7 @@ export default function AdminSettingsPage() {
     onSuccess: (data) => {
       setNotice("Configuracoes salvas.");
       setError("");
-      setForm(Object.fromEntries(Object.entries(data).map(([key, value]) => [key, String(value)])));
+      reset(Object.fromEntries(Object.entries(data).map(([key, value]) => [key, String(value)])));
     },
     onError: (err) => setError(errorMessage(err)),
   });
@@ -63,7 +69,7 @@ export default function AdminSettingsPage() {
         <div className="space-y-6">
           {settings.isLoading ? <LoadingState /> : null}
           {(settings.error || error) ? <ErrorState message={error || "Nao foi possivel carregar configuracoes."} /> : null}
-          {notice ? <Card className="border-emerald-200 text-emerald-800">{notice}</Card> : null}
+          <Toast message={notice} onDismiss={() => setNotice("")} />
           <Card>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {Object.keys(form).map((key) => (
@@ -74,7 +80,7 @@ export default function AdminSettingsPage() {
                   step="0.01"
                   type="number"
                   value={form[key]}
-                  onChange={(event) => setForm({ ...form, [key]: event.target.value })}
+                  onChange={(event) => setValue(key, event.target.value)}
                 />
               ))}
             </div>

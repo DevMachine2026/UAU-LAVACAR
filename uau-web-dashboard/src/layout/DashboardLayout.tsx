@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/Button";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useAuthStore } from "@/auth/auth.store";
 
 type NavItem = {
@@ -81,7 +82,7 @@ export function DashboardLayout({ children, title }: { children: React.ReactNode
             <Button onClick={logout} variant="ghost">Sair</Button>
           </div>
         </header>
-        <div className="p-5">{children}</div>
+        <div className="p-5"><ErrorBoundary>{children}</ErrorBoundary></div>
       </main>
     </div>
   );

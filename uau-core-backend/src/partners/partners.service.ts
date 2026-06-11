@@ -1,8 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { paginate } from '../common/dto/pagination.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
-import { UpdatePartnerDto } from './dto/update-partner.dto';
+import { ListPartnersDto, PartnerStatusFilter } from './dto/list-partners.dto';
 import { PartnerQrDto, PartnerTransactionDto } from './dto/partner-transaction.dto';
+import { UpdatePartnerDto } from './dto/update-partner.dto';
 
 @Injectable()
 export class PartnersService {
@@ -14,13 +17,32 @@ export class PartnersService {
     });
   }
 
-  async findAll() {
-    return this.prisma.partner.findMany({
-      include: {
-        state: true,
-        city: true,
-      },
-    });
+  async findAll(dto: ListPartnersDto) {
+    const { page, limit, search, status } = dto;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.PartnerWhereInput = {
+      ...(status !== undefined && { isActive: status === PartnerStatusFilter.ACTIVE }),
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+        ],
+      }),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.partner.findMany({
+        where,
+        include: { state: true, city: true },
+        skip,
+        take: limit,
+        orderBy: { name: 'asc' },
+      }),
+      this.prisma.partner.count({ where }),
+    ]);
+
+    return paginate(data, total, page, limit);
   }
 
   async findOne(id: string) {

@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Body, Param, Patch, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Put, Query } from '@nestjs/common';
 import { PartnersService } from './partners.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
+import { ListPartnersDto } from './dto/list-partners.dto';
 import { UpdatePartnerDto } from './dto/update-partner.dto';
 import { PartnerQrDto, PartnerTransactionDto } from './dto/partner-transaction.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -22,9 +23,9 @@ export class PartnersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Lista todos os parceiros' })
-  findAll() {
-    return this.partnersService.findAll();
+  @ApiOperation({ summary: 'Lista parceiros com paginação e filtros' })
+  findAll(@Query() dto: ListPartnersDto) {
+    return this.partnersService.findAll(dto);
   }
 
   @Get(':id')

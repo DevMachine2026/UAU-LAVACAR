@@ -2,6 +2,15 @@ import { Injectable, ConflictException, NotFoundException } from '@nestjs/common
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateReferralDto } from './dto/create-referral.dto';
 
+const MAX_TREE_DEPTH = 10;
+
+type TreeRow = {
+  id: string;
+  name: string;
+  depth: number;
+  parentId: string | null;
+};
+
 @Injectable()
 export class ReferralsService {
   constructor(private prisma: PrismaService) {}
@@ -96,21 +105,48 @@ export class ReferralsService {
     });
     if (!user) throw new NotFoundException('Usuário não encontrado');
 
-    return this.buildTree(user.id, user.name, 0, 3);
+    // Single recursive CTE query — replaces the previous N+1 buildTree recursion
+    const rows = await this.prisma.$queryRaw<TreeRow[]>`
+      WITH RECURSIVE tree AS (
+        SELECT
+          u.id,
+          u."name",
+          CAST(0 AS INTEGER)  AS depth,
+          NULL::text          AS "parentId"
+        FROM "User" u
+        WHERE u.id = ${userId}
+
+        UNION ALL
+
+        SELECT
+          u.id,
+          u."name",
+          CAST(t.depth + 1 AS INTEGER),
+          r."referrerId" AS "parentId"
+        FROM referrals r
+        JOIN "User" u ON u.id = r."referredId"
+        JOIN tree    t ON r."referrerId" = t.id
+        WHERE t.depth < ${MAX_TREE_DEPTH}
+      )
+      SELECT id, "name", depth, "parentId" FROM tree
+    `;
+
+    return this.assembleTree(rows, userId);
   }
 
-  private async buildTree(userId: string, name: string, depth: number, maxDepth: number): Promise<object> {
-    if (depth >= maxDepth) return { id: userId, name, children: [] };
+  private assembleTree(rows: TreeRow[], rootId: string): object {
+    const map = new Map<string, { id: string; name: string; children: object[] }>();
 
-    const refs = await this.prisma.referral.findMany({
-      where: { referrerId: userId },
-      include: { referred: { select: { id: true, name: true } } },
-    });
+    for (const row of rows) {
+      map.set(row.id, { id: row.id, name: row.name, children: [] });
+    }
 
-    const children = await Promise.all(
-      refs.map(r => this.buildTree(r.referred.id, r.referred.name, depth + 1, maxDepth)),
-    );
+    for (const row of rows) {
+      if (row.parentId !== null) {
+        map.get(row.parentId)?.children.push(map.get(row.id)!);
+      }
+    }
 
-    return { id: userId, name, children };
+    return map.get(rootId) ?? { id: rootId, name: '', children: [] };
   }
 }

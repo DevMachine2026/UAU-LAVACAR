@@ -1,7 +1,9 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { User, UserRole } from '@prisma/client';
+import { Prisma, User, UserRole } from '@prisma/client';
+import { paginate } from '../common/dto/pagination.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBillingDto } from './dto/create-billing.dto';
+import { ListBillingDto } from './dto/list-billing.dto';
 import { UpdateBillingDto } from './dto/update-billing.dto';
 
 @Injectable()
@@ -14,13 +16,37 @@ export class BillingService {
     });
   }
 
-  async findAll() {
-    return this.prisma.billingHistory.findMany({
-      include: {
-        customer: { select: { user: { select: { name: true } }, cpf: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(dto: ListBillingDto) {
+    const { page, limit, customerId, startDate, endDate } = dto;
+    const skip = (page - 1) * limit;
+
+    const dueDateFilter: Prisma.DateTimeNullableFilter = {};
+    if (startDate) dueDateFilter.gte = new Date(startDate);
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setUTCHours(23, 59, 59, 999);
+      dueDateFilter.lte = end;
+    }
+
+    const where: Prisma.BillingHistoryWhereInput = {
+      ...(customerId && { customerId }),
+      ...(Object.keys(dueDateFilter).length > 0 && { dueDate: dueDateFilter }),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.billingHistory.findMany({
+        where,
+        include: {
+          customer: { select: { user: { select: { name: true } }, cpf: true } },
+        },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.billingHistory.count({ where }),
+    ]);
+
+    return paginate(data, total, page, limit);
   }
 
   async findOne(id: string, user?: User) {
