@@ -16,6 +16,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
+    if (payload.jti) {
+      const revoked = await this.prisma.revokedToken.findUnique({
+        where: { jti: payload.jti },
+      });
+      if (revoked) throw new UnauthorizedException('Token revogado');
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
     });
@@ -28,6 +35,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Usuário bloqueado ou inativo');
     }
 
-    return user;
+    return { ...user, _jti: payload.jti as string | undefined };
   }
 }

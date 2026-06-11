@@ -1,5 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { randomInt } from 'crypto';
+import { randomInt, randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login.dto';
@@ -33,7 +33,8 @@ export class AuthService {
       throw new UnauthorizedException('Conta bloqueada ou inativa');
     }
 
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const jti = randomUUID();
+    const payload = { sub: user.id, email: user.email, role: user.role, jti };
     const accessToken = this.jwtService.sign(payload);
 
     const { passwordHash, ...userWithoutPassword } = user;
@@ -63,6 +64,14 @@ export class AuthService {
     });
 
     return { resetToken };
+  }
+
+  async logout(jti: string): Promise<void> {
+    const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000);
+    await this.prisma.revokedToken.create({ data: { jti, expiresAt } });
+    if (Math.random() < 0.01) {
+      await this.prisma.revokedToken.deleteMany({ where: { expiresAt: { lt: new Date() } } });
+    }
   }
 
   async resetPassword(resetToken: string, code: string, newPassword: string): Promise<void> {

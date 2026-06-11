@@ -5,7 +5,8 @@ import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { Public } from '../common/decorators/public.decorator';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { CurrentJti } from '../common/decorators/current-jti.decorator';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -19,6 +20,15 @@ export class AuthController {
   @ApiOperation({ summary: 'Realiza o login de um usuário' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @ApiBearerAuth()
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Revoga o token de acesso atual' })
+  async logout(@CurrentJti() jti?: string) {
+    if (jti) await this.authService.logout(jti);
+    return { message: 'Logout realizado com sucesso' };
   }
 
   @Public()
