@@ -461,7 +461,7 @@ model Subscription {
   customerId String
   planId     String
   status     SubscriptionStatus @default(PENDING)
-  asaasId    String?
+  asaasId    String?            @unique
   startedAt  DateTime?
   expiresAt  DateTime?
 
@@ -485,7 +485,7 @@ model BillingHistory {
   subscriptionId   String?
   amount           Decimal       @db.Decimal(10, 2)
   status           BillingStatus @default(PENDING)
-  asaasId          String?
+  asaasId          String?       @unique
   dueDate          DateTime?
   paidAt           DateTime?
   description      String?
@@ -831,4 +831,15 @@ model PartnerTransaction {
   @@index([status])
   @@index([createdAt])
   @@map("partner_transactions")
+}
+
+// ─── Auth ──────────────────────────────────────────────────────────────────
+
+model RevokedToken {
+  id        String   @id @default(cuid())
+  jti       String   @unique
+  expiresAt DateTime
+
+  @@index([expiresAt])
+  @@map("revoked_tokens")
 }
