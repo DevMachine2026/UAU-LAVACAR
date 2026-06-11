@@ -7,8 +7,17 @@ async function main() {
   console.log('🌱 Iniciando seed UAU+...');
 
   const email = process.env.SUPER_ADMIN_EMAIL ?? 'admin@uauplus.com';
-  const password = process.env.SUPER_ADMIN_PASSWORD ?? 'admin123';
   const name = process.env.SUPER_ADMIN_NAME ?? 'Super Admin';
+
+  const password = process.env.SUPER_ADMIN_PASSWORD;
+  if (!password) {
+    console.error('❌ SUPER_ADMIN_PASSWORD não definido. Seed abortado.');
+    process.exit(1);
+  }
+  if (password.length < 12) {
+    console.error('❌ SUPER_ADMIN_PASSWORD deve ter ao menos 12 caracteres.');
+    process.exit(1);
+  }
 
   const passwordHash = await bcrypt.hash(password, 10);
 
