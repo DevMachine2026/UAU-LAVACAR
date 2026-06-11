@@ -126,9 +126,14 @@ export class AsaasService {
 
     if (!billing) return;
 
+    // Idempotência: ignorar reenvios caso o pagamento já foi processado
+    if (billing.status === 'PAID') {
+      return { received: true, skipped: true };
+    }
+
     await this.prisma.billingHistory.update({
       where: { id: billing.id },
-      data: { status: 'PAID', paidAt: new Date() },
+      data: { status: 'PAID', paidAt: payment.paymentDate ? new Date(payment.paymentDate) : new Date() },
     });
 
     if (billing.subscriptionId) {

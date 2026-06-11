@@ -8,16 +8,21 @@ export class FranchiseDashboardService {
 
   async getOverview(unitId?: string) {
     const unitWhere = unitId ? { id: unitId } : {};
+    const userUnitWhere = unitId ? { defaultUnitId: unitId } : {};
+
     const units = await this.prisma.franchiseUnit.findMany({
       where: { ...unitWhere, isActive: true },
       select: { id: true },
     });
 
-    const customerWhere = unitId ? { where: { user: { defaultUnitId: unitId } } } : undefined;
     const [totalCustomers, activeSubscriptions, overdueSubscriptions] = await Promise.all([
-      this.prisma.customer.count(customerWhere),
-      this.prisma.subscription.count({ where: { status: 'ACTIVE' } }),
-      this.prisma.subscription.count({ where: { status: 'OVERDUE' } }),
+      this.prisma.customer.count({ where: { user: userUnitWhere } }),
+      this.prisma.subscription.count({
+        where: { status: 'ACTIVE', ...(unitId ? { customer: { user: { defaultUnitId: unitId } } } : {}) },
+      }),
+      this.prisma.subscription.count({
+        where: { status: 'OVERDUE', ...(unitId ? { customer: { user: { defaultUnitId: unitId } } } : {}) },
+      }),
     ]);
 
     return {
@@ -29,11 +34,32 @@ export class FranchiseDashboardService {
   }
 
   async getFinancial(unitId?: string) {
-    const ledgerWhere = unitId ? { unitId } : {};
+    const unitFilter = unitId ? { defaultUnitId: unitId } : {};
+
     const [billingAgg, walletAgg, partnerAgg] = await Promise.all([
-      this.prisma.billingHistory.aggregate({ where: { status: 'PAID' }, _sum: { amount: true } }),
-      this.prisma.walletMovement.aggregate({ where: { type: 'DEBIT', origin: 'SUBSCRIPTION' }, _sum: { amount: true } }),
-      this.prisma.financialLedger.aggregate({ where: { ...ledgerWhere, type: 'CREDIT', origin: 'PARTNER_COMMISSION' }, _sum: { amount: true } }),
+      this.prisma.billingHistory.aggregate({
+        where: {
+          status: 'PAID',
+          ...(unitId ? { customer: { user: { defaultUnitId: unitId } } } : {}),
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.walletMovement.aggregate({
+        where: {
+          type: 'DEBIT',
+          origin: 'SUBSCRIPTION',
+          ...(unitId ? { wallet: { customer: { user: unitFilter } } } : {}),
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.financialLedger.aggregate({
+        where: {
+          type: 'CREDIT',
+          origin: 'PARTNER_COMMISSION',
+          ...(unitId ? { unitId } : {}),
+        },
+        _sum: { amount: true },
+      }),
     ]);
 
     return {
@@ -52,10 +78,19 @@ export class FranchiseDashboardService {
     const [openShifts, planToday, avulsoToday] = await Promise.all([
       this.prisma.shift.count({ where: { ...shiftWhere, status: 'OPEN' } }),
       this.prisma.attendance.count({
-        where: { status: 'COMPLETED', type: 'MANUAL', createdAt: { gte: today } },
+        where: {
+          status: 'COMPLETED',
+          type: 'MANUAL',
+          createdAt: { gte: today },
+          ...(unitId ? { shift: { unitId } } : {}),
+        },
       }),
       this.prisma.attendance.count({
-        where: { status: 'COMPLETED', createdAt: { gte: today } },
+        where: {
+          status: 'COMPLETED',
+          createdAt: { gte: today },
+          ...(unitId ? { shift: { unitId } } : {}),
+        },
       }),
     ]);
 
@@ -69,7 +104,12 @@ export class FranchiseDashboardService {
 
   async getAlerts(unitId?: string) {
     const [overdueCount] = await Promise.all([
-      this.prisma.subscription.count({ where: { status: 'OVERDUE' } }),
+      this.prisma.subscription.count({
+        where: {
+          status: 'OVERDUE',
+          ...(unitId ? { customer: { user: { defaultUnitId: unitId } } } : {}),
+        },
+      }),
     ]);
 
     const alerts: string[] = [];

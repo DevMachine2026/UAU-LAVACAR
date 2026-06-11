@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { LoggerModule } from 'nestjs-pino';
 import { AppController } from './app.controller';
 import { validate } from './config/env.validation';
 import mailerConfig from './config/mailer.config';
@@ -38,6 +39,20 @@ import { RolesGuard } from './common/guards/roles.guard';
 
 @Module({
   imports: [
+    LoggerModule.forRoot({
+      pinoHttp: {
+        transport:
+          process.env.NODE_ENV !== 'production'
+            ? { target: 'pino-pretty', options: { colorize: true, translateTime: 'SYS:standard', ignore: 'pid,hostname' } }
+            : undefined,
+        level: process.env.LOG_LEVEL ?? 'info',
+        autoLogging: true,
+        serializers: {
+          req(req) { return { method: req.method, url: req.url }; },
+          res(res) { return { statusCode: res.statusCode }; },
+        },
+      },
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       validate,

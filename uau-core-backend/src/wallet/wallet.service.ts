@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { WalletMovementOrigin, WalletMovementType } from '@prisma/client';
+import { Prisma, WalletMovementOrigin, WalletMovementType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMovementDto } from './dto/create-movement.dto';
 import { resolveBalanceUpdate } from './wallet-balance.util';
@@ -47,49 +47,61 @@ export class WalletService {
     }
 
     return this.prisma.$transaction(async (tx) => {
-      const wallet = await tx.wallet.findUnique({ where: { id: walletId } });
-      if (!wallet) throw new NotFoundException('Carteira não encontrada');
-
-      if (promotionalAmount > 0) {
-        if (Number(wallet.promoBalance) < promotionalAmount) {
-          throw new BadRequestException('Saldo promocional insuficiente');
-        }
-        await tx.walletMovement.create({
-          data: {
-            walletId,
-            type: WalletMovementType.DEBIT,
-            origin: WalletMovementOrigin.BILLING_DEDUCTION,
-            amount: promotionalAmount,
-            description: 'Cashback promocional aplicado na assinatura',
-            referenceId,
-          },
-        });
-        await tx.wallet.update({
-          where: { id: walletId },
-          data: { promoBalance: { decrement: promotionalAmount } },
-        });
-      }
-
-      if (realAmount > 0) {
-        if (Number(wallet.balance) < realAmount) {
-          throw new BadRequestException('Saldo disponível insuficiente');
-        }
-        await tx.walletMovement.create({
-          data: {
-            walletId,
-            type: WalletMovementType.DEBIT,
-            origin: WalletMovementOrigin.BILLING_DEDUCTION,
-            amount: realAmount,
-            description: 'Cashback real aplicado na assinatura',
-            referenceId,
-          },
-        });
-        await tx.wallet.update({
-          where: { id: walletId },
-          data: { balance: { decrement: realAmount } },
-        });
-      }
+      await this.applyCashbackUsageTx(tx, walletId, promotionalAmount, realAmount, referenceId);
     });
+  }
+
+  async applyCashbackUsageTx(
+    tx: Prisma.TransactionClient,
+    walletId: string,
+    promotionalAmount: number,
+    realAmount: number,
+    referenceId?: string,
+  ) {
+    if (promotionalAmount <= 0 && realAmount <= 0) return;
+
+    const wallet = await tx.wallet.findUnique({ where: { id: walletId } });
+    if (!wallet) throw new NotFoundException('Carteira não encontrada');
+
+    if (promotionalAmount > 0) {
+      if (Number(wallet.promoBalance) < promotionalAmount) {
+        throw new BadRequestException('Saldo promocional insuficiente');
+      }
+      await tx.walletMovement.create({
+        data: {
+          walletId,
+          type: WalletMovementType.DEBIT,
+          origin: WalletMovementOrigin.BILLING_DEDUCTION,
+          amount: promotionalAmount,
+          description: 'Cashback promocional aplicado na assinatura',
+          referenceId,
+        },
+      });
+      await tx.wallet.update({
+        where: { id: walletId },
+        data: { promoBalance: { decrement: promotionalAmount } },
+      });
+    }
+
+    if (realAmount > 0) {
+      if (Number(wallet.balance) < realAmount) {
+        throw new BadRequestException('Saldo disponível insuficiente');
+      }
+      await tx.walletMovement.create({
+        data: {
+          walletId,
+          type: WalletMovementType.DEBIT,
+          origin: WalletMovementOrigin.BILLING_DEDUCTION,
+          amount: realAmount,
+          description: 'Cashback real aplicado na assinatura',
+          referenceId,
+        },
+      });
+      await tx.wallet.update({
+        where: { id: walletId },
+        data: { balance: { decrement: realAmount } },
+      });
+    }
   }
 
   async getWallet(customerId: string) {

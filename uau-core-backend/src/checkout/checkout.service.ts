@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { User } from '@prisma/client';
@@ -13,6 +14,8 @@ import { WalletService } from '../wallet/wallet.service';
 
 @Injectable()
 export class CheckoutService {
+  private readonly logger = new Logger(CheckoutService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly subscriptionsService: SubscriptionsService,
@@ -53,29 +56,67 @@ export class CheckoutService {
     const firstChargeAmount =
       pricing.gatewayAmount > 0 ? pricing.gatewayAmount : 0.01;
 
-    const subscriptionResult = await this.subscriptionsService.create({
-      customerId: context.customer.id,
-      planId: dto.planId,
-      paymentMethodId: dto.paymentMethod,
-      vehicleId: dto.vehicleId,
-      recurringAmount: context.planAmount,
+    // Step 1: All Asaas HTTP calls — outside any DB transaction.
+    // If this fails, no DB changes have occurred.
+    const asaasData = await this.subscriptionsService.resolveAsaasData(
+      context.customerForAsaas,
+      { name: context.plan.name },
+      { paymentMethodId: dto.paymentMethod, vehicleId: dto.vehicleId },
       firstChargeAmount,
-    });
+      context.planAmount,
+    );
 
-    if (pricing.totalCashbackUsed > 0 && context.wallet) {
-      await this.walletService.applyCashbackUsage(
-        context.wallet.id,
-        pricing.promotionalCashbackUsed,
-        pricing.realCashbackUsed,
-        subscriptionResult.billing.id,
+    // Step 2: Single DB transaction — subscription + billing + wallet debit are atomic.
+    // If this fails after HTTP succeeded, log all Asaas IDs for manual reconciliation.
+    let result: Awaited<ReturnType<SubscriptionsService['createDbRecord']>>;
+    try {
+      result = await this.prisma.$transaction(async (tx) => {
+        if (asaasData.asaasCustomerIsNew) {
+          await tx.customer.update({
+            where: { id: context.customer.id },
+            data: { asaasCustomerId: asaasData.asaasCustomerId },
+          });
+        }
+
+        const dbResult = await this.subscriptionsService.createDbRecord(
+          tx,
+          context.customer.id,
+          context.plan.id,
+          asaasData,
+        );
+
+        if (pricing.totalCashbackUsed > 0 && context.wallet) {
+          await this.walletService.applyCashbackUsageTx(
+            tx,
+            context.wallet.id,
+            pricing.promotionalCashbackUsed,
+            pricing.realCashbackUsed,
+            dbResult.billing.id,
+          );
+        }
+
+        return dbResult;
+      });
+    } catch (err) {
+      this.logger.error(
+        'CRITICAL: Asaas cobrado mas transação DB falhou — reconciliação manual necessária',
+        {
+          asaasSubscriptionId: asaasData.asaasSubscriptionId,
+          asaasPaymentId: asaasData.payment.id,
+          asaasCustomerId: asaasData.asaasCustomerId,
+          customerId: context.customer.id,
+          planId: context.plan.id,
+          error: (err as Error).message,
+        },
       );
+      throw err;
     }
 
-    return this.mapConfirmResponse(subscriptionResult, dto, pricing);
+    return this.mapConfirmResponse(result, dto, pricing);
   }
 
   private mapConfirmResponse(
-    result: Awaited<ReturnType<SubscriptionsService['create']>>,
+    result: Awaited<ReturnType<SubscriptionsService['createDbRecord']>>,
     dto: SubscriptionCheckoutDto,
     pricing: ReturnType<typeof calculateCashbackUsage>,
   ) {
@@ -121,7 +162,10 @@ export class CheckoutService {
   private async loadCheckoutContext(user: User, dto: SubscriptionCheckoutDto) {
     const customer = await this.prisma.customer.findUnique({
       where: { userId: user.id },
-      include: { wallet: true },
+      include: {
+        wallet: true,
+        user: { select: { name: true, email: true } },
+      },
     });
 
     if (!customer) {
@@ -156,6 +200,13 @@ export class CheckoutService {
 
     return {
       customer,
+      customerForAsaas: {
+        id: customer.id,
+        asaasCustomerId: customer.asaasCustomerId,
+        cpf: customer.cpf,
+        phone: customer.phone,
+        user: customer.user,
+      },
       vehicle,
       plan,
       planAmount,

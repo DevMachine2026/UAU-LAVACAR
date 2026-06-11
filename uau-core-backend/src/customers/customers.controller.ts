@@ -4,8 +4,9 @@ import { CreateCustomerDto } from './dto/create-customer.dto';
 import { ListCustomersDto } from './dto/list-customers.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Public } from '../common/decorators/public.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
+import { User, UserRole } from '@prisma/client';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('customers')
@@ -24,8 +25,9 @@ export class CustomersController {
   @Get()
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.OPERATOR)
   @ApiOperation({ summary: 'Lista clientes com paginação e filtros' })
-  findAll(@Query() dto: ListCustomersDto) {
-    return this.customersService.findAll(dto);
+  findAll(@Query() dto: ListCustomersDto, @CurrentUser() user: User) {
+    const unitId = user.role === UserRole.FRANCHISE_OWNER ? user.defaultUnitId : null;
+    return this.customersService.findAll(dto, unitId);
   }
 
   @Get(':id')

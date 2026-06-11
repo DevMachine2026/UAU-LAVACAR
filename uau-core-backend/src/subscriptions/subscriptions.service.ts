@@ -1,13 +1,34 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, User, UserRole } from '@prisma/client';
 import { AsaasService } from '../asaas/asaas.service';
-import { AsaasBillingType } from '../asaas/asaas.types';
+import { AsaasBillingType, AsaasPaymentResponse, AsaasPixQrCodeResponse } from '../asaas/asaas.types';
 import { paginate } from '../common/dto/pagination.dto';
 import { resolvePlanAmount } from '../plans/plan-pricing.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { ListSubscriptionsDto } from './dto/list-subscriptions.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
+
+export type ResolvedAsaasData = {
+  asaasCustomerId: string;
+  asaasCustomerIsNew: boolean;
+  asaasSubscriptionId: string;
+  payment: AsaasPaymentResponse;
+  pix: AsaasPixQrCodeResponse | null;
+  billingType: AsaasBillingType;
+  nextDueDate: string;
+  recurringAmount: number;
+  firstChargeAmount: number;
+  planName: string;
+};
+
+export type CustomerForAsaas = {
+  id: string;
+  asaasCustomerId: string | null;
+  cpf: string | null;
+  phone: string | null;
+  user: { name: string; email: string };
+};
 
 @Injectable()
 export class SubscriptionsService {
@@ -19,140 +40,187 @@ export class SubscriptionsService {
   async create(createDto: CreateSubscriptionDto, user?: User) {
     const resolvedCustomerId = await this.resolveCustomerId(createDto.customerId, user);
 
+    const customer = await this.prisma.customer.findUnique({
+      where: { id: resolvedCustomerId },
+      include: { user: true },
+    });
+    if (!customer) throw new NotFoundException('Cliente não encontrado');
+
+    const plan = await this.prisma.plan.findUnique({
+      where: { id: createDto.planId },
+      include: { vehicleSizePrices: { where: { isActive: true } } },
+    });
+    if (!plan || !plan.isActive) throw new NotFoundException('Plano não encontrado ou inativo');
+
+    const vehicle = createDto.vehicleId
+      ? await this.prisma.vehicle.findFirst({
+          where: { id: createDto.vehicleId, customerId: customer.id },
+        })
+      : null;
+    if (createDto.vehicleId && !vehicle) {
+      throw new NotFoundException('Veículo não encontrado para este cliente');
+    }
+
+    const recurringAmount =
+      createDto.recurringAmount ?? (await resolvePlanAmount(this.prisma, plan, vehicle));
+    const firstChargeAmount = createDto.firstChargeAmount ?? recurringAmount;
+
+    if (firstChargeAmount <= 0) {
+      throw new BadRequestException('Valor da cobrança inicial deve ser maior que zero');
+    }
+
+    // Step 1: HTTP calls — outside any DB transaction
+    const asaasData = await this.resolveAsaasData(
+      customer,
+      { name: plan.name },
+      createDto,
+      firstChargeAmount,
+      recurringAmount,
+    );
+
+    // Step 2: DB-only transaction
     return this.prisma.$transaction(async (tx) => {
-      const customer = await tx.customer.findUnique({
-        where: { id: resolvedCustomerId },
-        include: { user: true },
-      });
-
-      if (!customer) {
-        throw new NotFoundException('Cliente não encontrado');
-      }
-
-      const plan = await tx.plan.findUnique({
-        where: { id: createDto.planId },
-        include: { vehicleSizePrices: { where: { isActive: true } } },
-      });
-
-      if (!plan || !plan.isActive) {
-        throw new NotFoundException('Plano não encontrado ou inativo');
-      }
-
-      const vehicle = createDto.vehicleId
-        ? await tx.vehicle.findFirst({
-            where: { id: createDto.vehicleId, customerId: customer.id },
-          })
-        : null;
-
-      if (createDto.vehicleId && !vehicle) {
-        throw new NotFoundException('Veículo não encontrado para este cliente');
-      }
-
-      const recurringAmount =
-        createDto.recurringAmount ??
-        (await resolvePlanAmount(tx, plan, vehicle));
-      const firstChargeAmount = createDto.firstChargeAmount ?? recurringAmount;
-
-      if (firstChargeAmount <= 0) {
-        throw new BadRequestException('Valor da cobrança inicial deve ser maior que zero');
-      }
-
-      const cpfCnpj = this.normalizeCpfCnpj(customer.cpf);
-      if (!cpfCnpj) {
-        throw new BadRequestException('CPF do cliente é obrigatório para gerar cobrança no Asaas');
-      }
-
-      let asaasCustomerId = customer.asaasCustomerId;
-      if (!asaasCustomerId) {
-        const asaasCustomer = await this.asaasService.createCustomer({
-          name: customer.user.name,
-          email: customer.user.email,
-          cpfCnpj,
-          phone: customer.phone ?? undefined,
-          mobilePhone: customer.phone ?? undefined,
-        });
-        asaasCustomerId = asaasCustomer.id;
+      if (asaasData.asaasCustomerIsNew) {
         await tx.customer.update({
           where: { id: customer.id },
-          data: { asaasCustomerId },
+          data: { asaasCustomerId: asaasData.asaasCustomerId },
         });
       }
+      return this.createDbRecord(tx, resolvedCustomerId, plan.id, asaasData);
+    });
+  }
 
-      const billingType = this.resolveBillingType(createDto.paymentMethodId);
-      const nextDueDate = this.formatAsaasDate(new Date());
+  /**
+   * Executes all Asaas HTTP calls and returns the resolved data.
+   * Must be called BEFORE any prisma.$transaction to keep HTTP outside DB locks.
+   */
+  async resolveAsaasData(
+    customer: CustomerForAsaas,
+    plan: { name: string },
+    createDto: Pick<CreateSubscriptionDto, 'paymentMethodId' | 'vehicleId'>,
+    firstChargeAmount: number,
+    recurringAmount: number,
+  ): Promise<ResolvedAsaasData> {
+    const cpfCnpj = this.normalizeCpfCnpj(customer.cpf);
+    if (!cpfCnpj) {
+      throw new BadRequestException('CPF do cliente é obrigatório para gerar cobrança no Asaas');
+    }
 
-      const asaasSubscription = await this.asaasService.createSubscription({
+    let asaasCustomerId = customer.asaasCustomerId;
+    let asaasCustomerIsNew = false;
+
+    if (!asaasCustomerId) {
+      const asaasCustomer = await this.asaasService.createCustomer({
+        name: customer.user.name,
+        email: customer.user.email,
+        cpfCnpj,
+        phone: customer.phone ?? undefined,
+        mobilePhone: customer.phone ?? undefined,
+      });
+      asaasCustomerId = asaasCustomer.id;
+      asaasCustomerIsNew = true;
+    }
+
+    const billingType = this.resolveBillingType(createDto.paymentMethodId);
+    const nextDueDate = this.formatAsaasDate(new Date());
+
+    const asaasSubscription = await this.asaasService.createSubscription({
+      customer: asaasCustomerId,
+      billingType,
+      value: recurringAmount,
+      nextDueDate,
+      cycle: 'MONTHLY',
+      description: `Assinatura UAU+ — ${plan.name}`,
+      externalReference: customer.id,
+    });
+
+    const payment = await this.asaasService.resolveFirstSubscriptionPayment(
+      asaasSubscription.id,
+      {
         customer: asaasCustomerId,
         billingType,
-        value: recurringAmount,
-        nextDueDate,
-        cycle: 'MONTHLY',
-        description: `Assinatura UAU+ — ${plan.name}`,
+        value: firstChargeAmount,
+        dueDate: nextDueDate,
+        description: `Primeira cobrança — ${plan.name}`,
         externalReference: customer.id,
-      });
+      },
+    );
 
-      const payment = await this.asaasService.resolveFirstSubscriptionPayment(
-        asaasSubscription.id,
-        {
-          customer: asaasCustomerId,
-          billingType,
-          value: firstChargeAmount,
-          dueDate: nextDueDate,
-          description: `Primeira cobrança — ${plan.name}`,
-          externalReference: customer.id,
-        },
-      );
+    const pix =
+      billingType === 'PIX' && payment.id
+        ? await this.asaasService.getPaymentPixQrCode(payment.id)
+        : null;
 
-      const pix =
-        billingType === 'PIX' && payment.id
-          ? await this.asaasService.getPaymentPixQrCode(payment.id)
-          : null;
+    return {
+      asaasCustomerId,
+      asaasCustomerIsNew,
+      asaasSubscriptionId: asaasSubscription.id,
+      payment,
+      pix,
+      billingType,
+      nextDueDate,
+      recurringAmount,
+      firstChargeAmount,
+      planName: plan.name,
+    };
+  }
 
-      const subscription = await tx.subscription.create({
-        data: {
-          customerId: resolvedCustomerId,
-          planId: createDto.planId,
-          status: 'PENDING',
-          asaasId: asaasSubscription.id,
-        },
-        include: {
-          plan: true,
-          customer: { include: { user: { select: { name: true, email: true } } } },
-        },
-      });
-
-      const billing = await tx.billingHistory.create({
-        data: {
-          customerId: resolvedCustomerId,
-          subscriptionId: subscription.id,
-          amount: firstChargeAmount,
-          status: 'PENDING',
-          asaasId: payment.id,
-          dueDate: payment.dueDate ? new Date(payment.dueDate) : new Date(nextDueDate),
-          description: `Primeira cobrança — ${plan.name}`,
-          invoiceUrl: payment.invoiceUrl ?? payment.bankSlipUrl ?? null,
-          pixQrCode: pix?.encodedImage ?? null,
-          pixCopyPaste: pix?.payload ?? null,
-          bankSlipBarCode: payment.bankSlipBarCode ?? null,
-        },
-      });
-
-      return {
-        subscription,
-        billing,
-        payment: {
-          asaasPaymentId: payment.id,
-          invoiceUrl: billing.invoiceUrl,
-          pixQrCode: billing.pixQrCode,
-          pixCopyPaste: billing.pixCopyPaste,
-          bankSlipBarCode: billing.bankSlipBarCode,
-          dueDate: payment.dueDate ?? nextDueDate,
-          value: firstChargeAmount,
-          recurringAmount,
-          billingType,
-        },
-      };
+  /**
+   * Creates subscription + billing DB records inside a provided transaction client.
+   * Must be called INSIDE prisma.$transaction — no HTTP calls made here.
+   */
+  async createDbRecord(
+    tx: Prisma.TransactionClient,
+    customerId: string,
+    planId: string,
+    asaasData: ResolvedAsaasData,
+  ) {
+    const subscription = await tx.subscription.create({
+      data: {
+        customerId,
+        planId,
+        status: 'PENDING',
+        asaasId: asaasData.asaasSubscriptionId,
+      },
+      include: {
+        plan: true,
+        customer: { include: { user: { select: { name: true, email: true } } } },
+      },
     });
+
+    const billing = await tx.billingHistory.create({
+      data: {
+        customerId,
+        subscriptionId: subscription.id,
+        amount: asaasData.firstChargeAmount,
+        status: 'PENDING',
+        asaasId: asaasData.payment.id,
+        dueDate: asaasData.payment.dueDate
+          ? new Date(asaasData.payment.dueDate)
+          : new Date(asaasData.nextDueDate),
+        description: `Primeira cobrança — ${asaasData.planName}`,
+        invoiceUrl: asaasData.payment.invoiceUrl ?? asaasData.payment.bankSlipUrl ?? null,
+        pixQrCode: asaasData.pix?.encodedImage ?? null,
+        pixCopyPaste: asaasData.pix?.payload ?? null,
+        bankSlipBarCode: asaasData.payment.bankSlipBarCode ?? null,
+      },
+    });
+
+    return {
+      subscription,
+      billing,
+      payment: {
+        asaasPaymentId: asaasData.payment.id,
+        invoiceUrl: billing.invoiceUrl,
+        pixQrCode: billing.pixQrCode,
+        pixCopyPaste: billing.pixCopyPaste,
+        bankSlipBarCode: billing.bankSlipBarCode,
+        dueDate: asaasData.payment.dueDate ?? asaasData.nextDueDate,
+        value: asaasData.firstChargeAmount,
+        recurringAmount: asaasData.recurringAmount,
+        billingType: asaasData.billingType,
+      },
+    };
   }
 
   async findAll(dto: ListSubscriptionsDto) {

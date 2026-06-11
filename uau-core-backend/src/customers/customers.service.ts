@@ -63,7 +63,7 @@ export class CustomersService {
     });
   }
 
-  async findAll(dto: ListCustomersDto) {
+  async findAll(dto: ListCustomersDto, unitId?: string | null) {
     const { page, limit, search, status } = dto;
     const skip = (page - 1) * limit;
 
@@ -76,6 +76,7 @@ export class CustomersService {
           { cpf: { contains: search } },
         ],
       }),
+      ...(unitId && { attendances: { some: { shift: { unitId } } } }),
     };
 
     const [data, total] = await Promise.all([
