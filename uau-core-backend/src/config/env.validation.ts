@@ -1,5 +1,5 @@
-import { plainToInstance, Type } from 'class-transformer';
-import { IsNumber, IsNotEmpty, IsOptional, IsString, validateSync } from 'class-validator';
+import { plainToInstance, Transform, Type } from 'class-transformer';
+import { IsInt, IsNumber, IsNotEmpty, IsOptional, IsString, Min, validateSync } from 'class-validator';
 
 export class EnvironmentVariables {
   @IsString()
@@ -38,6 +38,16 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   MAILER_REJECT_UNAUTHORIZED?: string;
+
+  @IsInt()
+  @Min(1000) // rejeita se alguém colocar 60 (segundos) em vez de 60000 (ms)
+  @Transform(({ value }) => parseInt(value, 10))
+  RATE_LIMIT_TTL: number;
+
+  @IsInt()
+  @Min(1)
+  @Transform(({ value }) => parseInt(value, 10))
+  RATE_LIMIT_MAX: number;
 
   @IsString()
   @IsNotEmpty()

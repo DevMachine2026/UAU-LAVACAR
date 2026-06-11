@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller';
@@ -44,9 +44,10 @@ import { RolesGuard } from './common/guards/roles.guard';
       load: [mailerConfig],
     }),
     ThrottlerModule.forRootAsync({
-      useFactory: () => ([{
-        ttl: parseInt(process.env.RATE_LIMIT_TTL ?? '60000'),
-        limit: parseInt(process.env.RATE_LIMIT_MAX ?? '100'),
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ([{
+        ttl: configService.get<number>('RATE_LIMIT_TTL') ?? 60_000, // ms — 60 segundos
+        limit: configService.get<number>('RATE_LIMIT_MAX') ?? 5,
       }]),
     }),
     MailerModule,
