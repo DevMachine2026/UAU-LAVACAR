@@ -39,6 +39,10 @@ export class EnvironmentVariables {
   @IsString()
   MAILER_REJECT_UNAUTHORIZED?: string;
 
+  @IsString()
+  @IsNotEmpty()
+  ASAAS_WEBHOOK_TOKEN!: string;
+
   @IsOptional()
   @IsString()
   ASAAS_API_KEY?: string;

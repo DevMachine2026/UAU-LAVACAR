@@ -17,7 +17,7 @@ export class AsaasController {
   ) {
     // Valida o token do webhook configurado no Asaas
     const expectedToken = process.env.ASAAS_WEBHOOK_TOKEN;
-    if (expectedToken && token !== expectedToken) {
+    if (!expectedToken || token !== expectedToken) {
       throw new UnauthorizedException('Token de webhook inválido');
     }
 
