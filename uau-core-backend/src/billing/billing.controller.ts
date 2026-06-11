@@ -24,8 +24,9 @@ export class BillingController {
   @Get()
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER)
   @ApiOperation({ summary: 'Lista histórico de cobranças com paginação e filtros' })
-  findAll(@Query() dto: ListBillingDto) {
-    return this.billingService.findAll(dto);
+  findAll(@Query() dto: ListBillingDto, @CurrentUser() user: User) {
+    const unitId = user.role === UserRole.FRANCHISE_OWNER ? user.defaultUnitId : null;
+    return this.billingService.findAll(dto, unitId);
   }
 
   @Get('my-current')

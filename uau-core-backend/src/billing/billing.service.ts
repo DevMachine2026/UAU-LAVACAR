@@ -16,7 +16,7 @@ export class BillingService {
     });
   }
 
-  async findAll(dto: ListBillingDto) {
+  async findAll(dto: ListBillingDto, unitId?: string | null) {
     const { page, limit, customerId, startDate, endDate } = dto;
     const skip = (page - 1) * limit;
 
@@ -31,6 +31,7 @@ export class BillingService {
     const where: Prisma.BillingHistoryWhereInput = {
       ...(customerId && { customerId }),
       ...(Object.keys(dueDateFilter).length > 0 && { dueDate: dueDateFilter }),
+      ...(unitId && { customer: { attendances: { some: { shift: { unitId } } } } }),
     };
 
     const [data, total] = await Promise.all([

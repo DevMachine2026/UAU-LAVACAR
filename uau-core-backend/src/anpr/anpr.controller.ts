@@ -1,9 +1,10 @@
-import { Controller, Post, Body, Get, Param, Headers, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Headers, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { AnprService } from './anpr.service';
 import { CameraEventDto } from './dto/camera-event.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { User, UserRole } from '@prisma/client';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('anpr')
@@ -29,7 +30,13 @@ export class AnprController {
   @Get('events/:franchiseUnitId')
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.OPERATOR)
   @ApiOperation({ summary: 'Lista as últimas leituras de placa da unidade' })
-  getRecentEvents(@Param('franchiseUnitId') franchiseUnitId: string) {
+  getRecentEvents(
+    @Param('franchiseUnitId') franchiseUnitId: string,
+    @CurrentUser() user: User,
+  ) {
+    if (user.role !== UserRole.SUPER_ADMIN && user.defaultUnitId !== franchiseUnitId) {
+      throw new ForbiddenException('Acesso não autorizado para esta unidade');
+    }
     return this.anprService.getRecentEvents(franchiseUnitId);
   }
 }
