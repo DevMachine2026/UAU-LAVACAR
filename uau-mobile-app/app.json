@@ -13,7 +13,10 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "plugins": ["expo-router", "expo-secure-store"],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
     "experiments": {
       "typedRoutes": true
     },
@@ -26,8 +29,18 @@
       "package": "com.uauplus.mobile",
       "versionCode": 1,
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0BA95B"
       }
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "e8c6fc1b-d74f-4b7e-a860-383dd2739f39"
+      }
+    },
+    "owner": "dev-machine"
   }
 }
