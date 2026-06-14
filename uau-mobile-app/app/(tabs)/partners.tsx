@@ -29,9 +29,9 @@ export default function PartnersScreen() {
         </View>
 
         {partnersQuery.isLoading ? <Loading /> : null}
-        {partnersQuery.error ? <ErrorState message="Nao foi possivel carregar os parceiros agora." /> : null}
+        {partnersQuery.error ? <ErrorState message="Não foi possível carregar os parceiros agora." /> : null}
         {partners.length === 0 && !partnersQuery.isLoading ? (
-          <EmptyState title="Nenhum parceiro encontrado" description="Parceiros locais aparecerao aqui quando cadastrados." />
+          <EmptyState title="Nenhum parceiro encontrado" description="Parceiros locais aparecerão aqui quando cadastrados." />
         ) : null}
 
         {partners.map((partner) => (

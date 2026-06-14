@@ -28,12 +28,12 @@ export default function WalletScreen() {
 
         {walletQuery.isLoading || statementQuery.isLoading ? <Loading /> : null}
         {walletQuery.error || statementQuery.error ? (
-          <ErrorState message="Nao foi possivel carregar sua carteira agora." />
+          <ErrorState message="Não foi possível carregar sua carteira agora." />
         ) : null}
 
         <View className="gap-3">
           <Card>
-            <Text className="text-sm text-uau-gray">Saldo disponivel</Text>
+            <Text className="text-sm text-uau-gray">Saldo disponível</Text>
             <MoneyText
               className="mt-2 text-3xl font-bold text-uau-black"
               value={getNumber(wallet, ["availableBalance", "balance", "totalBalance"], 0)}
@@ -58,7 +58,7 @@ export default function WalletScreen() {
         <View className="gap-3">
           <Text className="text-xl font-bold text-uau-black">Extrato</Text>
           {statement.length === 0 && !statementQuery.isLoading ? (
-            <EmptyState title="Sem movimentacoes" description="Quando houver cashback, seu extrato aparecera aqui." />
+            <EmptyState title="Sem movimentações" description="Quando houver cashback, seu extrato aparecerá aqui." />
           ) : null}
 
           {statement.map((item, index) => {
@@ -68,7 +68,7 @@ export default function WalletScreen() {
                 <View className="flex-row justify-between gap-3">
                   <View className="flex-1">
                     <Text className="font-semibold text-uau-black">
-                      {getString(record, ["description", "origin", "type"], "Movimentacao")}
+                      {getString(record, ["description", "origin", "type"], "Movimentação")}
                     </Text>
                     <DateText className="mt-1 text-xs text-uau-gray" value={getString(record, ["createdAt"])} />
                   </View>

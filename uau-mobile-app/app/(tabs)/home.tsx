@@ -69,9 +69,9 @@ export default function HomeScreen() {
       <View className="gap-6">
         <View className="flex-row items-start justify-between gap-4">
           <View className="flex-1 gap-2">
-            <Text className="text-3xl font-bold text-uau-black">Ola, {user?.name ?? "cliente"}</Text>
+            <Text className="text-3xl font-bold text-uau-black">Olá, {user?.name ?? "cliente"}</Text>
             <Text className="text-base text-uau-gray">
-              {getString(subscription, ["status"], "Seu UAU+ em um so lugar.")}
+              {getString(subscription, ["status"], "Seu UAU+ em um só lugar.")}
             </Text>
             {getString(plan, ["name"]) ? <Text className="text-sm text-uau-gray">Plano {getString(plan, ["name"])}</Text> : null}
           </View>
@@ -86,7 +86,7 @@ export default function HomeScreen() {
         </View>
 
         {isLoading ? <Loading /> : null}
-        {hasError ? <ErrorState message="Alguns dados da Home nao puderam ser carregados agora." /> : null}
+        {hasError ? <ErrorState message="Alguns dados da Home não puderam ser carregados agora." /> : null}
 
         <Button
           onPress={() => {
@@ -96,7 +96,7 @@ export default function HomeScreen() {
             }
             router.push("/subscribe");
           }}
-          title={billingQuery.data ? "Pagar cobranca atual" : "Assinar agora"}
+          title={billingQuery.data ? "Pagar cobrança atual" : "Assinar agora"}
         />
 
         <View className="gap-3">
@@ -119,7 +119,7 @@ export default function HomeScreen() {
 
           <Card>
             <View className="gap-3">
-              <Text className="text-lg font-semibold text-uau-black">Cobranca atual</Text>
+              <Text className="text-lg font-semibold text-uau-black">Cobrança atual</Text>
               {billingQuery.data ? (
                 <>
                   <View className="flex-row justify-between gap-3">
@@ -145,7 +145,7 @@ export default function HomeScreen() {
                   </View>
                 </>
               ) : (
-                <Text className="text-sm text-uau-gray">Nenhuma cobranca atual encontrada.</Text>
+                <Text className="text-sm text-uau-gray">Nenhuma cobrança atual encontrada.</Text>
               )}
             </View>
           </Card>
@@ -190,12 +190,12 @@ export default function HomeScreen() {
           <View className="flex-row flex-wrap gap-3">
             {[
               ["Assinar agora", billingQuery.data ? "/(tabs)/billing" : "/subscribe"],
-              ["Minhas Cobrancas", "/(tabs)/billing"],
+              ["Minhas Cobranças", "/(tabs)/billing"],
               ["Minha Carteira", "/(tabs)/wallet"],
               ["Parceiros", "/(tabs)/partners"],
               ["Minha Rede", "/referrals"],
-              ["Meus Veiculos", "/vehicles"],
-              ["Historico", "/history"],
+              ["Meus Veículos", "/vehicles"],
+              ["Histórico", "/history"],
               ["Perfil", "/(tabs)/profile"]
             ].map(([title, href]) => (
               <Pressable
