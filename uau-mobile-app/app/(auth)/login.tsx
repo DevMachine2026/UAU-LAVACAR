@@ -9,7 +9,7 @@ import { Screen } from "@/components/Screen";
 import { useAuthStore } from "@/auth/auth.store";
 
 const loginSchema = z.object({
-  email: z.string().min(1, "Informe seu e-mail").email("Informe um e-mail valido"),
+  email: z.string().min(1, "Informe seu e-mail").email("Informe um e-mail válido"),
   password: z.string().min(1, "Informe sua senha")
 });
 
@@ -32,7 +32,7 @@ export default function LoginScreen() {
       await login(data.email, data.password);
     } catch (error) {
       setError("root", {
-        message: error instanceof Error ? error.message : "Nao foi possivel entrar. Confira seus dados."
+        message: error instanceof Error ? error.message : "Não foi possível entrar. Confira seus dados."
       });
     }
   }
@@ -87,6 +87,9 @@ export default function LoginScreen() {
           <Button loading={isSubmitting} onPress={handleSubmit(onSubmit)} title="Entrar" />
           <Link className="text-center font-semibold text-uau-green" href="/(auth)/register">
             Criar cadastro
+          </Link>
+          <Link className="text-center text-sm text-uau-gray" href="/(auth)/forgot-password">
+            Esqueci minha senha
           </Link>
         </View>
       </View>

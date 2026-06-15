@@ -23,3 +23,13 @@ export async function getMe() {
   const response = await api.get<ApiEnvelope<ApiUser>>("/users/me");
   return unwrap(response.data);
 }
+
+export async function forgotPassword(email: string): Promise<{ resetToken: string }> {
+  const response = await api.post<ApiEnvelope<{ resetToken: string }>>("/auth/forgot-password", { email });
+  return unwrap(response.data);
+}
+
+export async function resetPassword(resetToken: string, code: string, newPassword: string): Promise<void> {
+  const response = await api.post<ApiEnvelope<void>>("/auth/reset-password", { resetToken, code, newPassword });
+  unwrap(response.data);
+}
