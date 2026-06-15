@@ -49,9 +49,9 @@ export class EnvironmentVariables {
   @Transform(({ value }) => parseInt(value, 10))
   RATE_LIMIT_MAX: number;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  ASAAS_WEBHOOK_TOKEN!: string;
+  ASAAS_WEBHOOK_TOKEN?: string;
 
   @IsOptional()
   @IsString()
