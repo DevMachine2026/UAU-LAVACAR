@@ -6,9 +6,9 @@ export class EnvironmentVariables {
   @IsNotEmpty()
   JWT_SECRET!: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  ANPR_WEBHOOK_SECRET!: string;
+  ANPR_WEBHOOK_SECRET?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -42,12 +42,12 @@ export class EnvironmentVariables {
   @IsInt()
   @Min(1000) // rejeita se alguém colocar 60 (segundos) em vez de 60000 (ms)
   @Transform(({ value }) => parseInt(value, 10))
-  RATE_LIMIT_TTL: number;
+  RATE_LIMIT_TTL!: number;
 
   @IsInt()
   @Min(1)
   @Transform(({ value }) => parseInt(value, 10))
-  RATE_LIMIT_MAX: number;
+  RATE_LIMIT_MAX!: number;
 
   @IsOptional()
   @IsString()
