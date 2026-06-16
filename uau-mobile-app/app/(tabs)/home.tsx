@@ -53,13 +53,16 @@ export default function HomeScreen() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["campaigns", "active"] })
   });
 
+  const viewMutateRef = useRef(viewMutation.mutate);
+  viewMutateRef.current = viewMutation.mutate;
+
   useEffect(() => {
     campaigns.forEach((campaign) => {
       if (!campaign.id || viewedCampaigns.current.has(campaign.id)) return;
       viewedCampaigns.current.add(campaign.id);
-      viewMutation.mutate(campaign.id);
+      viewMutateRef.current(campaign.id);
     });
-  }, [campaigns, viewMutation]);
+  }, [campaigns]);
 
   const isLoading = walletQuery.isLoading || billingQuery.isLoading || campaignsQuery.isLoading || unreadQuery.isLoading;
   const hasError = walletQuery.error || billingQuery.error || campaignsQuery.error || unreadQuery.error;
