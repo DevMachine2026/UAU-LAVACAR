@@ -3,6 +3,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
 import { Loading } from "@/components/Loading";
+import { ToastProvider } from "@/components/Toast";
 import { useAuthStore } from "@/auth/auth.store";
 import { queryClient } from "@/store/query-client";
 
@@ -20,17 +21,19 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="notifications" />
-        <Stack.Screen name="subscribe" />
-        <Stack.Screen name="referrals" />
-        <Stack.Screen name="partners" />
-        <Stack.Screen name="vehicles" />
-        <Stack.Screen name="history" />
-      </Stack>
+      <ToastProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="notifications" />
+          <Stack.Screen name="subscribe" />
+          <Stack.Screen name="referrals" />
+          <Stack.Screen name="partners" />
+          <Stack.Screen name="vehicles" />
+          <Stack.Screen name="history" />
+        </Stack>
+      </ToastProvider>
     </QueryClientProvider>
   );
 }

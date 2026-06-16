@@ -5,8 +5,11 @@ import { Card } from "@/components/Card";
 import { DateText } from "@/components/DateText";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
+import { FadeInView } from "@/components/FadeInView";
 import { Loading } from "@/components/Loading";
+import { SkeletonList } from "@/components/Skeleton";
 import { Screen } from "@/components/Screen";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { markAllAsRead, markAsRead } from "@/features/notifications/notifications.api";
 import { useMyNotifications } from "@/features/notifications/notifications.hooks";
 import { asArray, asRecord, getString } from "@/utils/data";
@@ -32,28 +35,28 @@ export default function NotificationsScreen() {
   const unreadCount = notifications.filter((n) => !getString(asRecord(n), ["readAt"])).length;
 
   return (
-    <Screen>
+    <Screen
+      onRefresh={refreshNotifications}
+      refreshing={notificationsQuery.isFetching}
+      statusBarStyle="light"
+    >
       <View className="gap-5">
-        <View className="flex-row items-start justify-between gap-4">
-          <View className="gap-1">
-            <Text className="text-3xl font-bold text-uau-black">Notificações</Text>
-            {unreadCount > 0 ? (
-              <Text className="text-sm text-uau-teal">{unreadCount} não lida{unreadCount > 1 ? "s" : ""}</Text>
-            ) : (
-              <Text className="text-sm text-uau-gray">Tudo em dia</Text>
-            )}
-          </View>
-          {unreadCount > 0 ? (
+        <ScreenHeader
+          title="Notificações"
+          subtitle={unreadCount > 0 ? `${unreadCount} não lida${unreadCount > 1 ? "s" : ""}` : "Tudo em dia"}
+        />
+        {unreadCount > 0 ? (
+          <View className="items-end">
             <Button
               loading={readAllMutation.isPending}
               onPress={() => readAllMutation.mutate()}
               title="Ler todas"
               variant="ghost"
             />
-          ) : null}
-        </View>
+          </View>
+        ) : null}
 
-        {notificationsQuery.isLoading ? <Loading /> : null}
+        {notificationsQuery.isLoading ? <SkeletonList count={5} /> : null}
         {notificationsQuery.error ? (
           <ErrorState message="Não foi possível carregar suas notificações." />
         ) : null}
@@ -68,7 +71,8 @@ export default function NotificationsScreen() {
           const readAt = getString(notification, ["readAt"]);
 
           return (
-            <Card key={id}>
+            <FadeInView key={id} index={index}>
+            <Card>
               <View className="gap-3">
                 <View className="flex-row gap-3">
                   <View className="flex-1 gap-1">
@@ -96,6 +100,7 @@ export default function NotificationsScreen() {
                 </View>
               </View>
             </Card>
+            </FadeInView>
           );
         })}
       </View>

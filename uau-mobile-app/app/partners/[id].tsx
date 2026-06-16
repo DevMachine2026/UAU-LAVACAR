@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ErrorState";
 import { Input } from "@/components/Input";
 import { Loading } from "@/components/Loading";
 import { Screen } from "@/components/Screen";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuthStore } from "@/auth/auth.store";
 import { PartnerQrBox } from "@/features/partners/PartnerQrBox";
 import { PartnerRuleCard } from "@/features/partners/PartnerRuleCard";
@@ -117,21 +118,18 @@ export default function PartnerDetailScreen() {
   }
 
   return (
-    <Screen>
+    <Screen statusBarStyle="light">
       <View className="gap-5 pb-6">
-        {partnerQuery.error ? <ErrorState message="Nao foi possivel carregar este parceiro." /> : null}
-        {error ? <ErrorState title="Atencao" message={error} /> : null}
+        <ScreenHeader
+          title={partner?.name ?? "Parceiro"}
+          subtitle={partner ? `${getString(partnerRecord, ["category"], "Parceiro local")}${location ? ` · ${location}` : ""}` : undefined}
+        />
+
+        {partnerQuery.error ? <ErrorState message="Não foi possível carregar este parceiro." /> : null}
+        {error ? <ErrorState title="Atenção" message={error} /> : null}
 
         {partner ? (
           <>
-            <View className="gap-2">
-              <Text className="text-3xl font-bold text-uau-black">{partner.name}</Text>
-              <Text className="text-base text-uau-gray">{getString(partnerRecord, ["category"], "Parceiro local")}</Text>
-              {location ? <Text className="text-sm text-uau-gray">{location}</Text> : null}
-              <Text className={`text-sm font-bold ${partner.isActive === false ? "text-red-600" : "text-uau-green"}`}>
-                {partner.isActive === false ? "Inativo" : "Ativo"}
-              </Text>
-            </View>
 
             <PartnerRuleCard partner={partner} />
 

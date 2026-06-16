@@ -106,7 +106,11 @@ export default function HomeScreen() {
               </Text>
               <Text className="text-sm text-white/80">{headerSubtitle}</Text>
             </View>
-            <Pressable className="relative p-2" onPress={() => router.push("/notifications")}>
+            <Pressable
+              className="relative p-2"
+              onPress={() => router.push("/notifications")}
+              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            >
               <Ionicons name="notifications-outline" size={24} color="white" />
               {unreadCount > 0 && (
                 <View className="absolute right-1 top-1 h-4 w-4 items-center justify-center rounded-full bg-red-500">
@@ -165,7 +169,7 @@ export default function HomeScreen() {
             <Pressable
               key={label}
               className="overflow-hidden rounded-2xl"
-              style={{ width: "48%", aspectRatio: 1 }}
+              style={({ pressed }) => ({ width: "48%", aspectRatio: 1, opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] })}
               onPress={() => router.push(href)}
             >
               <LinearGradient

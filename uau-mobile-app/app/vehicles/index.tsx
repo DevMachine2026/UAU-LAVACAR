@@ -5,6 +5,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { Loading } from "@/components/Loading";
 import { Screen } from "@/components/Screen";
+import { ScreenHeader } from "@/components/ScreenHeader";
+import { useToast } from "@/components/Toast";
 import { VehicleCard } from "@/features/vehicles/VehicleCard";
 import { VehicleForm } from "@/features/vehicles/VehicleForm";
 import { CreateVehiclePayload, Vehicle } from "@/features/vehicles/vehicles.api";
@@ -25,6 +27,7 @@ function normalizeVehicles(value: unknown) {
 }
 
 export default function VehiclesScreen() {
+  const toast = useToast();
   const queryClient = useQueryClient();
   const vehiclesQuery = useVehicles();
   const createMutation = useCreateVehicle();
@@ -33,7 +36,6 @@ export default function VehiclesScreen() {
   const deactivateMutation = useDeactivateVehicle();
   const primaryMutation = useSetPrimaryVehicle();
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const vehicles = normalizeVehicles(vehiclesQuery.data);
@@ -46,8 +48,8 @@ export default function VehiclesScreen() {
 
   async function refreshVehicles(message: string) {
     await queryClient.invalidateQueries({ queryKey: ["vehicles", "me"] });
-    setFeedback(message);
     setError(null);
+    toast.show(message, "success");
   }
 
   async function submitVehicle(payload: CreateVehiclePayload) {
@@ -62,7 +64,9 @@ export default function VehiclesScreen() {
       await createMutation.mutateAsync(payload);
       await refreshVehicles("Veiculo cadastrado com sucesso.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Nao foi possivel salvar o veiculo.");
+      const msg = err instanceof Error ? err.message : "Não foi possível salvar o veículo.";
+      setError(msg);
+      toast.show(msg, "error");
     }
   }
 
@@ -71,24 +75,23 @@ export default function VehiclesScreen() {
       await action();
       await refreshVehicles(message);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Nao foi possivel executar a acao.");
+      const msg = err instanceof Error ? err.message : "Não foi possível executar a ação.";
+      setError(msg);
+      toast.show(msg, "error");
     }
   }
 
   return (
-    <Screen>
+    <Screen statusBarStyle="light">
       <View className="gap-6 pb-6">
-        <View className="gap-2">
-          <Text className="text-3xl font-bold text-uau-black">Meus Veiculos</Text>
-          <Text className="text-base leading-6 text-uau-gray">
-            Gerencie as placas vinculadas a sua assinatura e defina seu veiculo principal.
-          </Text>
-        </View>
+        <ScreenHeader
+          title="Meus Veículos"
+          subtitle="Gerencie as placas vinculadas à sua assinatura."
+        />
 
         {vehiclesQuery.isLoading ? <Loading /> : null}
-        {vehiclesQuery.error ? <ErrorState message="Nao foi possivel carregar seus veiculos agora." /> : null}
-        {error ? <ErrorState title="Atencao" message={error} /> : null}
-        {feedback ? <EmptyState title="Tudo certo" description={feedback} /> : null}
+        {vehiclesQuery.error ? <ErrorState message="Não foi possível carregar seus veículos agora." /> : null}
+        {error ? <ErrorState title="Atenção" message={error} /> : null}
 
         <VehicleForm
           loading={isMutating}
@@ -110,7 +113,6 @@ export default function VehiclesScreen() {
               onDeactivate={() => void runAction(() => deactivateMutation.mutateAsync(vehicle.id), "Veiculo desativado.")}
               onEdit={() => {
                 setEditingVehicle(vehicle);
-                setFeedback(null);
                 setError(null);
               }}
               onSetPrimary={() => void runAction(() => primaryMutation.mutateAsync(vehicle.id), "Veiculo principal atualizado.")}

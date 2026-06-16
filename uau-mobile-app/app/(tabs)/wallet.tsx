@@ -1,10 +1,12 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { Text, View } from "react-native";
 import { Card } from "@/components/Card";
+import { FadeInView } from "@/components/FadeInView";
 import { DateText } from "@/components/DateText";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { Loading } from "@/components/Loading";
+import { SkeletonList } from "@/components/Skeleton";
 import { MoneyText } from "@/components/MoneyText";
 import { Screen } from "@/components/Screen";
 import { useMyStatement, useMyWallet } from "@/features/wallet/wallet.hooks";
@@ -22,15 +24,24 @@ export default function WalletScreen() {
   const wallet = asRecord(walletQuery.data);
   const statement = normalizeStatement(statementQuery.data);
 
+  function onRefresh() {
+    void walletQuery.refetch();
+    void statementQuery.refetch();
+  }
+
   return (
-    <Screen statusBarStyle="light">
+    <Screen
+      onRefresh={onRefresh}
+      refreshing={walletQuery.isFetching || statementQuery.isFetching}
+      statusBarStyle="light"
+    >
       <View className="gap-5">
         <View className="-mx-5 -mt-6 rounded-b-3xl bg-uau-teal px-5 pb-6 pt-4">
           <Text className="text-2xl font-bold text-white">Minha Carteira</Text>
           <Text className="mt-1 text-sm text-white/80">Seu saldo e extrato de cashback</Text>
         </View>
 
-        {walletQuery.isLoading || statementQuery.isLoading ? <Loading /> : null}
+        {walletQuery.isLoading || statementQuery.isLoading ? <SkeletonList count={4} /> : null}
         {walletQuery.error || statementQuery.error ? (
           <ErrorState message="Não foi possível carregar sua carteira agora." />
         ) : null}
@@ -87,7 +98,8 @@ export default function WalletScreen() {
             const isCredit = amount >= 0;
 
             return (
-              <Card key={getString(record, ["id"], String(index))}>
+              <FadeInView key={getString(record, ["id"], String(index))} index={index}>
+              <Card>
                 <View className="flex-row items-center justify-between gap-3">
                   <View className="flex-1">
                     <Text className="font-semibold text-uau-black">
@@ -101,6 +113,7 @@ export default function WalletScreen() {
                   />
                 </View>
               </Card>
+              </FadeInView>
             );
           })}
         </View>

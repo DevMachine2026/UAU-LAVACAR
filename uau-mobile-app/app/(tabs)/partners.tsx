@@ -2,6 +2,7 @@ import { Text, View } from "react-native";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { Loading } from "@/components/Loading";
+import { SkeletonList } from "@/components/Skeleton";
 import { Screen } from "@/components/Screen";
 import { PartnerCard } from "@/features/partners/PartnerCard";
 import { Partner } from "@/features/partners/partners.api";
@@ -19,7 +20,11 @@ export default function PartnersScreen() {
   const partners = normalizePartners(partnersQuery.data);
 
   return (
-    <Screen statusBarStyle="light">
+    <Screen
+      onRefresh={() => void partnersQuery.refetch()}
+      refreshing={partnersQuery.isFetching}
+      statusBarStyle="light"
+    >
       <View className="gap-5">
         <View className="-mx-5 -mt-6 rounded-b-3xl bg-uau-teal px-5 pb-6 pt-4">
           <Text className="text-2xl font-bold text-white">Parceiros</Text>
@@ -28,7 +33,7 @@ export default function PartnersScreen() {
           </Text>
         </View>
 
-        {partnersQuery.isLoading ? <Loading /> : null}
+        {partnersQuery.isLoading ? <SkeletonList count={4} /> : null}
         {partnersQuery.error ? <ErrorState message="Não foi possível carregar os parceiros agora." /> : null}
         {partners.length === 0 && !partnersQuery.isLoading ? (
           <EmptyState title="Nenhum parceiro encontrado" description="Parceiros locais aparecerão aqui quando cadastrados." />

@@ -6,7 +6,7 @@ import { useAuthStore } from "@/auth/auth.store";
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
 function tabIcon(focused: boolean, icon: IoniconName, iconOutline: IoniconName) {
-  return <Ionicons name={focused ? icon : iconOutline} size={24} color={focused ? "#0BA95B" : "#667085"} />;
+  return <Ionicons name={focused ? icon : iconOutline} size={24} color={focused ? "#009688" : "#667085"} />;
 }
 
 export default function TabsLayout() {
@@ -25,7 +25,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#0BA95B",
+        tabBarActiveTintColor: "#009688",
         tabBarInactiveTintColor: "#667085",
         tabBarStyle: { backgroundColor: "#FFFFFF", borderTopColor: "#E5E7EB" },
       }}

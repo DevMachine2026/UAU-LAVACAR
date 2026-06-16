@@ -7,6 +7,7 @@ import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { Screen } from "@/components/Screen";
 import { useAuthStore } from "@/auth/auth.store";
+import { maskCPF, maskPhone, unmaskCPF, unmaskPhone } from "@/utils/masks";
 
 const optionalId = z.string().trim().optional().transform((value) => (value ? value : undefined));
 
@@ -63,7 +64,7 @@ export default function RegisterScreen() {
           control={control}
           name="name"
           render={({ field: { onChange, onBlur, value } }) => (
-            <Input error={errors.name?.message} label="Nome" onBlur={onBlur} onChangeText={onChange} value={value} />
+            <Input autoCapitalize="words" autoCorrect={false} error={errors.name?.message} label="Nome completo" onBlur={onBlur} onChangeText={onChange} returnKeyType="next" value={value} />
           )}
         />
 
@@ -92,9 +93,12 @@ export default function RegisterScreen() {
               error={errors.phone?.message}
               keyboardType="phone-pad"
               label="Telefone"
+              maxLength={15}
               onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
+              onChangeText={(text) => onChange(unmaskPhone(maskPhone(text)))}
+              placeholder="(11) 99999-9999"
+              returnKeyType="next"
+              value={maskPhone(value)}
             />
           )}
         />
@@ -107,9 +111,12 @@ export default function RegisterScreen() {
               error={errors.cpf?.message}
               keyboardType="number-pad"
               label="CPF"
+              maxLength={14}
               onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
+              onChangeText={(text) => onChange(unmaskCPF(maskCPF(text)))}
+              placeholder="000.000.000-00"
+              returnKeyType="next"
+              value={maskCPF(value)}
             />
           )}
         />
@@ -161,7 +168,7 @@ export default function RegisterScreen() {
 
         <Button loading={isSubmitting} onPress={handleSubmit(onSubmit)} title="Criar cadastro" />
 
-        <Link className="font-semibold text-uau-green" href="/(auth)/login">
+        <Link className="font-semibold text-uau-teal" href="/(auth)/login">
           Voltar para login
         </Link>
       </View>

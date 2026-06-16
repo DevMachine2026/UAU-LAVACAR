@@ -8,8 +8,10 @@ import { DateText } from "@/components/DateText";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { Loading } from "@/components/Loading";
+import { SkeletonList } from "@/components/Skeleton";
 import { MoneyText } from "@/components/MoneyText";
 import { Screen } from "@/components/Screen";
+import { useToast } from "@/components/Toast";
 import { useMyBillingHistory, useMyCurrentBilling } from "@/features/billing/billing.hooks";
 import { asArray, asRecord, getNestedRecord, getNumber, getString } from "@/utils/data";
 
@@ -29,6 +31,7 @@ function getStatusStyle(status: string): { bg: string; text: string; label: stri
 }
 
 export default function BillingScreen() {
+  const toast = useToast();
   const [copied, setCopied] = useState(false);
   const currentQuery = useMyCurrentBilling();
   const historyQuery = useMyBillingHistory();
@@ -42,17 +45,27 @@ export default function BillingScreen() {
     if (!pixCopyPaste) return;
     await Clipboard.setStringAsync(pixCopyPaste);
     setCopied(true);
+    toast.show("Código PIX copiado!", "success");
+  }
+
+  function onRefresh() {
+    void currentQuery.refetch();
+    void historyQuery.refetch();
   }
 
   return (
-    <Screen statusBarStyle="light">
+    <Screen
+      onRefresh={onRefresh}
+      refreshing={currentQuery.isFetching || historyQuery.isFetching}
+      statusBarStyle="light"
+    >
       <View className="gap-5">
         <View className="-mx-5 -mt-6 rounded-b-3xl bg-uau-teal px-5 pb-6 pt-4">
           <Text className="text-2xl font-bold text-white">Cobranças</Text>
           <Text className="mt-1 text-sm text-white/80">Acompanhe suas faturas e histórico</Text>
         </View>
 
-        {currentQuery.isLoading || historyQuery.isLoading ? <Loading /> : null}
+        {currentQuery.isLoading || historyQuery.isLoading ? <SkeletonList count={3} /> : null}
         {currentQuery.error || historyQuery.error ? (
           <ErrorState message="Não foi possível carregar suas cobranças agora." />
         ) : null}

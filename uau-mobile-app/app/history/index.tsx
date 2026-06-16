@@ -2,7 +2,9 @@ import { Text, View } from "react-native";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { Loading } from "@/components/Loading";
+import { SkeletonList } from "@/components/Skeleton";
 import { Screen } from "@/components/Screen";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { HistoryCard } from "@/features/history/HistoryCard";
 import { useMyAttendances } from "@/features/history/history.hooks";
 import { AttendanceHistoryItem } from "@/features/history/history.api";
@@ -19,16 +21,18 @@ export default function HistoryScreen() {
   const attendances = normalizeAttendances(attendancesQuery.data);
 
   return (
-    <Screen>
+    <Screen
+      onRefresh={() => void attendancesQuery.refetch()}
+      refreshing={attendancesQuery.isFetching}
+      statusBarStyle="light"
+    >
       <View className="gap-6">
-        <View className="gap-2">
-          <Text className="text-3xl font-bold text-uau-black">Historico</Text>
-          <Text className="text-base leading-6 text-uau-gray">
-            Lavagens e atendimentos registrados pelo caixa operacional ou camera.
-          </Text>
-        </View>
+        <ScreenHeader
+          title="Histórico"
+          subtitle="Lavagens e atendimentos registrados pelo caixa ou câmera."
+        />
 
-        {attendancesQuery.isLoading ? <Loading /> : null}
+        {attendancesQuery.isLoading ? <SkeletonList count={4} /> : null}
         {attendancesQuery.error ? <ErrorState message="Nao foi possivel carregar seu historico agora." /> : null}
         {attendances.length === 0 && !attendancesQuery.isLoading ? (
           <EmptyState

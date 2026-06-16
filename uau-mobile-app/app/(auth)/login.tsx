@@ -85,7 +85,7 @@ export default function LoginScreen() {
           {errors.root?.message ? <Text className="text-sm text-red-600">{errors.root.message}</Text> : null}
 
           <Button loading={isSubmitting} onPress={handleSubmit(onSubmit)} title="Entrar" />
-          <Link className="text-center font-semibold text-uau-green" href="/(auth)/register">
+          <Link className="text-center font-semibold text-uau-teal" href="/(auth)/register">
             Criar cadastro
           </Link>
           <Link className="text-center text-sm text-uau-gray" href="/(auth)/forgot-password">

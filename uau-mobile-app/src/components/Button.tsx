@@ -15,6 +15,7 @@ export function Button({ title, onPress, loading = false, variant = "primary" }:
       className={`h-12 items-center justify-center rounded-lg ${isPrimary ? "bg-uau-teal" : "bg-transparent"}`}
       disabled={loading}
       onPress={onPress}
+      style={({ pressed }) => ({ opacity: pressed || loading ? 0.75 : 1 })}
     >
       {loading ? (
         <ActivityIndicator color={isPrimary ? "#FFFFFF" : "#009688"} />

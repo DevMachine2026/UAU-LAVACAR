@@ -7,6 +7,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { Loading } from "@/components/Loading";
 import { Screen } from "@/components/Screen";
+import { ScreenHeader } from "@/components/ScreenHeader";
+import { useToast } from "@/components/Toast";
 import { useMyReferralNetwork, useMyReferralTree } from "@/features/referrals/referrals.hooks";
 import { QualificationBadge } from "@/features/referrals/QualificationBadge";
 import { ReferralLineSection } from "@/features/referrals/ReferralLineSection";
@@ -16,6 +18,7 @@ import { normalizeReferralLine } from "@/features/referrals/referrals.utils";
 import { asRecord, getString } from "@/utils/data";
 
 export default function ReferralsScreen() {
+  const toast = useToast();
   const [copied, setCopied] = useState<string | null>(null);
   const networkQuery = useMyReferralNetwork();
   const treeQuery = useMyReferralTree();
@@ -40,6 +43,7 @@ export default function ReferralsScreen() {
   async function copy(value: string, type: string) {
     await Clipboard.setStringAsync(value);
     setCopied(type);
+    toast.show(type === "code" ? "Código copiado!" : "Link copiado!", "success");
   }
 
   const isEmpty =
@@ -51,14 +55,12 @@ export default function ReferralsScreen() {
     lines.line3.length === 0;
 
   return (
-    <Screen>
+    <Screen statusBarStyle="light">
       <View className="gap-6 pb-6">
-        <View className="gap-2">
-          <Text className="text-3xl font-bold text-uau-black">Minha Rede</Text>
-          <Text className="text-base leading-6 text-uau-gray">
-            Acompanhe seu codigo, suas 3 linhas de indicacao, ganhos e qualificacao.
-          </Text>
-        </View>
+        <ScreenHeader
+          title="Minha Rede"
+          subtitle="Seu código, linhas de indicação e ganhos."
+        />
 
         {networkQuery.isLoading || treeQuery.isLoading ? <Loading /> : null}
         {networkQuery.error || treeQuery.error ? (
