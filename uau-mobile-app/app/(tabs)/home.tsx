@@ -1,10 +1,10 @@
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Button } from "@/components/Button";
-import { Card } from "@/components/Card";
-import { DateText } from "@/components/DateText";
 import { ErrorState } from "@/components/ErrorState";
 import { Loading } from "@/components/Loading";
 import { MoneyText } from "@/components/MoneyText";
@@ -17,6 +17,19 @@ import { useUnreadNotificationsCount } from "@/features/notifications/notificati
 import { useMyWallet } from "@/features/wallet/wallet.hooks";
 import { asArray, asRecord, getNestedRecord, getNumber, getString } from "@/utils/data";
 
+const TEAL_GRADIENT = ["#009B8D", "#00695C"] as const;
+const MAROON_GRADIENT = ["#7D1C2F", "#1A0010"] as const;
+
+const SHORTCUTS = [
+  { label: "Minha Carteira", icon: "wallet-outline",    href: "/(tabs)/wallet",   gradient: TEAL_GRADIENT },
+  { label: "Cobranças",      icon: "receipt-outline",   href: "/(tabs)/billing",  gradient: MAROON_GRADIENT },
+  { label: "Parceiros",      icon: "storefront-outline",href: "/(tabs)/partners", gradient: MAROON_GRADIENT },
+  { label: "Minha Rede",     icon: "people-outline",    href: "/referrals",       gradient: TEAL_GRADIENT },
+  { label: "Meus Veículos",  icon: "car-outline",       href: "/vehicles",        gradient: TEAL_GRADIENT },
+  { label: "Histórico",      icon: "time-outline",      href: "/history",         gradient: MAROON_GRADIENT },
+  { label: "Perfil",         icon: "person-outline",    href: "/(tabs)/profile",  gradient: MAROON_GRADIENT },
+] as const;
+
 function normalizeCount(value: unknown) {
   if (typeof value === "number") return value;
   const record = asRecord(value);
@@ -27,6 +40,14 @@ function normalizeCampaigns(value: unknown) {
   if (Array.isArray(value)) return value as Campaign[];
   const record = asRecord(value);
   return asArray<Campaign>(record.items ?? record.data);
+}
+
+function normalizeSubscriptionStatus(status: string): string {
+  const s = status.toLowerCase();
+  if (s.includes("ativ")) return "Ativa";
+  if (s.includes("pend") || s.includes("aguard")) return "Pendente";
+  if (s.includes("venc") || s.includes("atras") || s.includes("cancel")) return "Vencida";
+  return status;
 }
 
 export default function HomeScreen() {
@@ -50,7 +71,7 @@ export default function HomeScreen() {
   const clickMutation = useMutation({ mutationFn: clickCampaign });
   const dismissMutation = useMutation({
     mutationFn: dismissCampaign,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["campaigns", "active"] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["campaigns", "active"] }),
   });
 
   const viewMutateRef = useRef(viewMutation.mutate);
@@ -67,93 +88,104 @@ export default function HomeScreen() {
   const isLoading = walletQuery.isLoading || billingQuery.isLoading || campaignsQuery.isLoading || unreadQuery.isLoading;
   const hasError = walletQuery.error || billingQuery.error || campaignsQuery.error || unreadQuery.error;
 
+  const planName = getString(plan, ["name"]);
+  const subscriptionStatus = getString(subscription, ["status"]);
+  const headerSubtitle = planName
+    ? `Plano ${planName} · ${normalizeSubscriptionStatus(subscriptionStatus)}`
+    : "Seu UAU+ em um só lugar.";
+
   return (
     <Screen>
-      <View className="gap-6">
-        <View className="flex-row items-start justify-between gap-4">
-          <View className="flex-1 gap-2">
-            <Text className="text-3xl font-bold text-uau-black">Olá, {user?.name ?? "cliente"}</Text>
-            <Text className="text-base text-uau-gray">
-              {getString(subscription, ["status"], "Seu UAU+ em um só lugar.")}
-            </Text>
-            {getString(plan, ["name"]) ? <Text className="text-sm text-uau-gray">Plano {getString(plan, ["name"])}</Text> : null}
+      <View className="gap-5">
+        {/* Header teal */}
+        <View className="-mx-5 -mt-6 rounded-b-3xl bg-uau-teal px-5 pb-6 pt-4">
+          <View className="flex-row items-start justify-between">
+            <View className="flex-1 gap-1">
+              <Text className="text-2xl font-bold text-white">
+                Olá, {user?.name ?? "cliente"}
+              </Text>
+              <Text className="text-sm text-white/80">{headerSubtitle}</Text>
+            </View>
+            <Pressable className="relative p-2" onPress={() => router.push("/notifications")}>
+              <Ionicons name="notifications-outline" size={24} color="white" />
+              {unreadCount > 0 && (
+                <View className="absolute right-1 top-1 h-4 w-4 items-center justify-center rounded-full bg-red-500">
+                  <Text className="text-[10px] font-bold text-white">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
           </View>
-
-          <Pressable
-            className="min-h-12 min-w-12 items-center justify-center rounded-lg bg-uau-black px-3"
-            onPress={() => router.push("/notifications")}
-          >
-            <Text className="text-xs font-semibold text-white">Avisos</Text>
-            {unreadCount > 0 ? <Text className="text-xs font-bold text-uau-green">{unreadCount}</Text> : null}
-          </Pressable>
         </View>
 
         {isLoading ? <Loading /> : null}
         {hasError ? <ErrorState message="Alguns dados da Home não puderam ser carregados agora." /> : null}
 
-        <Button
+        {/* Stats Row */}
+        <View className="flex-row gap-3">
+          <View className="flex-1 rounded-xl border border-gray-100 bg-white p-3">
+            <Text className="text-xs font-semibold text-uau-teal">Cashback</Text>
+            <MoneyText
+              className="mt-1 text-lg font-bold text-uau-black"
+              value={getNumber(wallet, ["totalBalance", "availableBalance", "balance"], 0)}
+            />
+          </View>
+          <View className="flex-1 rounded-xl border border-gray-100 bg-white p-3">
+            <Text className="text-xs font-semibold text-uau-teal">Veículos</Text>
+            <Text className="mt-1 text-lg font-bold text-uau-black">0</Text>
+          </View>
+          <View className="flex-1 rounded-xl border border-gray-100 bg-white p-3">
+            <Text className="text-xs font-semibold text-uau-teal">Assinatura</Text>
+            <Text className="mt-1 text-lg font-bold text-uau-black" numberOfLines={1}>
+              {subscriptionStatus ? normalizeSubscriptionStatus(subscriptionStatus) : "—"}
+            </Text>
+          </View>
+        </View>
+
+        {/* CTA Pill Preto */}
+        <Pressable
+          className="h-14 items-center justify-center rounded-full bg-uau-black"
           onPress={() => {
             if (billingQuery.data) {
               router.push("/(tabs)/billing");
-              return;
+            } else {
+              router.push("/subscribe");
             }
-            router.push("/subscribe");
           }}
-          title={billingQuery.data ? "Pagar cobrança atual" : "Assinar agora"}
-        />
+        >
+          <Text className="text-base font-semibold text-white">
+            {billingQuery.data ? "Pagar cobrança atual" : "Assinar agora"}
+          </Text>
+        </Pressable>
 
-        <View className="gap-3">
-          <View className="flex-row gap-3">
-            <Card>
-              <Text className="text-sm text-uau-gray">Cashback total</Text>
-              <MoneyText
-                className="mt-2 text-2xl font-bold text-uau-black"
-                value={getNumber(wallet, ["totalBalance", "availableBalance", "balance"], 0)}
-              />
-            </Card>
-            <Card>
-              <Text className="text-sm text-uau-gray">Promocional</Text>
-              <MoneyText
-                className="mt-2 text-2xl font-bold text-uau-black"
-                value={getNumber(wallet, ["promotionalBalance", "promoBalance"], 0)}
-              />
-            </Card>
-          </View>
-
-          <Card>
-            <View className="gap-3">
-              <Text className="text-lg font-semibold text-uau-black">Cobrança atual</Text>
-              {billingQuery.data ? (
-                <>
-                  <View className="flex-row justify-between gap-3">
-                    <Text className="text-sm text-uau-gray">Status</Text>
-                    <Text className="text-sm font-semibold text-uau-black">{getString(billing, ["status"], "-")}</Text>
-                  </View>
-                  <View className="flex-row justify-between gap-3">
-                    <Text className="text-sm text-uau-gray">Valor a pagar</Text>
-                    <MoneyText
-                      className="text-sm font-semibold text-uau-black"
-                      value={getNumber(billing, ["gatewayAmount", "amount", "totalAmount"], 0)}
-                    />
-                  </View>
-                  <View className="flex-row justify-between gap-3">
-                    <Text className="text-sm text-uau-gray">Vencimento</Text>
-                    <DateText className="text-sm font-semibold text-uau-black" value={getString(billing, ["dueDate"])} />
-                  </View>
-                  <View className="flex-row justify-between gap-3">
-                    <Text className="text-sm text-uau-gray">Pagamento</Text>
-                    <Text className="text-sm font-semibold text-uau-black">
-                      {getString(billing, ["paymentMethod"], "-")}
-                    </Text>
-                  </View>
-                </>
-              ) : (
-                <Text className="text-sm text-uau-gray">Nenhuma cobrança atual encontrada.</Text>
-              )}
-            </View>
-          </Card>
+        {/* Cards de Ação */}
+        <View className="flex-row flex-wrap gap-3">
+          {SHORTCUTS.map(({ label, icon, href, gradient }) => (
+            <Pressable
+              key={label}
+              className="overflow-hidden rounded-2xl"
+              style={{ width: "48%", aspectRatio: 1 }}
+              onPress={() => router.push(href)}
+            >
+              <LinearGradient
+                colors={gradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 16 }}
+              >
+                <Ionicons name={icon as any} size={40} color="white" />
+                <Text
+                  style={{ color: "white", fontWeight: "600", fontSize: 13, marginTop: 12, textAlign: "center" }}
+                >
+                  {label}
+                </Text>
+              </LinearGradient>
+            </Pressable>
+          ))}
         </View>
 
+        {/* Campanhas (ao final, se houver) */}
         {campaigns.length > 0 ? (
           <View className="gap-3">
             <Text className="text-xl font-bold text-uau-black">Campanhas</Text>
@@ -162,21 +194,21 @@ export default function HomeScreen() {
                 {campaigns.map((campaign) => (
                   <View key={campaign.id} className="w-72 rounded-lg border border-gray-200 bg-white p-4">
                     <Text className="text-lg font-bold text-uau-black">{campaign.title}</Text>
-                    {campaign.subtitle ? <Text className="mt-1 text-sm text-uau-gray">{campaign.subtitle}</Text> : null}
-                    {campaign.body ? <Text className="mt-3 text-sm leading-5 text-uau-gray">{campaign.body}</Text> : null}
+                    {campaign.subtitle ? (
+                      <Text className="mt-1 text-sm text-uau-gray">{campaign.subtitle}</Text>
+                    ) : null}
+                    {campaign.body ? (
+                      <Text className="mt-3 text-sm leading-5 text-uau-gray">{campaign.body}</Text>
+                    ) : null}
                     <View className="mt-4 flex-row gap-2">
                       {campaign.ctaLabel ? (
                         <Button
-                          onPress={() => {
-                            clickMutation.mutate(campaign.id);
-                          }}
+                          onPress={() => clickMutation.mutate(campaign.id)}
                           title={campaign.ctaLabel}
                         />
                       ) : null}
                       <Button
-                        onPress={() => {
-                          dismissMutation.mutate(campaign.id);
-                        }}
+                        onPress={() => dismissMutation.mutate(campaign.id)}
                         title="Fechar"
                         variant="ghost"
                       />
@@ -187,30 +219,6 @@ export default function HomeScreen() {
             </ScrollView>
           </View>
         ) : null}
-
-        <View className="gap-3">
-          <Text className="text-xl font-bold text-uau-black">Atalhos</Text>
-          <View className="flex-row flex-wrap gap-3">
-            {[
-              ["Assinar agora", billingQuery.data ? "/(tabs)/billing" : "/subscribe"],
-              ["Minhas Cobranças", "/(tabs)/billing"],
-              ["Minha Carteira", "/(tabs)/wallet"],
-              ["Parceiros", "/(tabs)/partners"],
-              ["Minha Rede", "/referrals"],
-              ["Meus Veículos", "/vehicles"],
-              ["Histórico", "/history"],
-              ["Perfil", "/(tabs)/profile"]
-            ].map(([title, href]) => (
-              <Pressable
-                className="min-h-12 min-w-[47%] flex-1 justify-center rounded-lg border border-gray-200 bg-white px-4"
-                key={title}
-                onPress={() => router.push(href)}
-              >
-                <Text className="font-semibold text-uau-black">{title}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
       </View>
     </Screen>
   );
