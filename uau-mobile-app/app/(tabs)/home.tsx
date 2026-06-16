@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Button } from "@/components/Button";
 import { ErrorState } from "@/components/ErrorState";
@@ -89,6 +90,7 @@ export default function HomeScreen() {
   const isLoading = walletQuery.isLoading || billingQuery.isLoading || campaignsQuery.isLoading || unreadQuery.isLoading;
   const hasError = walletQuery.error || billingQuery.error || campaignsQuery.error || unreadQuery.error;
 
+  const insets = useSafeAreaInsets();
   const planName = getString(plan, ["name"]);
   const subscriptionStatus = getString(subscription, ["status"]);
   const headerSubtitle = planName
@@ -100,7 +102,7 @@ export default function HomeScreen() {
       <StatusBar style="light" />
       <View className="gap-5">
         {/* Header teal */}
-        <View className="-mx-5 -mt-6 rounded-b-3xl bg-uau-teal px-5 pb-6 pt-4">
+        <View className="-mx-5 -mt-6 rounded-b-3xl bg-uau-teal px-5 pb-6" style={{ paddingTop: insets.top + 16 }}>
           <View className="flex-row items-start justify-between">
             <View className="flex-1 gap-1">
               <Text className="text-2xl font-bold text-white">
