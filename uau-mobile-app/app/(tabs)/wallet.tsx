@@ -1,3 +1,4 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { Text, View } from "react-native";
 import { Card } from "@/components/Card";
 import { DateText } from "@/components/DateText";
@@ -24,55 +25,80 @@ export default function WalletScreen() {
   return (
     <Screen>
       <View className="gap-5">
-        <Text className="text-3xl font-bold text-uau-black">Wallet / Cashback</Text>
+        <View className="gap-1">
+          <Text className="text-3xl font-bold text-uau-black">Minha Carteira</Text>
+          <Text className="text-sm text-uau-gray">Seu saldo e extrato de cashback</Text>
+        </View>
 
         {walletQuery.isLoading || statementQuery.isLoading ? <Loading /> : null}
         {walletQuery.error || statementQuery.error ? (
           <ErrorState message="Não foi possível carregar sua carteira agora." />
         ) : null}
 
-        <View className="gap-3">
-          <Card>
-            <Text className="text-sm text-uau-gray">Saldo disponível</Text>
+        {/* Hero — Saldo disponível */}
+        <View className="overflow-hidden rounded-2xl">
+          <LinearGradient
+            colors={["#009B8D", "#00695C"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ padding: 24 }}
+          >
+            <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 13, fontWeight: "600" }}>
+              Saldo disponível
+            </Text>
             <MoneyText
-              className="mt-2 text-3xl font-bold text-uau-black"
+              style={{ color: "white", fontSize: 36, fontWeight: "700", marginTop: 6 }}
               value={getNumber(wallet, ["availableBalance", "balance", "totalBalance"], 0)}
             />
-          </Card>
+          </LinearGradient>
+        </View>
 
-          <View className="flex-row gap-3">
-            <Card>
-              <Text className="text-sm text-uau-gray">Promocional</Text>
-              <MoneyText
-                className="mt-2 text-xl font-bold text-uau-black"
-                value={getNumber(wallet, ["promotionalBalance", "promoBalance"], 0)}
-              />
-            </Card>
-            <Card>
-              <Text className="text-sm text-uau-gray">Bloqueado</Text>
-              <MoneyText className="mt-2 text-xl font-bold text-uau-black" value={getNumber(wallet, ["blockedBalance"], 0)} />
-            </Card>
+        {/* Saldos secundários */}
+        <View className="flex-row gap-3">
+          <View className="flex-1 rounded-xl border border-gray-100 bg-white p-4">
+            <Text className="text-xs font-semibold text-uau-teal">Promocional</Text>
+            <MoneyText
+              className="mt-1 text-xl font-bold text-uau-black"
+              value={getNumber(wallet, ["promotionalBalance", "promoBalance"], 0)}
+            />
+          </View>
+          <View className="flex-1 rounded-xl border border-gray-100 bg-white p-4">
+            <Text className="text-xs font-semibold text-uau-gray">Bloqueado</Text>
+            <MoneyText
+              className="mt-1 text-xl font-bold text-uau-black"
+              value={getNumber(wallet, ["blockedBalance"], 0)}
+            />
           </View>
         </View>
 
+        {/* Extrato */}
         <View className="gap-3">
-          <Text className="text-xl font-bold text-uau-black">Extrato</Text>
+          <View className="border-l-4 border-uau-teal pl-3">
+            <Text className="text-xl font-bold text-uau-black">Extrato</Text>
+          </View>
+
           {statement.length === 0 && !statementQuery.isLoading ? (
             <EmptyState title="Sem movimentações" description="Quando houver cashback, seu extrato aparecerá aqui." />
           ) : null}
 
           {statement.map((item, index) => {
             const record = asRecord(item);
+            const amount = getNumber(record, ["amount"], 0);
+            const isCredit = amount >= 0;
+
             return (
               <Card key={getString(record, ["id"], String(index))}>
-                <View className="flex-row justify-between gap-3">
+                <View className="flex-row items-center justify-between gap-3">
                   <View className="flex-1">
                     <Text className="font-semibold text-uau-black">
                       {getString(record, ["description", "origin", "type"], "Movimentação")}
                     </Text>
                     <DateText className="mt-1 text-xs text-uau-gray" value={getString(record, ["createdAt"])} />
                   </View>
-                  <MoneyText className="font-bold text-uau-black" value={getNumber(record, ["amount"], 0)} />
+                  <MoneyText
+                    className={`font-bold ${isCredit ? "text-uau-teal" : "text-red-500"}`}
+                    value={amount}
+                  />
                 </View>
               </Card>
             );

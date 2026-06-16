@@ -29,24 +29,37 @@ export default function NotificationsScreen() {
   const readMutation = useMutation({ mutationFn: markAsRead, onSuccess: refreshNotifications });
   const readAllMutation = useMutation({ mutationFn: markAllAsRead, onSuccess: refreshNotifications });
 
+  const unreadCount = notifications.filter((n) => !getString(asRecord(n), ["readAt"])).length;
+
   return (
     <Screen>
       <View className="gap-5">
-        <View className="flex-row items-center justify-between gap-4">
-          <Text className="text-3xl font-bold text-uau-black">Notificacoes</Text>
-          <Button
-            loading={readAllMutation.isPending}
-            onPress={() => readAllMutation.mutate()}
-            title="Ler todas"
-            variant="ghost"
-          />
+        <View className="flex-row items-start justify-between gap-4">
+          <View className="gap-1">
+            <Text className="text-3xl font-bold text-uau-black">Notificações</Text>
+            {unreadCount > 0 ? (
+              <Text className="text-sm text-uau-teal">{unreadCount} não lida{unreadCount > 1 ? "s" : ""}</Text>
+            ) : (
+              <Text className="text-sm text-uau-gray">Tudo em dia</Text>
+            )}
+          </View>
+          {unreadCount > 0 ? (
+            <Button
+              loading={readAllMutation.isPending}
+              onPress={() => readAllMutation.mutate()}
+              title="Ler todas"
+              variant="ghost"
+            />
+          ) : null}
         </View>
 
         {notificationsQuery.isLoading ? <Loading /> : null}
-        {notificationsQuery.error ? <ErrorState message="Nao foi possivel carregar suas notificacoes." /> : null}
+        {notificationsQuery.error ? (
+          <ErrorState message="Não foi possível carregar suas notificações." />
+        ) : null}
 
         {notifications.length === 0 && !notificationsQuery.isLoading ? (
-          <EmptyState title="Nada novo por aqui" description="Suas notificacoes do UAU+ aparecerao nesta tela." />
+          <EmptyState title="Nada novo por aqui" description="Suas notificações do UAU+ aparecerão nesta tela." />
         ) : null}
 
         {notifications.map((item, index) => {
@@ -57,24 +70,30 @@ export default function NotificationsScreen() {
           return (
             <Card key={id}>
               <View className="gap-3">
-                <View className="flex-row justify-between gap-3">
-                  <View className="flex-1">
-                    <Text className="text-lg font-semibold text-uau-black">
-                      {getString(notification, ["title"], "Notificacao")}
+                <View className="flex-row gap-3">
+                  <View className="flex-1 gap-1">
+                    <Text className={`text-base font-semibold ${readAt ? "text-uau-gray" : "text-uau-black"}`}>
+                      {getString(notification, ["title"], "Notificação")}
                     </Text>
-                    <Text className="mt-1 text-sm leading-5 text-uau-gray">{getString(notification, ["body"], "")}</Text>
+                    <Text className="text-sm leading-5 text-uau-gray">
+                      {getString(notification, ["body"], "")}
+                    </Text>
                   </View>
-                  {!readAt ? <View className="mt-1 h-3 w-3 rounded-full bg-uau-green" /> : null}
+                  {!readAt ? (
+                    <View className="mt-1 h-2.5 w-2.5 rounded-full bg-uau-teal" />
+                  ) : null}
                 </View>
-                <DateText className="text-xs text-uau-gray" value={getString(notification, ["createdAt"])} />
-                {!readAt ? (
-                  <Button
-                    loading={readMutation.isPending}
-                    onPress={() => readMutation.mutate(id)}
-                    title="Marcar como lida"
-                    variant="ghost"
-                  />
-                ) : null}
+                <View className="flex-row items-center justify-between">
+                  <DateText className="text-xs text-uau-gray" value={getString(notification, ["createdAt"])} />
+                  {!readAt ? (
+                    <Button
+                      loading={readMutation.isPending}
+                      onPress={() => readMutation.mutate(id)}
+                      title="Marcar como lida"
+                      variant="ghost"
+                    />
+                  ) : null}
+                </View>
               </View>
             </Card>
           );
