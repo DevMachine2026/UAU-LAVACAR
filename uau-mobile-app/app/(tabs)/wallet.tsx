@@ -23,11 +23,11 @@ export default function WalletScreen() {
   const statement = normalizeStatement(statementQuery.data);
 
   return (
-    <Screen>
+    <Screen statusBarStyle="light">
       <View className="gap-5">
-        <View className="gap-1">
-          <Text className="text-3xl font-bold text-uau-black">Minha Carteira</Text>
-          <Text className="text-sm text-uau-gray">Seu saldo e extrato de cashback</Text>
+        <View className="-mx-5 -mt-6 rounded-b-3xl bg-uau-teal px-5 pb-6 pt-4">
+          <Text className="text-2xl font-bold text-white">Minha Carteira</Text>
+          <Text className="mt-1 text-sm text-white/80">Seu saldo e extrato de cashback</Text>
         </View>
 
         {walletQuery.isLoading || statementQuery.isLoading ? <Loading /> : null}
