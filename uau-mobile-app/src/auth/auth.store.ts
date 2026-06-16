@@ -40,7 +40,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     const result = await loginApi(email, password);
     await persistSession(result.accessToken, result.user);
     set({ accessToken: result.accessToken, user: result.user, isAuthenticated: true });
-    router.replace("/(tabs)/home");
   },
 
   async register(payload) {
@@ -48,7 +47,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     const result = await loginApi(payload.email, payload.password);
     await persistSession(result.accessToken, result.user);
     set({ accessToken: result.accessToken, user: result.user, isAuthenticated: true });
-    router.replace("/(tabs)/home");
   },
 
   async logout() {
