@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import { Button } from "@/components/Button";
 import { ErrorState } from "@/components/ErrorState";
 import { Loading } from "@/components/Loading";
@@ -95,8 +96,10 @@ export default function HomeScreen() {
     : "Seu UAU+ em um só lugar.";
 
   return (
-    <Screen>
-      <View className="gap-5">
+    <>
+      <StatusBar style="light" />
+      <Screen>
+        <View className="gap-5">
         {/* Header teal */}
         <View className="-mx-5 -mt-6 rounded-b-3xl bg-uau-teal px-5 pb-6 pt-4">
           <View className="flex-row items-start justify-between">
@@ -133,7 +136,7 @@ export default function HomeScreen() {
           </View>
           <View className="flex-1 rounded-xl border border-gray-100 bg-white p-3">
             <Text className="text-xs font-semibold text-uau-teal">Veículos</Text>
-            <Text className="mt-1 text-lg font-bold text-uau-black">0</Text>
+            <Text className="mt-1 text-lg font-bold text-uau-black">—</Text>
           </View>
           <View className="flex-1 rounded-xl border border-gray-100 bg-white p-3">
             <Text className="text-xs font-semibold text-uau-teal">Assinatura</Text>
@@ -219,7 +222,8 @@ export default function HomeScreen() {
             </ScrollView>
           </View>
         ) : null}
-      </View>
-    </Screen>
+        </View>
+      </Screen>
+    </>
   );
 }
