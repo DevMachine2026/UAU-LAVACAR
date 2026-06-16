@@ -37,40 +37,18 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
 
   async login(email, password) {
-    set({ isLoading: true });
-    try {
-      const result = await loginApi(email, password);
-      await persistSession(result.accessToken, result.user);
-      set({
-        accessToken: result.accessToken,
-        user: result.user,
-        isAuthenticated: true,
-        isLoading: false
-      });
-      router.replace("/(tabs)/home");
-    } catch (error) {
-      set({ isLoading: false });
-      throw error;
-    }
+    const result = await loginApi(email, password);
+    await persistSession(result.accessToken, result.user);
+    set({ accessToken: result.accessToken, user: result.user, isAuthenticated: true });
+    router.replace("/(tabs)/home");
   },
 
   async register(payload) {
-    set({ isLoading: true });
-    try {
-      await registerCustomer(payload);
-      const result = await loginApi(payload.email, payload.password);
-      await persistSession(result.accessToken, result.user);
-      set({
-        accessToken: result.accessToken,
-        user: result.user,
-        isAuthenticated: true,
-        isLoading: false
-      });
-      router.replace("/(tabs)/home");
-    } catch (error) {
-      set({ isLoading: false });
-      throw error;
-    }
+    await registerCustomer(payload);
+    const result = await loginApi(payload.email, payload.password);
+    await persistSession(result.accessToken, result.user);
+    set({ accessToken: result.accessToken, user: result.user, isAuthenticated: true });
+    router.replace("/(tabs)/home");
   },
 
   async logout() {
