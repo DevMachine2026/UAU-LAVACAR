@@ -96,10 +96,9 @@ export default function HomeScreen() {
     : "Seu UAU+ em um só lugar.";
 
   return (
-    <>
+    <Screen>
       <StatusBar style="light" />
-      <Screen>
-        <View className="gap-5">
+      <View className="gap-5">
         {/* Header teal */}
         <View className="-mx-5 -mt-6 rounded-b-3xl bg-uau-teal px-5 pb-6 pt-4">
           <View className="flex-row items-start justify-between">
@@ -224,6 +223,5 @@ export default function HomeScreen() {
         ) : null}
         </View>
       </Screen>
-    </>
   );
 }
