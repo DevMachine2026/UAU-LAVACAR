@@ -19,12 +19,12 @@ export default function PartnersScreen() {
   const partners = normalizePartners(partnersQuery.data);
 
   return (
-    <Screen>
+    <Screen statusBarStyle="light">
       <View className="gap-5">
-        <View className="gap-2">
-          <Text className="text-3xl font-bold text-uau-black">Parceiros</Text>
-          <Text className="text-base leading-6 text-uau-gray">
-            Use cashback como desconto operacional no parceiro e ganhe novo cashback sobre o valor pago.
+        <View className="-mx-5 -mt-6 rounded-b-3xl bg-uau-teal px-5 pb-6 pt-4">
+          <Text className="text-2xl font-bold text-white">Parceiros</Text>
+          <Text className="mt-1 text-sm text-white/80">
+            Use cashback como desconto e ganhe novo cashback sobre o valor pago.
           </Text>
         </View>
 

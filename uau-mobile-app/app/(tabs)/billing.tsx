@@ -45,11 +45,11 @@ export default function BillingScreen() {
   }
 
   return (
-    <Screen>
+    <Screen statusBarStyle="light">
       <View className="gap-5">
-        <View className="gap-1">
-          <Text className="text-3xl font-bold text-uau-black">Cobranças</Text>
-          <Text className="text-sm text-uau-gray">Acompanhe suas faturas e histórico</Text>
+        <View className="-mx-5 -mt-6 rounded-b-3xl bg-uau-teal px-5 pb-6 pt-4">
+          <Text className="text-2xl font-bold text-white">Cobranças</Text>
+          <Text className="mt-1 text-sm text-white/80">Acompanhe suas faturas e histórico</Text>
         </View>
 
         {currentQuery.isLoading || historyQuery.isLoading ? <Loading /> : null}
