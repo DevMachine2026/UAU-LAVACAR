@@ -6,11 +6,13 @@ module.exports = {
     extend: {
       colors: {
         uau: {
-          green: "#0BA95B",
-          black: "#101418",
-          gray: "#667085",
-          light: "#F5F7FA",
-          white: "#FFFFFF"
+          teal:   "#009688",
+          maroon: "#7D1C2F",
+          green:  "#0BA95B",
+          black:  "#101418",
+          gray:   "#667085",
+          light:  "#F5F7FA",
+          white:  "#FFFFFF"
         }
       }
     }
