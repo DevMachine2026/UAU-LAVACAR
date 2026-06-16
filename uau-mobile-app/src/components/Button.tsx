@@ -12,14 +12,14 @@ export function Button({ title, onPress, loading = false, variant = "primary" }:
 
   return (
     <Pressable
-      className={`h-12 items-center justify-center rounded-lg ${isPrimary ? "bg-uau-green" : "bg-transparent"}`}
+      className={`h-12 items-center justify-center rounded-lg ${isPrimary ? "bg-uau-teal" : "bg-transparent"}`}
       disabled={loading}
       onPress={onPress}
     >
       {loading ? (
-        <ActivityIndicator color={isPrimary ? "#FFFFFF" : "#0BA95B"} />
+        <ActivityIndicator color={isPrimary ? "#FFFFFF" : "#009688"} />
       ) : (
-        <Text className={`font-semibold ${isPrimary ? "text-white" : "text-uau-green"}`}>{title}</Text>
+        <Text className={`font-semibold ${isPrimary ? "text-white" : "text-uau-teal"}`}>{title}</Text>
       )}
     </Pressable>
   );
