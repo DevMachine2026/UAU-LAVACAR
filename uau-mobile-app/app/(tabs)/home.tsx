@@ -27,7 +27,6 @@ const SHORTCUTS = [
   { label: "Minha Rede",     icon: "people-outline",    href: "/referrals",       gradient: TEAL_GRADIENT },
   { label: "Meus Veículos",  icon: "car-outline",       href: "/vehicles",        gradient: TEAL_GRADIENT },
   { label: "Histórico",      icon: "time-outline",      href: "/history",         gradient: MAROON_GRADIENT },
-  { label: "Perfil",         icon: "person-outline",    href: "/(tabs)/profile",  gradient: MAROON_GRADIENT },
 ] as const;
 
 function normalizeCount(value: unknown) {
