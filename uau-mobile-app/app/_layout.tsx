@@ -12,13 +12,13 @@ import { queryClient } from "@/store/query-client";
 export default function RootLayout() {
   const restoreSession = useAuthStore((state) => state.restoreSession);
   const isLoading = useAuthStore((state) => state.isLoading);
-  const [fontsLoaded] = useFonts({ ...Ionicons.font });
+  const [fontsLoaded, fontError] = useFonts({ ...Ionicons.font });
 
   useEffect(() => {
     void restoreSession();
   }, [restoreSession]);
 
-  if (isLoading || !fontsLoaded) {
+  if (isLoading || (!fontsLoaded && !fontError)) {
     return <Loading />;
   }
 
