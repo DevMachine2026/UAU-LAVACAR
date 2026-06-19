@@ -52,6 +52,117 @@ function statusColor(status: string): string {
   return "#EF4444";
 }
 
+type Step = { label: string; description: string; icon: string; href: string; done: boolean };
+
+function OnboardingSteps({ hasPlan, hasBalance }: { hasPlan: boolean; hasBalance: boolean }) {
+  const steps: Step[] = [
+    {
+      label: "Crie sua conta",
+      description: "Você já está dentro!",
+      icon: "checkmark-circle",
+      href: "",
+      done: true,
+    },
+    {
+      label: "Assine um plano",
+      description: hasPlan ? "Plano ativo" : "Escolha o plano ideal para você",
+      icon: hasPlan ? "checkmark-circle" : "star-outline",
+      href: "/subscribe",
+      done: hasPlan,
+    },
+    {
+      label: "Cadastre seu veículo",
+      description: "Associe seu carro para fazer check-ins",
+      icon: "car-outline",
+      href: "/vehicles",
+      done: false,
+    },
+    {
+      label: "Ganhe cashback",
+      description: hasBalance ? "Você já tem saldo!" : "Faça check-ins e acumule saldo",
+      icon: hasBalance ? "checkmark-circle" : "wallet-outline",
+      href: "/(tabs)/wallet",
+      done: hasBalance,
+    },
+  ];
+
+  const completedCount = steps.filter((s) => s.done).length;
+  const allDone = completedCount === steps.length;
+
+  if (allDone) return null;
+
+  const pct = Math.round((completedCount / steps.length) * 100);
+
+  return (
+    <View style={{
+      backgroundColor: "white", borderRadius: 20, padding: 16,
+      borderWidth: 1, borderColor: "#F0F0F0",
+      shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
+    }}>
+      {/* Cabeçalho */}
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <View>
+          <Text style={{ fontSize: 14, fontWeight: "700", color: "#101418" }}>Primeiros passos</Text>
+          <Text style={{ fontSize: 12, color: "#667085", marginTop: 2 }}>{completedCount} de {steps.length} concluídos</Text>
+        </View>
+        <View style={{ alignItems: "flex-end" }}>
+          <Text style={{ fontSize: 18, fontWeight: "800", color: "#009688" }}>{pct}%</Text>
+        </View>
+      </View>
+
+      {/* Barra de progresso */}
+      <View style={{ height: 4, backgroundColor: "#F0F0F0", borderRadius: 99, marginBottom: 16 }}>
+        <View style={{ height: 4, backgroundColor: "#009688", borderRadius: 99, width: `${pct}%` }} />
+      </View>
+
+      {/* Passos */}
+      <View style={{ gap: 8 }}>
+        {steps.map((step, i) => (
+          <TouchableOpacity
+            key={i}
+            disabled={step.done || !step.href}
+            onPress={() => step.href && router.push(step.href as any)}
+            style={{
+              flexDirection: "row", alignItems: "center", gap: 12,
+              padding: 10, borderRadius: 12,
+              backgroundColor: step.done ? "#F0FBF9" : "#FAFAFA",
+              opacity: step.done ? 0.8 : 1,
+            }}
+          >
+            <View style={{
+              width: 36, height: 36, borderRadius: 10,
+              backgroundColor: step.done ? "#009688" : "#F0F0F0",
+              alignItems: "center", justifyContent: "center",
+            }}>
+              <Ionicons
+                name={step.done ? "checkmark" : step.icon as any}
+                size={18}
+                color={step.done ? "white" : "#667085"}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{
+                fontSize: 13, fontWeight: "600",
+                color: step.done ? "#009688" : "#101418",
+                textDecorationLine: step.done ? "line-through" : "none",
+              }}>
+                {step.label}
+              </Text>
+              <Text style={{ fontSize: 11, color: "#667085", marginTop: 1 }}>
+                {step.description}
+              </Text>
+            </View>
+            {!step.done && step.href && (
+              <Ionicons name="chevron-forward" size={16} color="#667085" />
+            )}
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
@@ -241,6 +352,9 @@ export default function HomeScreen() {
             ))}
           </View>
         </View>
+
+        {/* ── Primeiros passos (onboarding) ── */}
+        <OnboardingSteps hasPlan={!!planName && normalizedStatus === "Ativa"} hasBalance={balance > 0} />
 
         {/* ── Campanhas ── */}
         {campaigns.length > 0 && (
