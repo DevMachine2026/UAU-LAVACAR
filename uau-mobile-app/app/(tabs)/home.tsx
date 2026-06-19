@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
@@ -175,21 +176,28 @@ export default function HomeScreen() {
 
         {/* ── CTA principal ── */}
         <TouchableOpacity
-          style={{
-            backgroundColor: "#101418",
-            borderRadius: 99,
-            height: 52,
-            alignItems: "center",
-            justifyContent: "center",
-            flexDirection: "row",
-            gap: 8,
-          }}
           onPress={() => router.push(hasBilling ? "/(tabs)/billing" : "/subscribe")}
+          activeOpacity={0.85}
+          style={{ borderRadius: 99, overflow: "hidden" }}
         >
-          <Ionicons name={hasBilling ? "card-outline" : "star-outline"} size={18} color="white" />
-          <Text style={{ color: "white", fontSize: 15, fontWeight: "700" }}>
-            {hasBilling ? "Pagar cobrança atual" : "Assinar agora"}
-          </Text>
+          <LinearGradient
+            colors={hasBilling ? ["#7D1C2F", "#9B2335"] : ["#00B5A4", "#009688"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{
+              height: 52,
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              gap: 8,
+              paddingHorizontal: 24,
+            }}
+          >
+            <Ionicons name={hasBilling ? "card-outline" : "star-outline"} size={18} color="white" />
+            <Text style={{ color: "white", fontSize: 15, fontWeight: "700" }}>
+              {hasBilling ? "Pagar cobrança atual" : "Assinar agora"}
+            </Text>
+          </LinearGradient>
         </TouchableOpacity>
 
         {/* ── Atalhos rápidos (grid 3×2 compacto) ── */}
