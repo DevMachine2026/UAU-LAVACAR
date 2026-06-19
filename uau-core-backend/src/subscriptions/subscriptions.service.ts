@@ -1,5 +1,11 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, User, UserRole } from '@prisma/client';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { PlanPeriodicity, Prisma, User, UserRole } from '@prisma/client';
 import { AsaasService } from '../asaas/asaas.service';
 import { AsaasBillingType, AsaasPaymentResponse, AsaasPixQrCodeResponse } from '../asaas/asaas.types';
 import { paginate } from '../common/dto/pagination.dto';
@@ -12,7 +18,8 @@ import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 export type ResolvedAsaasData = {
   asaasCustomerId: string;
   asaasCustomerIsNew: boolean;
-  asaasSubscriptionId: string;
+  // null para planos não-MONTHLY: cobrança única sem subscription recorrente no Asaas
+  asaasSubscriptionId: string | null;
   payment: AsaasPaymentResponse;
   pix: AsaasPixQrCodeResponse | null;
   billingType: AsaasBillingType;
@@ -61,6 +68,21 @@ export class SubscriptionsService {
       throw new NotFoundException('Veículo não encontrado para este cliente');
     }
 
+    // Rejeitar imediatamente se o veículo já tem assinatura ativa — evita chamada HTTP desnecessária ao Asaas
+    if (createDto.vehicleId) {
+      const existingActive = await this.prisma.subscription.findFirst({
+        where: {
+          vehicleId: createDto.vehicleId,
+          status: { in: ['ACTIVE', 'OVERDUE'] },
+        },
+      });
+      if (existingActive) {
+        throw new ConflictException(
+          'Este veículo já possui uma assinatura ativa. Cancele a assinatura atual antes de criar uma nova.',
+        );
+      }
+    }
+
     const recurringAmount =
       createDto.recurringAmount ?? (await resolvePlanAmount(this.prisma, plan, vehicle));
     const firstChargeAmount = createDto.firstChargeAmount ?? recurringAmount;
@@ -72,31 +94,49 @@ export class SubscriptionsService {
     // Step 1: HTTP calls — outside any DB transaction
     const asaasData = await this.resolveAsaasData(
       customer,
-      { name: plan.name },
+      { name: plan.name, periodicity: plan.periodicity },
       createDto,
       firstChargeAmount,
       recurringAmount,
     );
 
-    // Step 2: DB-only transaction
+    // Step 2: DB-only transaction — verifica conflito novamente para reduzir race condition
     return this.prisma.$transaction(async (tx) => {
+      if (createDto.vehicleId) {
+        const stillActive = await tx.subscription.findFirst({
+          where: {
+            vehicleId: createDto.vehicleId,
+            status: { in: ['ACTIVE', 'OVERDUE'] },
+          },
+        });
+        if (stillActive) {
+          throw new ConflictException(
+            'Este veículo já possui uma assinatura ativa. Cancele a assinatura atual antes de criar uma nova.',
+          );
+        }
+      }
+
       if (asaasData.asaasCustomerIsNew) {
         await tx.customer.update({
           where: { id: customer.id },
           data: { asaasCustomerId: asaasData.asaasCustomerId },
         });
       }
-      return this.createDbRecord(tx, resolvedCustomerId, plan.id, asaasData);
+      return this.createDbRecord(tx, resolvedCustomerId, plan.id, asaasData, createDto.vehicleId);
     });
   }
 
   /**
    * Executes all Asaas HTTP calls and returns the resolved data.
    * Must be called BEFORE any prisma.$transaction to keep HTTP outside DB locks.
+   *
+   * Branching on periodicity:
+   *   MONTHLY      → Asaas subscription (recorrente, cycle MONTHLY) + first payment
+   *   QUARTERLY/SEMIANNUALLY/YEARLY → single Asaas payment (cobrança única pelo valor cheio do período)
    */
   async resolveAsaasData(
     customer: CustomerForAsaas,
-    plan: { name: string },
+    plan: { name: string; periodicity: PlanPeriodicity },
     createDto: Pick<CreateSubscriptionDto, 'paymentMethodId' | 'vehicleId'>,
     firstChargeAmount: number,
     recurringAmount: number,
@@ -124,27 +164,58 @@ export class SubscriptionsService {
     const billingType = this.resolveBillingType(createDto.paymentMethodId);
     const nextDueDate = this.formatAsaasDate(new Date());
 
-    const asaasSubscription = await this.asaasService.createSubscription({
-      customer: asaasCustomerId,
-      billingType,
-      value: recurringAmount,
-      nextDueDate,
-      cycle: 'MONTHLY',
-      description: `Assinatura UAU+ — ${plan.name}`,
-      externalReference: customer.id,
-    });
-
-    const payment = await this.asaasService.resolveFirstSubscriptionPayment(
-      asaasSubscription.id,
-      {
+    if (plan.periodicity === 'MONTHLY') {
+      // Plano mensal: subscription recorrente no Asaas
+      const asaasSubscription = await this.asaasService.createSubscription({
         customer: asaasCustomerId,
         billingType,
-        value: firstChargeAmount,
-        dueDate: nextDueDate,
-        description: `Primeira cobrança — ${plan.name}`,
+        value: recurringAmount,
+        nextDueDate,
+        cycle: 'MONTHLY',
+        description: `Assinatura UAU+ — ${plan.name}`,
         externalReference: customer.id,
-      },
-    );
+      });
+
+      const payment = await this.asaasService.resolveFirstSubscriptionPayment(
+        asaasSubscription.id,
+        {
+          customer: asaasCustomerId,
+          billingType,
+          value: firstChargeAmount,
+          dueDate: nextDueDate,
+          description: `Primeira cobrança — ${plan.name}`,
+          externalReference: customer.id,
+        },
+      );
+
+      const pix =
+        billingType === 'PIX' && payment.id
+          ? await this.asaasService.getPaymentPixQrCode(payment.id)
+          : null;
+
+      return {
+        asaasCustomerId,
+        asaasCustomerIsNew,
+        asaasSubscriptionId: asaasSubscription.id,
+        payment,
+        pix,
+        billingType,
+        nextDueDate,
+        recurringAmount,
+        firstChargeAmount,
+        planName: plan.name,
+      };
+    }
+
+    // Planos não-mensais: cobrança única pelo valor cheio do período
+    const payment = await this.asaasService.createPayment({
+      customer: asaasCustomerId,
+      billingType,
+      value: firstChargeAmount,
+      dueDate: nextDueDate,
+      description: `${plan.name}`,
+      externalReference: customer.id,
+    });
 
     const pix =
       billingType === 'PIX' && payment.id
@@ -154,7 +225,7 @@ export class SubscriptionsService {
     return {
       asaasCustomerId,
       asaasCustomerIsNew,
-      asaasSubscriptionId: asaasSubscription.id,
+      asaasSubscriptionId: null,
       payment,
       pix,
       billingType,
@@ -174,11 +245,13 @@ export class SubscriptionsService {
     customerId: string,
     planId: string,
     asaasData: ResolvedAsaasData,
+    vehicleId?: string,
   ) {
     const subscription = await tx.subscription.create({
       data: {
         customerId,
         planId,
+        vehicleId: vehicleId ?? null,
         status: 'PENDING',
         asaasId: asaasData.asaasSubscriptionId,
       },

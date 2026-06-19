@@ -28,6 +28,7 @@ export class CheckoutService {
       context.planAmount,
       context.balance,
       context.promoBalance,
+      context.welcomeBonusBalance,
     );
 
     return {
@@ -45,6 +46,7 @@ export class CheckoutService {
       context.planAmount,
       context.balance,
       context.promoBalance,
+      context.welcomeBonusBalance,
     );
 
     if (pricing.gatewayAmount <= 0 && dto.paymentMethod !== 'PIX') {
@@ -56,11 +58,24 @@ export class CheckoutService {
     const firstChargeAmount =
       pricing.gatewayAmount > 0 ? pricing.gatewayAmount : 0.01;
 
+    // Rejeitar se o veículo já tem assinatura ativa — mesma regra aplicada em subscriptions.service
+    const existingActive = await this.prisma.subscription.findFirst({
+      where: {
+        vehicleId: dto.vehicleId,
+        status: { in: ['ACTIVE', 'OVERDUE'] },
+      },
+    });
+    if (existingActive) {
+      throw new BadRequestException(
+        'Este veículo já possui uma assinatura ativa. Cancele a assinatura atual antes de criar uma nova.',
+      );
+    }
+
     // Step 1: All Asaas HTTP calls — outside any DB transaction.
     // If this fails, no DB changes have occurred.
     const asaasData = await this.subscriptionsService.resolveAsaasData(
       context.customerForAsaas,
-      { name: context.plan.name },
+      { name: context.plan.name, periodicity: context.plan.periodicity },
       { paymentMethodId: dto.paymentMethod, vehicleId: dto.vehicleId },
       firstChargeAmount,
       context.planAmount,
@@ -83,6 +98,7 @@ export class CheckoutService {
           context.customer.id,
           context.plan.id,
           asaasData,
+          dto.vehicleId,
         );
 
         if (pricing.totalCashbackUsed > 0 && context.wallet) {
@@ -92,6 +108,7 @@ export class CheckoutService {
             pricing.promotionalCashbackUsed,
             pricing.realCashbackUsed,
             dbResult.billing.id,
+            pricing.welcomeBonusUsed,
           );
         }
 
@@ -134,6 +151,7 @@ export class CheckoutService {
       value: payment.value,
       planAmount: pricing.planAmount,
       gatewayAmount: pricing.gatewayAmount,
+      welcomeBonusUsed: pricing.welcomeBonusUsed,
       promotionalCashbackUsed: pricing.promotionalCashbackUsed,
       realCashbackUsed: pricing.realCashbackUsed,
       totalCashbackUsed: pricing.totalCashbackUsed,
@@ -197,6 +215,7 @@ export class CheckoutService {
     const planAmount = await resolvePlanAmount(this.prisma, plan, vehicle);
     const balance = Number(customer.wallet?.balance ?? 0);
     const promoBalance = Number(customer.wallet?.promoBalance ?? 0);
+    const welcomeBonusBalance = Number(customer.wallet?.welcomeBonusBalance ?? 0);
 
     return {
       customer,
@@ -212,6 +231,7 @@ export class CheckoutService {
       planAmount,
       balance,
       promoBalance,
+      welcomeBonusBalance,
       wallet: customer.wallet,
     };
   }

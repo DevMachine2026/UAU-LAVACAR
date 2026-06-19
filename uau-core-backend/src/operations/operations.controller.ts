@@ -4,7 +4,8 @@ import { OpenShiftDto } from './dto/open-shift.dto';
 import { CloseShiftDto } from './dto/close-shift.dto';
 import { ManualAttendanceDto } from './dto/manual-attendance.dto';
 import { Roles } from '../common/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { User, UserRole } from '@prisma/client';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('operational')
@@ -85,8 +86,8 @@ export class OperationsController {
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.OPERATOR, UserRole.CUSTOMER)
   @ApiQuery({ name: 'userId', required: false })
   @ApiOperation({ summary: 'Lista atendimentos de um usuário' })
-  getMyAttendances(@Query('userId') userId: string) {
-    return this.svc.getMyAttendances(userId);
+  getMyAttendances(@Query('userId') userId: string, @CurrentUser() user: User) {
+    return this.svc.getMyAttendances(userId, user);
   }
 
   @Get('plate-check/:plate')

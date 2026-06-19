@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpenShiftDto } from './dto/open-shift.dto';
 import { CloseShiftDto } from './dto/close-shift.dto';
@@ -189,12 +189,6 @@ export class OperationsService {
         customer: {
           include: {
             user: { select: { id: true, name: true, email: true, status: true } },
-            subscriptions: {
-              where: { status: { in: ['ACTIVE', 'OVERDUE'] } },
-              include: { plan: true },
-              take: 1,
-              orderBy: { createdAt: 'desc' },
-            },
           },
         },
       },
@@ -216,7 +210,13 @@ export class OperationsService {
     }
 
     const customer = vehicle.customer;
-    const subscription = customer?.subscriptions?.[0] ?? null;
+
+    // Busca por vehicleId para garantir consistência com confirmPlateWash()
+    const subscription = await this.prisma.subscription.findFirst({
+      where: { vehicleId: vehicle.id, status: { in: ['ACTIVE', 'OVERDUE'] } },
+      include: { plan: true },
+      orderBy: { createdAt: 'desc' },
+    });
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -274,19 +274,51 @@ export class OperationsService {
 
   async confirmPlateWash(plate: string, payload: { unitId: string; notes?: string }) {
     const normalizedPlate = plate.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
     const vehicle = await this.prisma.vehicle.findUnique({ where: { plate: normalizedPlate } });
     if (!vehicle) throw new NotFoundException('Veículo não encontrado');
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    await this.prisma.dailyWash.upsert({
-      where: { vehicleId_date: { vehicleId: vehicle.id, date: today } },
-      update: { used: true, usedAt: new Date() },
-      create: { vehicleId: vehicle.id, date: today, used: true, usedAt: new Date() },
+    const subscription = await this.prisma.subscription.findFirst({
+      where: { vehicleId: vehicle.id, status: { in: ['ACTIVE', 'OVERDUE'] } },
     });
 
-    return { ok: true };
+    if (!subscription) {
+      throw new BadRequestException(
+        'Veículo não possui assinatura ativa. Lavagem não pode ser confirmada.',
+      );
+    }
+
+    if (subscription.expiresAt && subscription.expiresAt < new Date()) {
+      // Committed as an independent write so the cancellation persists even after the exception
+      await this.prisma.subscription.update({
+        where: { id: subscription.id },
+        data: { status: 'CANCELLED' },
+      });
+      throw new BadRequestException('Assinatura expirada. Veículo não possui assinatura ativa.');
+    }
+
+    // Transaction guards against concurrent confirmations: re-reads subscription before writing
+    return this.prisma.$transaction(async (tx) => {
+      const current = await tx.subscription.findFirst({
+        where: { vehicleId: vehicle.id, status: { in: ['ACTIVE', 'OVERDUE'] } },
+      });
+      if (!current || (current.expiresAt && current.expiresAt < new Date())) {
+        throw new BadRequestException(
+          'Veículo não possui assinatura ativa. Lavagem não pode ser confirmada.',
+        );
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      await tx.dailyWash.upsert({
+        where: { vehicleId_date: { vehicleId: vehicle.id, date: today } },
+        update: { used: true, usedAt: new Date() },
+        create: { vehicleId: vehicle.id, date: today, used: true, usedAt: new Date() },
+      });
+
+      return { ok: true };
+    });
   }
 
   async cancelDailyWash(id: string) {
@@ -301,8 +333,11 @@ export class OperationsService {
     return { ok: true };
   }
 
-  async getMyAttendances(userId: string) {
-    const customer = await this.prisma.customer.findFirst({ where: { userId } });
+  async getMyAttendances(userId: string, requestingUser?: { id: string; role: UserRole | string }) {
+    const resolvedUserId =
+      requestingUser?.role === UserRole.CUSTOMER ? requestingUser.id : userId;
+
+    const customer = await this.prisma.customer.findFirst({ where: { userId: resolvedUserId } });
     if (!customer) return [];
 
     return this.prisma.attendance.findMany({
