@@ -3,6 +3,7 @@ import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { ListCustomersDto } from './dto/list-customers.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
+import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -20,6 +21,16 @@ export class CustomersController {
   @ApiOperation({ summary: 'Cadastra um novo cliente (registro público via app mobile)' })
   create(@Body() createDto: CreateCustomerDto) {
     return this.customersService.create(createDto);
+  }
+
+  @Patch('me')
+  @Roles(UserRole.CUSTOMER)
+  @ApiOperation({ summary: 'Atualiza nome e/ou telefone do cliente autenticado' })
+  updateMyProfile(
+    @CurrentUser() user: User,
+    @Body() dto: UpdateMyProfileDto,
+  ) {
+    return this.customersService.updateMyProfile(user.id, dto);
   }
 
   @Get()

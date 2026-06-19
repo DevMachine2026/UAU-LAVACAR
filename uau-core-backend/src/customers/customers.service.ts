@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, UserRole, UserStatus, WalletMovementOrigin, WalletMovementType } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
@@ -8,6 +8,7 @@ import { AdminSettingsService } from '../admin-settings/admin-settings.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { ListCustomersDto } from './dto/list-customers.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
+import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 
 function generateReferralCode(): string {
   return 'UAU-' + randomBytes(3).toString('hex').toUpperCase();
@@ -169,6 +170,40 @@ export class CustomersService {
       where: { id: customer.userId },
       data: { status: UserStatus.SUSPECT },
       select: { id: true, status: true },
+    });
+  }
+
+  async updateMyProfile(userId: string, dto: UpdateMyProfileDto) {
+    const userUpdateData: Record<string, string> = {};
+    if (dto.name !== undefined) userUpdateData.name = dto.name.trim();
+
+    const customerUpdateData: Record<string, string> = {};
+    if (dto.phone !== undefined) customerUpdateData.phone = dto.phone.replace(/\D/g, '');
+
+    if (Object.keys(userUpdateData).length === 0 && Object.keys(customerUpdateData).length === 0) {
+      throw new BadRequestException('Nenhum campo para atualizar');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      if (Object.keys(userUpdateData).length > 0) {
+        await tx.user.update({ where: { id: userId }, data: userUpdateData });
+      }
+
+      if (Object.keys(customerUpdateData).length > 0) {
+        await tx.customer.update({ where: { userId }, data: customerUpdateData });
+      }
+
+      return tx.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          status: true,
+          role: true,
+          customer: { select: { phone: true } },
+        },
+      });
     });
   }
 
