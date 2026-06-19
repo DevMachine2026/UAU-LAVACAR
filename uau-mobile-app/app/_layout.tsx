@@ -17,12 +17,13 @@ export default function RootLayout() {
 
   useEffect(() => {
     async function prepare() {
-      // Carrega fonte e sessão em paralelo; timeout de 3s evita trava se asset falhar
+      // Sem plugin nativo (app.json removido), loadAsync não tem conflito de nome 'Ionicons' vs 'ionicons'.
+      // Timeout de 5s só para fonte — sessão sempre é aguardada completamente.
       await Promise.all([
         Promise.race([
           Font.loadAsync(Ionicons.font),
-          new Promise<void>((resolve) => setTimeout(resolve, 3000)),
-        ]).catch(() => {}),
+          new Promise<void>((_, reject) => setTimeout(() => reject(new Error("font timeout")), 5000)),
+        ]).catch(() => { /* se font falhar, app continua sem ícones */ }),
         restoreSession(),
       ]);
       setAppReady(true);
