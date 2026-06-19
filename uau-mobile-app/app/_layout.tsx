@@ -4,7 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ToastProvider } from "@/components/Toast";
 import { useAuthStore } from "@/auth/auth.store";
 import { queryClient } from "@/store/query-client";
@@ -14,21 +14,25 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const restoreSession = useAuthStore((state) => state.restoreSession);
   const isLoading = useAuthStore((state) => state.isLoading);
-  // Fonts são pré-carregadas pelo plugin expo-font no app.json (native assets).
-  // useFonts ainda é chamado para compatibilidade, mas não bloqueia a splash.
-  useFonts({ ...Ionicons.font });
+  const [fontsLoaded] = useFonts({ ...Ionicons.font });
+  const [fontReady, setFontReady] = useState(false);
 
   useEffect(() => {
     void restoreSession();
   }, [restoreSession]);
 
+  // Aguarda fonts carregarem; fallback de 2s evita splash eterna se asset falhar
   useEffect(() => {
-    if (!isLoading) {
-      void SplashScreen.hideAsync();
-    }
-  }, [isLoading]);
+    if (fontsLoaded) { setFontReady(true); return; }
+    const t = setTimeout(() => setFontReady(true), 2000);
+    return () => clearTimeout(t);
+  }, [fontsLoaded]);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!isLoading && fontReady) void SplashScreen.hideAsync();
+  }, [isLoading, fontReady]);
+
+  if (isLoading || !fontReady) {
     return null;
   }
 
