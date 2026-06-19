@@ -33,11 +33,11 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="notifications" />
-          <Stack.Screen name="subscribe" />
-          <Stack.Screen name="referrals" />
-          <Stack.Screen name="partners" />
-          <Stack.Screen name="vehicles" />
-          <Stack.Screen name="history" />
+          <Stack.Screen name="subscribe/index" />
+          <Stack.Screen name="referrals/index" />
+          <Stack.Screen name="partners/[id]" />
+          <Stack.Screen name="vehicles/index" />
+          <Stack.Screen name="history/index" />
         </Stack>
       </ToastProvider>
     </QueryClientProvider>
