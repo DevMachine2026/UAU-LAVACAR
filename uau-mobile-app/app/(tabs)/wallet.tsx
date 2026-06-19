@@ -82,6 +82,17 @@ export default function WalletScreen() {
           </View>
         </View>
 
+        {getNumber(wallet, ["welcomeBonusBalance"], 0) > 0 ? (
+          <View className="rounded-xl border border-amber-100 bg-amber-50 p-4">
+            <Text className="text-xs font-semibold text-amber-700">Bônus de boas-vindas</Text>
+            <MoneyText
+              className="mt-1 text-xl font-bold text-amber-800"
+              value={getNumber(wallet, ["welcomeBonusBalance"], 0)}
+            />
+            <Text className="mt-1 text-xs text-amber-600">Válido por 7 dias · uso exclusivo em assinaturas</Text>
+          </View>
+        ) : null}
+
         {/* Extrato */}
         <View className="gap-3">
           <View className="border-l-4 border-uau-teal pl-3">

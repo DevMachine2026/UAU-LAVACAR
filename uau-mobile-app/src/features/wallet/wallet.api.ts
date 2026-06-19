@@ -5,6 +5,7 @@ export type Wallet = {
   id?: string;
   balance?: number | string;
   promoBalance?: number | string;
+  welcomeBonusBalance?: number | string;
   availableBalance?: number | string;
   promotionalBalance?: number | string;
   blockedBalance?: number | string;

@@ -15,6 +15,7 @@ export function CheckoutSummary({ preview, unitName, vehiclePlate }: CheckoutSum
   const promotional = getNumber(record, ["promotionalCashbackUsed"], 0);
   const real = getNumber(record, ["realCashbackUsed"], 0);
   const totalCashback = getNumber(record, ["totalCashbackUsed", "cashbackUsed"], promotional + real);
+  const welcomeBonus = getNumber(record, ["welcomeBonusUsed"], 0);
 
   return (
     <Card>
@@ -24,6 +25,7 @@ export function CheckoutSummary({ preview, unitName, vehiclePlate }: CheckoutSum
         <MoneyRow label="Cashback promocional" value={promotional} />
         <MoneyRow label="Cashback real" value={real} />
         <MoneyRow label="Total cashback usado" value={totalCashback} />
+        {welcomeBonus > 0 ? <DiscountMoneyRow label="Bônus de boas-vindas aplicado" value={welcomeBonus} /> : null}
         <MoneyRow label="Valor final gateway" value={getNumber(record, ["gatewayAmount"], 0)} />
         <Row label="Pagamento" value={getString(record, ["paymentMethod"], "-")} />
         {unitName ? <Row label="Unidade" value={unitName} /> : null}
@@ -47,6 +49,15 @@ function MoneyRow({ label, value }: { label: string; value: number }) {
     <View className="flex-row justify-between gap-3">
       <Text className="text-sm text-uau-gray">{label}</Text>
       <MoneyText className="text-sm font-semibold text-uau-black" value={value} />
+    </View>
+  );
+}
+
+function DiscountMoneyRow({ label, value }: { label: string; value: number }) {
+  return (
+    <View className="flex-row justify-between gap-3">
+      <Text className="text-sm text-amber-700">{label}</Text>
+      <MoneyText className="text-sm font-semibold text-amber-700" value={-value} />
     </View>
   );
 }

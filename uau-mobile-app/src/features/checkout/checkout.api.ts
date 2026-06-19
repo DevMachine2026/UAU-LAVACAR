@@ -17,6 +17,7 @@ export type CheckoutPreview = {
   realCashbackUsed?: number | string;
   totalCashbackUsed?: number | string;
   cashbackUsed?: number | string;
+  welcomeBonusUsed?: number | string;
   gatewayAmount?: number | string;
   paymentMethod?: string;
   [key: string]: unknown;
@@ -37,6 +38,7 @@ export type CheckoutConfirmResult = {
   promotionalCashbackUsed?: number | string;
   realCashbackUsed?: number | string;
   totalCashbackUsed?: number | string;
+  welcomeBonusUsed?: number | string;
   billingCycle?: {
     id?: string;
     status?: string;
