@@ -56,22 +56,22 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   async restoreSession() {
-    set({ isLoading: true });
-    const accessToken = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
-
-    if (!accessToken) {
-      set({ accessToken: null, user: null, isAuthenticated: false, isLoading: false });
-      return;
-    }
-
-    const cachedUser = await SecureStore.getItemAsync(USER_KEY);
-    if (!cachedUser) {
-      await clearSession();
-      set({ accessToken: null, user: null, isAuthenticated: false, isLoading: false });
-      return;
-    }
-
     try {
+      set({ isLoading: true });
+      const accessToken = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+
+      if (!accessToken) {
+        set({ accessToken: null, user: null, isAuthenticated: false, isLoading: false });
+        return;
+      }
+
+      const cachedUser = await SecureStore.getItemAsync(USER_KEY);
+      if (!cachedUser) {
+        await clearSession();
+        set({ accessToken: null, user: null, isAuthenticated: false, isLoading: false });
+        return;
+      }
+
       const user = JSON.parse(cachedUser) as ApiUser;
       set({ accessToken, user, isAuthenticated: true, isLoading: false });
       try {
@@ -82,7 +82,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         // Mantém usuário em cache até existir rota de perfil no backend.
       }
     } catch {
-      await clearSession();
+      // Qualquer falha inesperada do SecureStore ou keystore → vai para login
+      await clearSession().catch(() => {});
       set({ accessToken: null, user: null, isAuthenticated: false, isLoading: false });
     }
   },

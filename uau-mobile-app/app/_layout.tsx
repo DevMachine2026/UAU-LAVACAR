@@ -14,19 +14,21 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const restoreSession = useAuthStore((state) => state.restoreSession);
   const isLoading = useAuthStore((state) => state.isLoading);
-  const [fontsLoaded] = useFonts({ ...Ionicons.font });
+  // Fonts são pré-carregadas pelo plugin expo-font no app.json (native assets).
+  // useFonts ainda é chamado para compatibilidade, mas não bloqueia a splash.
+  useFonts({ ...Ionicons.font });
 
   useEffect(() => {
     void restoreSession();
   }, [restoreSession]);
 
   useEffect(() => {
-    if (!isLoading && fontsLoaded) {
+    if (!isLoading) {
       void SplashScreen.hideAsync();
     }
-  }, [isLoading, fontsLoaded]);
+  }, [isLoading]);
 
-  if (isLoading || !fontsLoaded) {
+  if (isLoading) {
     return null;
   }
 
