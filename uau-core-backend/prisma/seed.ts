@@ -39,6 +39,9 @@ async function main() {
     { key: 'platformName', value: 'UAU+' },
     { key: 'cashbackExpiryDays', value: '30' },
     { key: 'maxWashesPerDay', value: '1' },
+    { key: 'WELCOME_BONUS_AMOUNT', value: '21.00' },
+    { key: 'WELCOME_BONUS_DAILY_DECAY', value: '3.00' },
+    { key: 'REFERRAL_BONUS_AMOUNT', value: '10.00' },
   ];
 
   for (const setting of defaultSettings) {

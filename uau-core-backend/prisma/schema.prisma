@@ -48,6 +48,13 @@ enum BillingStatus {
   REFUNDED
 }
 
+enum PlanPeriodicity {
+  MONTHLY
+  QUARTERLY
+  SEMIANNUALLY
+  YEARLY
+}
+
 enum WalletMovementType {
   CREDIT
   DEBIT
@@ -62,6 +69,8 @@ enum WalletMovementOrigin {
   CASHBACK_EXPIRY
   MANUAL_ADJUSTMENT
   BILLING_DEDUCTION
+  WELCOME_BONUS
+  REFERRAL_BONUS
 }
 
 enum ShiftStatus {
@@ -105,6 +114,11 @@ enum AntiFraudFlagSeverity {
   MEDIUM
   HIGH
   CRITICAL
+}
+
+enum PurchasePaymentMethod {
+  PIX
+  CREDIT_CARD
 }
 
 // ─── User ──────────────────────────────────────────────────────────────────
@@ -256,6 +270,7 @@ model Plan {
   allowedEndTime       String?
   allowAllDays         Boolean      @default(true)
   maxVehicles          Int          @default(1)
+  periodicity          PlanPeriodicity @default(MONTHLY)
   isActive             Boolean      @default(true)
 
   availabilities    PlanAvailability[]
@@ -421,6 +436,7 @@ model Customer {
   billingHistory      BillingHistory[]
   attendances         Attendance[]
   partnerTransactions PartnerTransaction[]
+  individualPurchases IndividualServicePurchase[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -442,8 +458,10 @@ model Vehicle {
 
   customer     Customer             @relation(fields: [customerId], references: [id])
   sizeCategory VehicleSizeCategory? @relation(fields: [sizeCategoryId], references: [id])
-  dailyWashes  DailyWash[]
-  attendances  Attendance[]
+  dailyWashes   DailyWash[]
+  attendances   Attendance[]
+  subscriptions Subscription[]
+  individualPurchases IndividualServicePurchase[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -460,6 +478,7 @@ model Subscription {
   id         String             @id @default(cuid())
   customerId String
   planId     String
+  vehicleId  String?
   status     SubscriptionStatus @default(PENDING)
   asaasId    String?            @unique
   startedAt  DateTime?
@@ -467,6 +486,7 @@ model Subscription {
 
   customer       Customer         @relation(fields: [customerId], references: [id])
   plan           Plan             @relation(fields: [planId], references: [id])
+  vehicle        Vehicle?         @relation(fields: [vehicleId], references: [id])
   billingHistory BillingHistory[]
 
   createdAt DateTime @default(now())
@@ -474,28 +494,31 @@ model Subscription {
 
   @@index([customerId])
   @@index([planId])
+  @@index([vehicleId])
   @@index([status])
   @@index([customerId, status])
   @@map("subscriptions")
 }
 
 model BillingHistory {
-  id               String        @id @default(cuid())
-  customerId       String
-  subscriptionId   String?
-  amount           Decimal       @db.Decimal(10, 2)
-  status           BillingStatus @default(PENDING)
-  asaasId          String?       @unique
-  dueDate          DateTime?
-  paidAt           DateTime?
-  description      String?
-  invoiceUrl       String?
-  pixQrCode        String?       @db.Text
-  pixCopyPaste     String?       @db.Text
-  bankSlipBarCode  String?
+  id                   String        @id @default(cuid())
+  customerId           String
+  subscriptionId       String?
+  individualPurchaseId String?       @unique
+  amount               Decimal       @db.Decimal(10, 2)
+  status               BillingStatus @default(PENDING)
+  asaasId              String?       @unique
+  dueDate              DateTime?
+  paidAt               DateTime?
+  description          String?
+  invoiceUrl           String?
+  pixQrCode            String?       @db.Text
+  pixCopyPaste         String?       @db.Text
+  bankSlipBarCode      String?
 
-  customer     Customer      @relation(fields: [customerId], references: [id])
-  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+  customer           Customer                   @relation(fields: [customerId], references: [id])
+  subscription       Subscription?              @relation(fields: [subscriptionId], references: [id])
+  individualPurchase IndividualServicePurchase? @relation(fields: [individualPurchaseId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -511,14 +534,16 @@ model BillingHistory {
 // ─── Wallet ────────────────────────────────────────────────────────────────
 
 model Wallet {
-  id             String  @id @default(cuid())
-  customerId     String  @unique
-  balance        Decimal @default(0) @db.Decimal(10, 2)
-  promoBalance   Decimal @default(0) @db.Decimal(10, 2)
-  blockedBalance Decimal @default(0) @db.Decimal(10, 2)
+  id                  String  @id @default(cuid())
+  customerId          String  @unique
+  balance             Decimal @default(0) @db.Decimal(10, 2)
+  promoBalance        Decimal @default(0) @db.Decimal(10, 2)
+  welcomeBonusBalance Decimal @default(0) @db.Decimal(10, 2)
+  blockedBalance      Decimal @default(0) @db.Decimal(10, 2)
 
-  customer  Customer        @relation(fields: [customerId], references: [id])
-  movements WalletMovement[]
+  customer          Customer           @relation(fields: [customerId], references: [id])
+  movements         WalletMovement[]
+  welcomeBonusGrant WelcomeBonusGrant?
 
   updatedAt DateTime @updatedAt
 
@@ -771,9 +796,10 @@ model SecurityLog {
 // ─── Referrals ─────────────────────────────────────────────────────────────
 
 model Referral {
-  id         String @id @default(cuid())
-  referrerId String
-  referredId String @unique
+  id            String  @id @default(cuid())
+  referrerId    String
+  referredId    String  @unique
+  rewardGranted Boolean @default(false)
 
   referrer User @relation("ReferrerUser", fields: [referrerId], references: [id])
   referred User @relation("ReferredUser", fields: [referredId], references: [id])
@@ -782,6 +808,20 @@ model Referral {
 
   @@index([referrerId])
   @@map("referrals")
+}
+
+// ─── Welcome Bonus ─────────────────────────────────────────────────────────
+
+model WelcomeBonusGrant {
+  id             String    @id @default(cuid())
+  cpf            String    @unique
+  walletId       String    @unique
+  grantedAt      DateTime  @default(now())
+  fullyExpiredAt DateTime?
+
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@map("welcome_bonus_grants")
 }
 
 // ─── Notifications ─────────────────────────────────────────────────────────
@@ -831,6 +871,64 @@ model PartnerTransaction {
   @@index([status])
   @@index([createdAt])
   @@map("partner_transactions")
+}
+
+// ─── Wash Services & Individual Purchases ──────────────────────────────────
+
+model WashService {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  price       Decimal @db.Decimal(10, 2)
+  isActive    Boolean @default(true)
+
+  purchaseItems IndividualServicePurchaseItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("wash_services")
+}
+
+model IndividualServicePurchase {
+  id             String                @id @default(cuid())
+  customerId     String
+  vehicleId      String
+  originalAmount Decimal               @db.Decimal(10, 2)
+  discountAmount Decimal               @default(0) @db.Decimal(10, 2)
+  finalAmount    Decimal               @db.Decimal(10, 2)
+  status         BillingStatus         @default(PENDING)
+  paymentMethod  PurchasePaymentMethod
+
+  customer Customer                       @relation(fields: [customerId], references: [id])
+  vehicle  Vehicle                        @relation(fields: [vehicleId], references: [id])
+  items    IndividualServicePurchaseItem[]
+  billing  BillingHistory?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([vehicleId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("individual_service_purchases")
+}
+
+model IndividualServicePurchaseItem {
+  id         String  @id @default(cuid())
+  purchaseId String
+  serviceId  String
+  quantity   Int     @default(1)
+  unitPrice  Decimal @db.Decimal(10, 2)
+
+  purchase IndividualServicePurchase @relation(fields: [purchaseId], references: [id])
+  service  WashService               @relation(fields: [serviceId], references: [id])
+
+  @@index([purchaseId])
+  @@index([serviceId])
+  @@map("individual_service_purchase_items")
 }
 
 // ─── Auth ──────────────────────────────────────────────────────────────────
