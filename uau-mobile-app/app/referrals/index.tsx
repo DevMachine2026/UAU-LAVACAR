@@ -1,6 +1,6 @@
 import * as Clipboard from "expo-clipboard";
 import { useMemo, useState } from "react";
-import { Text, View } from "react-native";
+import { Share, Text, View } from "react-native";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
@@ -46,6 +46,13 @@ export default function ReferralsScreen() {
     toast.show(type === "code" ? "Código copiado!" : "Link copiado!", "success");
   }
 
+  async function shareReferral() {
+    await Share.share({
+      message: `Baixe o UAU+ Lavacar e ganhe R$21 de bônus! Use meu código: ${referralCode}\nhttps://uau.app/convite/${referralCode}`,
+      title: "UAU+ Lavacar",
+    });
+  }
+
   const isEmpty =
     !networkQuery.isLoading &&
     !networkQuery.error &&
@@ -85,6 +92,11 @@ export default function ReferralsScreen() {
                 void copy(referralCode, "code");
               }}
               title={copied === "code" ? "Codigo copiado" : "Copiar codigo"}
+            />
+            <Button
+              onPress={() => void shareReferral()}
+              title="Compartilhar"
+              variant="ghost"
             />
 
             <View className="gap-2 rounded-lg bg-uau-light p-3">

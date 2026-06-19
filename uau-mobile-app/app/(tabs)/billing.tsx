@@ -1,7 +1,7 @@
 import * as Clipboard from "expo-clipboard";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Text, View } from "react-native";
+import { Linking, Text, View } from "react-native";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { DateText } from "@/components/DateText";
@@ -21,13 +21,16 @@ function normalizeHistory(value: unknown) {
   return asArray(record.items ?? record.data);
 }
 
+const STATUS_LABELS: Record<string, { bg: string; text: string; label: string }> = {
+  PENDING:   { bg: "#FFF8E1", text: "#F57F17", label: "Pendente" },
+  PAID:      { bg: "#E8F5E9", text: "#2E7D32", label: "Pago" },
+  OVERDUE:   { bg: "#FFEBEE", text: "#C62828", label: "Vencido" },
+  CANCELLED: { bg: "#FAFAFA", text: "#616161", label: "Cancelado" },
+  REFUNDED:  { bg: "#FAFAFA", text: "#616161", label: "Reembolsado" },
+};
+
 function getStatusStyle(status: string): { bg: string; text: string; label: string } {
-  const s = status.toLowerCase();
-  if (s.includes("ativ") || s.includes("pag")) return { bg: "#E8F5E9", text: "#2E7D32", label: "Pago" };
-  if (s.includes("pend") || s.includes("aguard")) return { bg: "#FFF8E1", text: "#F57F17", label: "Pendente" };
-  if (s.includes("venc") || s.includes("atras")) return { bg: "#FFEBEE", text: "#C62828", label: "Vencido" };
-  if (s.includes("cancel")) return { bg: "#FAFAFA", text: "#616161", label: "Cancelado" };
-  return { bg: "#F5F5F5", text: "#616161", label: status };
+  return STATUS_LABELS[status?.toUpperCase()] ?? { bg: "#F5F5F5", text: "#616161", label: status ?? "" };
 }
 
 export default function BillingScreen() {
@@ -40,6 +43,8 @@ export default function BillingScreen() {
   const history = normalizeHistory(historyQuery.data);
   const pixCopyPaste = getString(billing, ["pixCopyPaste"]) || getString(asaasPayment, ["pixCopyPaste"]);
   const pixQrCode = getString(billing, ["pixQrCode"]) || getString(asaasPayment, ["pixQrCode"]);
+  const invoiceUrl = getString(billing, ["invoiceUrl"]) || getString(asaasPayment, ["invoiceUrl"]);
+  const planName = getString(getNestedRecord(billing, ["subscription", "plan"]), ["name"]);
 
   async function copyPix() {
     if (!pixCopyPaste) return;
@@ -78,7 +83,10 @@ export default function BillingScreen() {
             <View className="overflow-hidden rounded-2xl border border-gray-100 bg-white">
               <View className="border-l-4 border-uau-teal p-4">
                 <View className="flex-row items-center justify-between gap-3">
-                  <Text className="text-lg font-bold text-uau-black">Cobrança atual</Text>
+                  <View className="flex-1 gap-0.5">
+                    <Text className="text-lg font-bold text-uau-black">Cobrança atual</Text>
+                    {planName ? <Text className="text-xs text-uau-gray" numberOfLines={1}>{planName}</Text> : null}
+                  </View>
                   <View style={{ backgroundColor: statusStyle.bg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 99 }}>
                     <Text style={{ color: statusStyle.text, fontSize: 12, fontWeight: "600" }}>{statusStyle.label}</Text>
                   </View>
@@ -108,6 +116,15 @@ export default function BillingScreen() {
                     {pixQrCode ? <Text className="text-xs leading-5 text-uau-gray" numberOfLines={3}>{pixQrCode}</Text> : null}
                     {pixCopyPaste ? <Text className="text-xs leading-5 text-uau-gray" numberOfLines={3}>{pixCopyPaste}</Text> : null}
                     <Button onPress={() => void copyPix()} title={copied ? "✓ Código copiado" : "Copiar código PIX"} />
+                  </View>
+                ) : null}
+                {invoiceUrl ? (
+                  <View className="mt-3">
+                    <Button
+                      onPress={() => void Linking.openURL(invoiceUrl)}
+                      title="Ver fatura completa ↗"
+                      variant="ghost"
+                    />
                   </View>
                 ) : null}
               </View>

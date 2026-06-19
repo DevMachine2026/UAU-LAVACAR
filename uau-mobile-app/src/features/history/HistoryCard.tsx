@@ -1,8 +1,19 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Text, View } from "react-native";
 import { Card } from "@/components/Card";
 import { DateText } from "@/components/DateText";
 import { MoneyText } from "@/components/MoneyText";
 import { asRecord, getNestedRecord, getNumber, getString } from "@/utils/data";
+
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+
+function getAttendanceTypeInfo(type: string): { label: string; icon: IoniconName } {
+  switch (type?.toUpperCase()) {
+    case "MANUAL": return { label: "Check-in manual",    icon: "person-outline" };
+    case "ANPR":   return { label: "Câmera automática",  icon: "camera-outline" };
+    default:       return { label: type || "-",           icon: "checkmark-circle-outline" };
+  }
+}
 
 type HistoryCardProps = {
   item: unknown;
@@ -26,7 +37,16 @@ export function HistoryCard({ item }: HistoryCardProps) {
         </View>
 
         <View className="gap-2">
-          <Row label="Tipo" value={getString(record, ["type"], "-")} />
+          {(() => {
+            const typeVal = getString(record, ["type"], "");
+            const { label, icon } = getAttendanceTypeInfo(typeVal);
+            return (
+              <View className="flex-row items-center gap-1.5">
+                <Ionicons name={icon} size={14} color="#667085" />
+                <Text className="text-sm text-uau-gray">{label}</Text>
+              </View>
+            );
+          })()}
           <Row label="Origem" value={getString(record, ["source"], "-")} />
           <View className="flex-row justify-between gap-3">
             <Text className="text-sm text-uau-gray">Entrada</Text>

@@ -1,6 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { LinearGradient } from "expo-linear-gradient";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
@@ -14,17 +13,31 @@ import { useMyCurrentBilling } from "@/features/billing/billing.hooks";
 import { Campaign, clickCampaign, dismissCampaign, viewCampaign } from "@/features/campaigns/campaigns.api";
 import { useActiveCampaigns } from "@/features/campaigns/campaigns.hooks";
 import { useUnreadNotificationsCount } from "@/features/notifications/notifications.hooks";
+import { useMyReferralNetwork } from "@/features/referrals/referrals.hooks";
+import { getMyStatement } from "@/features/wallet/wallet.api";
 import { useMyWallet } from "@/features/wallet/wallet.hooks";
 import { asArray, asRecord, getNestedRecord, getNumber, getString } from "@/utils/data";
 
+const PRIMARY = "#009688";
+const AMBER   = "#F59E0B";
+const TINT    = "#F0FBF9";
+
+function calcDiasRestantesBônus(grantedAt: string): number {
+  return 7 - Math.floor((Date.now() - new Date(grantedAt).getTime()) / 86400000);
+}
+
 const SHORTCUTS = [
-  { label: "Carteira",   icon: "wallet-outline",     href: "/(tabs)/wallet",   color: "#009688" },
-  { label: "Cobranças",  icon: "receipt-outline",     href: "/(tabs)/billing",  color: "#7D1C2F" },
-  { label: "Parceiros",  icon: "storefront-outline",  href: "/(tabs)/partners", color: "#7D1C2F" },
-  { label: "Minha Rede", icon: "people-outline",      href: "/referrals",       color: "#009688" },
-  { label: "Veículos",   icon: "car-outline",         href: "/vehicles",        color: "#009688" },
-  { label: "Histórico",  icon: "time-outline",        href: "/history",         color: "#7D1C2F" },
+  { label: "Carteira",   icon: "wallet-outline",  href: "/(tabs)/wallet"  },
+  { label: "Cobranças",  icon: "receipt-outline", href: "/(tabs)/billing" },
+  { label: "Veículos",   icon: "car-outline",     href: "/vehicles"       },
+  { label: "Minha Rede", icon: "people-outline",  href: "/referrals"      },
 ] as const;
+
+function formatShortDate(iso: string) {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
 
 function normalizeCount(value: unknown) {
   if (typeof value === "number") return value;
@@ -48,13 +61,21 @@ function normalizeSubscriptionStatus(status: string): string {
 
 function statusColor(status: string): string {
   if (status === "Ativa") return "#0BA95B";
-  if (status === "Pendente") return "#F59E0B";
+  if (status === "Pendente") return AMBER;
   return "#EF4444";
 }
 
 type Step = { label: string; description: string; icon: string; href: string; done: boolean };
 
-function OnboardingSteps({ hasPlan, hasBalance }: { hasPlan: boolean; hasBalance: boolean }) {
+function OnboardingSteps({
+  hasPlan,
+  hasBalance,
+  welcomeBonus,
+}: {
+  hasPlan: boolean;
+  hasBalance: boolean;
+  welcomeBonus: number;
+}) {
   const steps: Step[] = [
     {
       label: "Crie sua conta",
@@ -65,8 +86,12 @@ function OnboardingSteps({ hasPlan, hasBalance }: { hasPlan: boolean; hasBalance
     },
     {
       label: "Assine um plano",
-      description: hasPlan ? "Plano ativo" : "Escolha o plano ideal para você",
-      icon: hasPlan ? "checkmark-circle" : "star-outline",
+      description: hasPlan
+        ? "Plano ativo"
+        : welcomeBonus > 0
+        ? `Use seu bônus de R$${welcomeBonus.toFixed(0)} para assinar`
+        : "Escolha o plano ideal para você",
+      icon: "star-outline",
       href: "/subscribe",
       done: hasPlan,
     },
@@ -80,18 +105,17 @@ function OnboardingSteps({ hasPlan, hasBalance }: { hasPlan: boolean; hasBalance
     {
       label: "Ganhe cashback",
       description: hasBalance ? "Você já tem saldo!" : "Faça check-ins e acumule saldo",
-      icon: hasBalance ? "checkmark-circle" : "wallet-outline",
+      icon: "wallet-outline",
       href: "/(tabs)/wallet",
       done: hasBalance,
     },
   ];
 
   const completedCount = steps.filter((s) => s.done).length;
-  const allDone = completedCount === steps.length;
-
-  if (allDone) return null;
+  if (completedCount === steps.length) return null;
 
   const pct = Math.round((completedCount / steps.length) * 100);
+  const firstPendingIndex = steps.findIndex((s) => !s.done);
 
   return (
     <View style={{
@@ -100,64 +124,81 @@ function OnboardingSteps({ hasPlan, hasBalance }: { hasPlan: boolean; hasBalance
       shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
     }}>
-      {/* Cabeçalho */}
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <View>
           <Text style={{ fontSize: 14, fontWeight: "700", color: "#101418" }}>Primeiros passos</Text>
           <Text style={{ fontSize: 12, color: "#667085", marginTop: 2 }}>{completedCount} de {steps.length} concluídos</Text>
         </View>
-        <View style={{ alignItems: "flex-end" }}>
-          <Text style={{ fontSize: 18, fontWeight: "800", color: "#009688" }}>{pct}%</Text>
-        </View>
+        <Text style={{ fontSize: 18, fontWeight: "800", color: PRIMARY }}>{pct}%</Text>
       </View>
 
-      {/* Barra de progresso */}
       <View style={{ height: 4, backgroundColor: "#F0F0F0", borderRadius: 99, marginBottom: 16 }}>
-        <View style={{ height: 4, backgroundColor: "#009688", borderRadius: 99, width: `${pct}%` }} />
+        <View style={{ height: 4, backgroundColor: PRIMARY, borderRadius: 99, width: `${pct}%` }} />
       </View>
 
-      {/* Passos */}
       <View style={{ gap: 8 }}>
-        {steps.map((step, i) => (
-          <TouchableOpacity
-            key={i}
-            disabled={step.done || !step.href}
-            onPress={() => step.href && router.push(step.href as any)}
-            style={{
-              flexDirection: "row", alignItems: "center", gap: 12,
-              padding: 10, borderRadius: 12,
-              backgroundColor: step.done ? "#F0FBF9" : "#FAFAFA",
-              opacity: step.done ? 0.8 : 1,
-            }}
-          >
-            <View style={{
-              width: 36, height: 36, borderRadius: 10,
-              backgroundColor: step.done ? "#009688" : "#F0F0F0",
-              alignItems: "center", justifyContent: "center",
-            }}>
-              <Ionicons
-                name={step.done ? "checkmark" : step.icon as any}
-                size={18}
-                color={step.done ? "white" : "#667085"}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{
-                fontSize: 13, fontWeight: "600",
-                color: step.done ? "#009688" : "#101418",
-                textDecorationLine: step.done ? "line-through" : "none",
-              }}>
-                {step.label}
-              </Text>
-              <Text style={{ fontSize: 11, color: "#667085", marginTop: 1 }}>
-                {step.description}
-              </Text>
-            </View>
-            {!step.done && step.href && (
-              <Ionicons name="chevron-forward" size={16} color="#667085" />
-            )}
-          </TouchableOpacity>
-        ))}
+        {steps.map((step, i) => {
+          const isActive  = !step.done && i === firstPendingIndex;
+          const isPending = !step.done && i !== firstPendingIndex;
+
+          return (
+            <TouchableOpacity
+              key={i}
+              disabled={step.done || !step.href}
+              onPress={() => step.href && router.push(step.href as any)}
+              style={{
+                flexDirection: "row", alignItems: "center", gap: 12,
+                padding: 10, borderRadius: 12,
+                backgroundColor: step.done ? TINT : isActive ? "rgba(245,158,11,0.06)" : "#FAFAFA",
+                opacity: isPending ? 0.6 : step.done ? 0.75 : 1,
+              }}
+            >
+              {step.done ? (
+                <View style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  backgroundColor: PRIMARY,
+                  alignItems: "center", justifyContent: "center",
+                }}>
+                  <Ionicons name="checkmark" size={18} color="white" />
+                </View>
+              ) : isActive ? (
+                <View style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  backgroundColor: AMBER,
+                  alignItems: "center", justifyContent: "center",
+                }}>
+                  <Ionicons name={step.icon as any} size={18} color="white" />
+                </View>
+              ) : (
+                <View style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  borderWidth: 1.5, borderColor: "#D0D5DD",
+                  backgroundColor: "#F5F5F5",
+                  alignItems: "center", justifyContent: "center",
+                }}>
+                  <Ionicons name={step.icon as any} size={18} color="#667085" />
+                </View>
+              )}
+
+              <View style={{ flex: 1 }}>
+                <Text style={{
+                  fontSize: 13, fontWeight: "600",
+                  color: step.done ? PRIMARY : isActive ? "#101418" : "#667085",
+                  textDecorationLine: step.done ? "line-through" : "none",
+                }}>
+                  {step.label}
+                </Text>
+                <Text style={{ fontSize: 11, color: isActive ? AMBER : "#667085", marginTop: 1 }}>
+                  {step.description}
+                </Text>
+              </View>
+
+              {!step.done && step.href && (
+                <Ionicons name="chevron-forward" size={16} color={isActive ? AMBER : "#D0D5DD"} />
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );
@@ -168,17 +209,36 @@ export default function HomeScreen() {
   const user = useAuthStore((state) => state.user);
   const viewedCampaigns = useRef(new Set<string>());
 
-  const walletQuery = useMyWallet();
-  const billingQuery = useMyCurrentBilling();
+  const walletQuery    = useMyWallet();
+  const billingQuery   = useMyCurrentBilling();
   const campaignsQuery = useActiveCampaigns();
-  const unreadQuery = useUnreadNotificationsCount();
+  const unreadQuery    = useUnreadNotificationsCount();
+  const referralQuery  = useMyReferralNetwork();
 
-  const campaigns = useMemo(() => normalizeCampaigns(campaignsQuery.data), [campaignsQuery.data]);
-  const unreadCount = normalizeCount(unreadQuery.data);
   const wallet = asRecord(walletQuery.data);
-  const billing = asRecord(billingQuery.data);
-  const subscription = getNestedRecord(billing, ["subscription"]);
-  const plan = getNestedRecord(subscription, ["plan"]);
+  const welcomeBonusBalance = getNumber(wallet, ["welcomeBonusBalance"], 0);
+
+  // Busca statement só quando há bônus — para calcular dias restantes reais
+  const statementQuery = useQuery({
+    queryKey: ["wallet", "statement"],
+    queryFn: getMyStatement,
+    enabled: walletQuery.isSuccess && welcomeBonusBalance > 0,
+  });
+
+  const bonusGrantedAt = useMemo(() => {
+    if (!statementQuery.data) return null;
+    const item = statementQuery.data.find((i) => i.origin === "WELCOME_BONUS");
+    return item?.createdAt ?? null;
+  }, [statementQuery.data]);
+
+  const diasRestantes = bonusGrantedAt ? calcDiasRestantesBônus(bonusGrantedAt) : 7;
+
+  const campaigns     = useMemo(() => normalizeCampaigns(campaignsQuery.data), [campaignsQuery.data]);
+  const unreadCount   = normalizeCount(unreadQuery.data);
+  const billing       = asRecord(billingQuery.data);
+  const subscription  = getNestedRecord(billing, ["subscription"]);
+  const plan          = getNestedRecord(subscription, ["plan"]);
+  const referralNetwork = asRecord(referralQuery.data);
 
   const viewMutation = useMutation({ mutationFn: viewCampaign });
   const clickMutation = useMutation({ mutationFn: clickCampaign });
@@ -200,11 +260,22 @@ export default function HomeScreen() {
 
   const hasError = walletQuery.error && billingQuery.error;
 
-  const balance = getNumber(wallet, ["totalBalance", "availableBalance", "balance"], 0);
-  const planName = getString(plan, ["name"]);
-  const subscriptionStatus = getString(subscription, ["status"]);
-  const normalizedStatus = subscriptionStatus ? normalizeSubscriptionStatus(subscriptionStatus) : null;
-  const hasBilling = !!billingQuery.data;
+  const balance      = getNumber(wallet, ["totalBalance", "availableBalance", "balance"], 0);
+  const promoBalance = getNumber(wallet, ["promoBalance", "promotionalBalance"], 0);
+  const planName     = getString(plan, ["name"]);
+  const subscriptionStatus  = getString(subscription, ["status"]);
+  const normalizedStatus    = subscriptionStatus ? normalizeSubscriptionStatus(subscriptionStatus) : null;
+  const hasActivePlan       = !!planName && normalizedStatus === "Ativa";
+  const hasBilling          = !!billingQuery.data;
+  const dueDate             = getString(billing, ["dueDate"]);
+  const referralCode        = getString(referralNetwork, ["referralCode", "referral_code"]);
+
+  // Prioridade do card no header — bônus só aparece se ainda não expirou
+  const headerMode = welcomeBonusBalance > 0 && diasRestantes > 0
+    ? "bonus"
+    : (balance + promoBalance) > 0
+    ? "cashback"
+    : "empty";
 
   return (
     <Screen statusBarStyle="light">
@@ -212,7 +283,7 @@ export default function HomeScreen() {
 
         {/* ── Header ── */}
         <View className="-mx-5 -mt-6 bg-uau-teal px-5 pb-6 pt-4" style={{ borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
-          {/* Linha superior: nome + notificações */}
+          {/* Nome + notificações */}
           <View className="flex-row items-center justify-between mb-4">
             <View className="flex-1">
               <Text className="text-white/70 text-sm">Olá,</Text>
@@ -240,43 +311,83 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Saldo em destaque */}
+          {/* Card de saldo — prioridade: bônus > cashback > vazio */}
           <View style={{ backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 16, padding: 16 }}>
-            <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 12, fontWeight: "500", marginBottom: 4 }}>
-              Saldo de Cashback
-            </Text>
-            {walletQuery.isLoading ? (
-              <Skeleton style={{ width: 140, height: 32, borderRadius: 6 }} />
-            ) : (
-              <MoneyText
-                value={balance}
-                style={{ color: "white", fontSize: 28, fontWeight: "700" }}
-              />
-            )}
-
-            {/* Linha plano + assinatura */}
-            {billingQuery.isLoading ? (
-              <Skeleton style={{ width: 160, height: 16, borderRadius: 4, marginTop: 8 }} />
-            ) : planName ? (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 }}>
-                <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 12 }}>
-                  Plano {planName}
-                </Text>
-                {normalizedStatus && (
-                  <View style={{
-                    backgroundColor: statusColor(normalizedStatus),
-                    borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2,
-                  }}>
-                    <Text style={{ color: "white", fontSize: 10, fontWeight: "700" }}>
-                      {normalizedStatus}
-                    </Text>
-                  </View>
+            {headerMode === "bonus" ? (
+              <>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                  <Ionicons name="gift-outline" size={12} color={AMBER} />
+                  <Text style={{ color: AMBER, fontSize: 12, fontWeight: "600" }}>
+                    Bônus de boas-vindas
+                  </Text>
+                </View>
+                {walletQuery.isLoading ? (
+                  <Skeleton style={{ width: 140, height: 32, borderRadius: 6 }} />
+                ) : (
+                  <MoneyText
+                    value={welcomeBonusBalance}
+                    style={{ color: "white", fontSize: 28, fontWeight: "700" }}
+                  />
                 )}
-              </View>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 }}>
+                  <Ionicons name="time-outline" size={12} color={diasRestantes === 1 ? "#D97706" : AMBER} />
+                  <Text style={{
+                    color: diasRestantes === 1 ? "#D97706" : AMBER,
+                    fontSize: 11,
+                    fontWeight: diasRestantes === 1 ? "700" : "500",
+                  }}>
+                    {diasRestantes === 1
+                      ? "Expira amanhã! · use na sua assinatura"
+                      : `Expira em ${diasRestantes} dias · use na sua assinatura`}
+                  </Text>
+                </View>
+              </>
+            ) : headerMode === "cashback" ? (
+              <>
+                <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 12, fontWeight: "500", marginBottom: 4 }}>
+                  Saldo de Cashback
+                </Text>
+                {walletQuery.isLoading ? (
+                  <Skeleton style={{ width: 140, height: 32, borderRadius: 6 }} />
+                ) : (
+                  <MoneyText
+                    value={balance}
+                    style={{ color: "white", fontSize: 28, fontWeight: "700" }}
+                  />
+                )}
+                {billingQuery.isLoading ? (
+                  <Skeleton style={{ width: 160, height: 16, borderRadius: 4, marginTop: 8 }} />
+                ) : planName ? (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 }}>
+                    <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 12 }}>
+                      Plano {planName}
+                    </Text>
+                    {normalizedStatus && (
+                      <View style={{
+                        backgroundColor: statusColor(normalizedStatus),
+                        borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2,
+                      }}>
+                        <Text style={{ color: "white", fontSize: 10, fontWeight: "700" }}>
+                          {normalizedStatus}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                ) : null}
+              </>
             ) : (
-              <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, marginTop: 8 }}>
-                Sem plano ativo
-              </Text>
+              /* Sem bônus e sem saldo — não mostra zeros */
+              <>
+                <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 12, fontWeight: "500", marginBottom: 8 }}>
+                  {planName ? `Plano ${planName}` : "Nenhum plano ativo"}
+                </Text>
+                <Text style={{ color: "white", fontSize: 20, fontWeight: "700" }}>
+                  Assine e comece a ganhar
+                </Text>
+                <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, marginTop: 6 }}>
+                  Ganhe cashback em cada lavagem
+                </Text>
+              </>
             )}
           </View>
         </View>
@@ -285,48 +396,69 @@ export default function HomeScreen() {
           <ErrorState message="Alguns dados não puderam ser carregados." />
         )}
 
-        {/* ── CTA principal ── */}
-        <TouchableOpacity
-          onPress={() => router.push(hasBilling ? "/(tabs)/billing" : "/subscribe")}
-          activeOpacity={0.85}
-          style={{ borderRadius: 99, overflow: "hidden" }}
-        >
-          <LinearGradient
-            colors={hasBilling ? ["#7D1C2F", "#9B2335"] : ["#00B5A4", "#009688"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{
-              height: 52,
-              alignItems: "center",
-              justifyContent: "center",
-              flexDirection: "row",
-              gap: 8,
-              paddingHorizontal: 24,
-            }}
+        {/* ── CTA contextual ── */}
+        {hasActivePlan ? (
+          /* Com plano ativo: card de status */
+          <View style={{
+            backgroundColor: "white", borderRadius: 16, padding: 16,
+            borderWidth: 1, borderColor: "#E8F5F3",
+            flexDirection: "row", alignItems: "center", gap: 12,
+            shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.04, shadowRadius: 4, elevation: 2,
+          }}>
+            <View style={{
+              width: 44, height: 44, borderRadius: 12,
+              backgroundColor: TINT,
+              alignItems: "center", justifyContent: "center",
+            }}>
+              <Ionicons name="shield-checkmark-outline" size={22} color={PRIMARY} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: "700", color: "#101418" }}>
+                Plano {planName}
+              </Text>
+              <Text style={{ fontSize: 11, color: "#667085", marginTop: 2 }}>
+                {dueDate ? `Ativo até ${formatShortDate(dueDate)}` : "Plano ativo"}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => router.push("/(tabs)/billing")}>
+              <Ionicons name="chevron-forward" size={18} color={PRIMARY} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          /* Sem plano ativo: card CTA para assinar */
+          <TouchableOpacity
+            onPress={() => router.push(hasBilling ? "/(tabs)/billing" : "/subscribe")}
+            activeOpacity={0.88}
+            style={{ backgroundColor: PRIMARY, borderRadius: 16, padding: 16, gap: 2 }}
           >
-            <Ionicons name={hasBilling ? "card-outline" : "star-outline"} size={18} color="white" />
-            <Text style={{ color: "white", fontSize: 15, fontWeight: "700" }}>
-              {hasBilling ? "Pagar cobrança atual" : "Assinar agora"}
+            <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 12, fontWeight: "500" }}>
+              {welcomeBonusBalance > 0 ? "Use seu bônus agora" : hasBilling ? "Cobrança pendente" : "Comece hoje"}
             </Text>
-          </LinearGradient>
-        </TouchableOpacity>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <Text style={{ color: "white", fontSize: 17, fontWeight: "700" }}>
+                {hasBilling ? "Pagar cobrança atual" : "Assinar um plano"}
+              </Text>
+              <Ionicons name="arrow-forward" size={20} color="white" />
+            </View>
+          </TouchableOpacity>
+        )}
 
-        {/* ── Atalhos rápidos (grid 3×2 compacto) ── */}
+        {/* ── Atalhos rápidos — barra horizontal 4 itens ── */}
         <View>
           <Text style={{ fontSize: 13, fontWeight: "700", color: "#667085", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 10 }}>
             Acesso rápido
           </Text>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-            {SHORTCUTS.map(({ label, icon, href, color }) => (
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            {SHORTCUTS.map(({ label, icon, href }) => (
               <TouchableOpacity
                 key={label}
                 onPress={() => router.push(href)}
                 style={{
-                  width: "30%",
-                  flexGrow: 1,
+                  flex: 1,
                   backgroundColor: "white",
                   borderRadius: 16,
-                  padding: 14,
+                  padding: 12,
                   alignItems: "center",
                   gap: 8,
                   borderWidth: 1,
@@ -339,13 +471,13 @@ export default function HomeScreen() {
                 }}
               >
                 <View style={{
-                  width: 44, height: 44, borderRadius: 12,
-                  backgroundColor: color + "18",
+                  width: 40, height: 40, borderRadius: 10,
+                  backgroundColor: "rgba(0, 150, 136, 0.09)",
                   alignItems: "center", justifyContent: "center",
                 }}>
-                  <Ionicons name={icon as any} size={22} color={color} />
+                  <Ionicons name={icon as any} size={20} color={PRIMARY} />
                 </View>
-                <Text style={{ fontSize: 11, fontWeight: "600", color: "#101418", textAlign: "center" }}>
+                <Text style={{ fontSize: 10, fontWeight: "600", color: "#101418", textAlign: "center" }}>
                   {label}
                 </Text>
               </TouchableOpacity>
@@ -353,8 +485,43 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* ── Card de indicação — só aparece se tem referralCode ── */}
+        {!!referralCode && (
+          <TouchableOpacity
+            onPress={() => router.push("/referrals")}
+            activeOpacity={0.88}
+            style={{
+              backgroundColor: TINT,
+              borderRadius: 16, padding: 16,
+              borderWidth: 1, borderColor: "rgba(0, 150, 136, 0.19)",
+              flexDirection: "row", alignItems: "center", gap: 12,
+            }}
+          >
+            <View style={{
+              width: 44, height: 44, borderRadius: 12,
+              backgroundColor: "rgba(0, 150, 136, 0.12)",
+              alignItems: "center", justifyContent: "center",
+            }}>
+              <Ionicons name="people-outline" size={22} color={PRIMARY} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 14, fontWeight: "700", color: "#101418" }}>
+                Indique e ganhe R$10
+              </Text>
+              <Text style={{ fontSize: 12, color: "#667085", marginTop: 2 }}>
+                A cada amigo que assinar
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={PRIMARY} />
+          </TouchableOpacity>
+        )}
+
         {/* ── Primeiros passos (onboarding) ── */}
-        <OnboardingSteps hasPlan={!!planName && normalizedStatus === "Ativa"} hasBalance={balance > 0} />
+        <OnboardingSteps
+          hasPlan={hasActivePlan}
+          hasBalance={balance > 0}
+          welcomeBonus={welcomeBonusBalance}
+        />
 
         {/* ── Campanhas ── */}
         {campaigns.length > 0 && (
