@@ -5,7 +5,9 @@ import {
   Logger,
 } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
+import { PlanPeriodicity, WalletMovementOrigin, WalletMovementType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AdminSettingsService } from '../admin-settings/admin-settings.service';
 import {
   AsaasBillingType,
   AsaasCustomerPayload,
@@ -17,12 +19,26 @@ import {
   AsaasSubscriptionResponse,
 } from './asaas.types';
 
+function calculateExpiresAt(startedAt: Date, periodicity: PlanPeriodicity): Date {
+  const result = new Date(startedAt);
+  switch (periodicity) {
+    case 'MONTHLY':      result.setMonth(result.getMonth() + 1);  break;
+    case 'QUARTERLY':    result.setMonth(result.getMonth() + 3);  break;
+    case 'SEMIANNUALLY': result.setMonth(result.getMonth() + 6);  break;
+    case 'YEARLY':       result.setFullYear(result.getFullYear() + 1); break;
+  }
+  return result;
+}
+
 @Injectable()
 export class AsaasService {
   private readonly logger = new Logger(AsaasService.name);
   private http?: AxiosInstance;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly adminSettings: AdminSettingsService,
+  ) {}
 
   async createCustomer(payload: AsaasCustomerPayload): Promise<AsaasCustomerResponse> {
     const { data } = await this.request<AsaasCustomerResponse>('post', '/customers', payload);
@@ -104,27 +120,35 @@ export class AsaasService {
     const event = payload.event;
     const paymentId = payload.payment?.id;
 
-    if (!paymentId) return { success: false, message: 'ID do pagamento não enviado' };
+    if (!paymentId) {
+      this.logger.warn('Webhook recebido sem payment.id', { event: payload.event, receivedAt: new Date().toISOString() });
+      return { success: false, message: 'ID do pagamento não enviado' };
+    }
 
     switch (event) {
       case 'PAYMENT_RECEIVED':
       case 'PAYMENT_CONFIRMED':
-        await this.handlePaymentConfirmed(payload.payment);
+        await this.handlePaymentConfirmed(payload.payment, event);
         break;
       case 'PAYMENT_OVERDUE':
-        await this.handlePaymentOverdue(payload.payment);
+        await this.handlePaymentOverdue(payload.payment, event);
         break;
+      default:
+        this.logger.log('Evento Asaas não mapeado recebido', { event: payload.event });
     }
 
     return { success: true };
   }
 
-  private async handlePaymentConfirmed(payment: any) {
+  private async handlePaymentConfirmed(payment: any, event: string) {
     const billing = await this.prisma.billingHistory.findFirst({
       where: { asaasId: payment.id },
     });
 
-    if (!billing) return;
+    if (!billing) {
+      this.logger.error('BillingHistory não encontrado para asaasId', { asaasId: payment.id, event });
+      return;
+    }
 
     // Idempotência: ignorar reenvios caso o pagamento já foi processado
     if (billing.status === 'PAID') {
@@ -137,19 +161,91 @@ export class AsaasService {
     });
 
     if (billing.subscriptionId) {
-      await this.prisma.subscription.update({
+      const subscription = await this.prisma.subscription.findUnique({
         where: { id: billing.subscriptionId },
-        data: { status: 'ACTIVE', startedAt: new Date() },
+        include: { plan: true },
       });
+
+      if (subscription) {
+        const startedAt = new Date();
+        const expiresAt = calculateExpiresAt(startedAt, subscription.plan.periodicity);
+
+        await this.prisma.subscription.update({
+          where: { id: billing.subscriptionId },
+          data: { status: 'ACTIVE', startedAt, expiresAt },
+        });
+
+        await this.grantReferralBonusIfEligible(subscription.customerId, billing.subscriptionId);
+      }
     }
   }
 
-  private async handlePaymentOverdue(payment: any) {
+  // Credita REFERRAL_BONUS_AMOUNT no promoBalance do referrer na primeira ativação do indicado
+  private async grantReferralBonusIfEligible(customerId: string, subscriptionId: string) {
+    const activeCount = await this.prisma.subscription.count({
+      where: { customerId, status: 'ACTIVE' },
+    });
+
+    // Só concede na primeira assinatura ACTIVE deste customer
+    if (activeCount !== 1) return;
+
+    const customer = await this.prisma.customer.findUnique({
+      where: { id: customerId },
+      select: { userId: true },
+    });
+    if (!customer) return;
+
+    const referral = await this.prisma.referral.findFirst({
+      where: { referredId: customer.userId, rewardGranted: false },
+    });
+    if (!referral) return;
+
+    const referrerCustomer = await this.prisma.customer.findFirst({
+      where: { userId: referral.referrerId },
+      include: { wallet: true },
+    });
+    if (!referrerCustomer?.wallet) return;
+
+    const bonusAmountStr = await this.adminSettings.getCached('REFERRAL_BONUS_AMOUNT');
+    const bonusAmount = Number(bonusAmountStr);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.wallet.update({
+        where: { id: referrerCustomer.wallet!.id },
+        data: { promoBalance: { increment: bonusAmount } },
+      });
+
+      await tx.walletMovement.create({
+        data: {
+          walletId: referrerCustomer.wallet!.id,
+          type: WalletMovementType.CREDIT,
+          origin: WalletMovementOrigin.REFERRAL_BONUS,
+          amount: bonusAmount,
+          description: 'Bônus por indicação',
+          referenceId: referral.id,
+        },
+      });
+
+      await tx.referral.update({
+        where: { id: referral.id },
+        data: { rewardGranted: true },
+      });
+    });
+
+    this.logger.log(
+      `Bônus de indicação R$${bonusAmount} creditado para referrer ${referral.referrerId} (referral ${referral.id})`,
+    );
+  }
+
+  private async handlePaymentOverdue(payment: any, event: string) {
     const billing = await this.prisma.billingHistory.findFirst({
       where: { asaasId: payment.id },
     });
 
-    if (!billing) return;
+    if (!billing) {
+      this.logger.error('BillingHistory não encontrado para asaasId', { asaasId: payment.id, event });
+      return;
+    }
 
     await this.prisma.billingHistory.update({
       where: { id: billing.id },
@@ -172,7 +268,7 @@ export class AsaasService {
   }
 
   private buildClientConfig() {
-    const rawBaseUrl = process.env.ASAAS_BASE_URL ?? 'https://sandbox.asaas.com';
+    const rawBaseUrl = process.env.ASAAS_BASE_URL!;
     const baseURL = rawBaseUrl.includes('/api/v3')
       ? rawBaseUrl
       : `${rawBaseUrl.replace(/\/$/, '')}/api/v3`;

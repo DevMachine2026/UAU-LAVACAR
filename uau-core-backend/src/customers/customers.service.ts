@@ -1,9 +1,10 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, UserRole, UserStatus } from '@prisma/client';
+import { Prisma, UserRole, UserStatus, WalletMovementOrigin, WalletMovementType } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { paginate } from '../common/dto/pagination.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { AdminSettingsService } from '../admin-settings/admin-settings.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { ListCustomersDto } from './dto/list-customers.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -14,7 +15,10 @@ function generateReferralCode(): string {
 
 @Injectable()
 export class CustomersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private adminSettings: AdminSettingsService,
+  ) {}
 
   async create(createDto: CreateCustomerDto) {
     const existingUser = await this.prisma.user.findUnique({
@@ -35,6 +39,10 @@ export class CustomersService {
 
     const passwordHash = await bcrypt.hash(createDto.password, 10);
 
+    // Lê o valor do bônus antes da transação para minimizar o tempo de lock
+    const bonusAmountStr = await this.adminSettings.getCached('WELCOME_BONUS_AMOUNT');
+    const welcomeBonusAmount = Number(bonusAmountStr);
+
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
@@ -54,10 +62,36 @@ export class CustomersService {
         },
       });
 
-      // Cria a carteira automaticamente
-      await tx.wallet.create({
+      const wallet = await tx.wallet.create({
         data: { customerId: customer.id },
       });
+
+      // Verifica se o CPF já recebeu bônus de boas-vindas (por qualquer conta anterior)
+      const existingGrant = await tx.welcomeBonusGrant.findUnique({
+        where: { cpf: createDto.cpf! },
+      });
+
+      if (!existingGrant && welcomeBonusAmount > 0) {
+        const grant = await tx.welcomeBonusGrant.create({
+          data: { cpf: createDto.cpf!, walletId: wallet.id },
+        });
+
+        await tx.wallet.update({
+          where: { id: wallet.id },
+          data: { welcomeBonusBalance: { increment: welcomeBonusAmount } },
+        });
+
+        await tx.walletMovement.create({
+          data: {
+            walletId: wallet.id,
+            type: WalletMovementType.CREDIT,
+            origin: WalletMovementOrigin.WELCOME_BONUS,
+            amount: welcomeBonusAmount,
+            description: 'Bônus de boas-vindas',
+            referenceId: grant.id,
+          },
+        });
+      }
 
       return { user, customer };
     });

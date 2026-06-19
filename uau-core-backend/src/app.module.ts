@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { AppController } from './app.controller';
@@ -33,6 +34,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { AdminDashboardModule } from './admin-dashboard/admin-dashboard.module';
 import { FranchiseDashboardModule } from './franchise-dashboard/franchise-dashboard.module';
 import { PartnerDashboardModule } from './partner-dashboard/partner-dashboard.module';
+import { WelcomeBonusModule } from './welcome-bonus/welcome-bonus.module';
 import { MailerModule } from './third-party/mailer.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -58,6 +60,7 @@ import { RolesGuard } from './common/guards/roles.guard';
       validate,
       load: [mailerConfig],
     }),
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ([{
@@ -93,6 +96,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     AdminDashboardModule,
     FranchiseDashboardModule,
     PartnerDashboardModule,
+    WelcomeBonusModule,
   ],
   controllers: [AppController],
   providers: [

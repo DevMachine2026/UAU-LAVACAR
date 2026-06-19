@@ -1,9 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
 import { Prisma, Wallet, WalletMovementOrigin, WalletMovementType } from '@prisma/client';
 
-export type WalletBalanceField = 'balance' | 'promoBalance' | 'blockedBalance';
+export type WalletBalanceField = 'balance' | 'promoBalance' | 'blockedBalance' | 'welcomeBonusBalance';
 
-const BALANCE_FIELDS: WalletBalanceField[] = ['balance', 'promoBalance', 'blockedBalance'];
+const BALANCE_FIELDS: WalletBalanceField[] = ['balance', 'promoBalance', 'blockedBalance', 'welcomeBonusBalance'];
 
 export function toNumber(value: Prisma.Decimal | number | string): number {
   return Number(value);
@@ -13,6 +13,14 @@ export function resolveCreditBalanceField(
   origin: WalletMovementOrigin,
   description?: string,
 ): WalletBalanceField {
+  if (origin === WalletMovementOrigin.WELCOME_BONUS) {
+    return 'welcomeBonusBalance';
+  }
+
+  if (origin === WalletMovementOrigin.REFERRAL_BONUS) {
+    return 'promoBalance';
+  }
+
   if (origin === WalletMovementOrigin.PARTNER_TRANSACTION) {
     return 'blockedBalance';
   }
@@ -59,6 +67,9 @@ export function resolveDebitBalanceOrder(origin: WalletMovementOrigin): WalletBa
 }
 
 export function resolveExpiryBalanceOrder(origin: WalletMovementOrigin): WalletBalanceField[] {
+  if (origin === WalletMovementOrigin.WELCOME_BONUS) {
+    return ['welcomeBonusBalance'];
+  }
   if (origin === WalletMovementOrigin.CASHBACK_EXPIRY) {
     return ['promoBalance', 'balance'];
   }

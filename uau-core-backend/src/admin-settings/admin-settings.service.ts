@@ -4,7 +4,20 @@ import { UpdateAdminSettingDto } from './dto/update-admin-setting.dto';
 
 @Injectable()
 export class AdminSettingsService {
+  private readonly cache = new Map<string, { value: string; expiresAt: number }>();
+  private readonly TTL_MS = 60_000;
+
   constructor(private prisma: PrismaService) {}
+
+  async getCached(key: string): Promise<string> {
+    const now = Date.now();
+    const hit = this.cache.get(key);
+    if (hit && hit.expiresAt > now) return hit.value;
+
+    const setting = await this.findOne(key);
+    this.cache.set(key, { value: setting.value, expiresAt: now + this.TTL_MS });
+    return setting.value;
+  }
 
   async findAll() {
     return this.prisma.adminSetting.findMany();

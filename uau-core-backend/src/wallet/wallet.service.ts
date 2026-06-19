@@ -57,11 +57,32 @@ export class WalletService {
     promotionalAmount: number,
     realAmount: number,
     referenceId?: string,
+    welcomeBonusAmount = 0,
   ) {
-    if (promotionalAmount <= 0 && realAmount <= 0) return;
+    if (promotionalAmount <= 0 && realAmount <= 0 && welcomeBonusAmount <= 0) return;
 
     const wallet = await tx.wallet.findUnique({ where: { id: walletId } });
     if (!wallet) throw new NotFoundException('Carteira não encontrada');
+
+    if (welcomeBonusAmount > 0) {
+      if (Number(wallet.welcomeBonusBalance) < welcomeBonusAmount) {
+        throw new BadRequestException('Saldo de bônus de boas-vindas insuficiente');
+      }
+      await tx.walletMovement.create({
+        data: {
+          walletId,
+          type: WalletMovementType.DEBIT,
+          origin: WalletMovementOrigin.BILLING_DEDUCTION,
+          amount: welcomeBonusAmount,
+          description: 'Bônus de boas-vindas aplicado na assinatura',
+          referenceId,
+        },
+      });
+      await tx.wallet.update({
+        where: { id: walletId },
+        data: { welcomeBonusBalance: { decrement: welcomeBonusAmount } },
+      });
+    }
 
     if (promotionalAmount > 0) {
       if (Number(wallet.promoBalance) < promotionalAmount) {

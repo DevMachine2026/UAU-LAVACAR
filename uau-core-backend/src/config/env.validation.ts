@@ -57,9 +57,9 @@ export class EnvironmentVariables {
   @IsString()
   ASAAS_API_KEY?: string;
 
-  @IsOptional()
   @IsString()
-  ASAAS_BASE_URL?: string;
+  @IsNotEmpty()
+  ASAAS_BASE_URL!: string;
 
   @IsOptional()
   @IsString()

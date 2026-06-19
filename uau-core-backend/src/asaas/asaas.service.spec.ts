@@ -9,6 +9,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AsaasService } from './asaas.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AdminSettingsService } from '../admin-settings/admin-settings.service';
 import {
   TestCleanup,
   createTestCustomer,
@@ -24,7 +25,14 @@ describe('AsaasService.processWebhook — idempotência', () => {
 
   beforeAll(async () => {
     module = await Test.createTestingModule({
-      providers: [AsaasService, PrismaService],
+      providers: [
+        AsaasService,
+        PrismaService,
+        {
+          provide: AdminSettingsService,
+          useValue: { getCached: jest.fn().mockResolvedValue('10.00') },
+        },
+      ],
     }).compile();
 
     service = module.get(AsaasService);
@@ -79,6 +87,12 @@ describe('AsaasService.processWebhook — idempotência', () => {
     });
     expect(updatedSub!.status).toBe('ACTIVE');
     expect(updatedSub!.startedAt).not.toBeNull();
+    expect(updatedSub!.expiresAt).not.toBeNull();
+
+    // MONTHLY: expiresAt deve ser startedAt + 1 mês
+    const expectedExpiry = new Date(updatedSub!.startedAt!);
+    expectedExpiry.setMonth(expectedExpiry.getMonth() + 1);
+    expect(updatedSub!.expiresAt!.getTime()).toBe(expectedExpiry.getTime());
   });
 
   // ─── Cenário 2 — Segundo disparo é ignorado (idempotência) ───────────────
@@ -112,6 +126,27 @@ describe('AsaasService.processWebhook — idempotência', () => {
     });
     expect(unchangedBilling!.status).toBe('PAID');
     expect(unchangedBilling!.paidAt!.getTime()).toBe(originalPaidAt.getTime());
+  });
+
+  // ─── Cenário 4 — expiresAt com plano QUARTERLY ───────────────────────────
+
+  it('cenário 4: plano QUARTERLY → expiresAt = startedAt + 3 meses', async () => {
+    const { customer } = await createTestCustomer(prisma, cleanup);
+    const plan = await createTestPlan(prisma, cleanup, { periodicity: 'QUARTERLY' });
+    const { subscription, billing } = await createTestSubscription(
+      prisma, cleanup, customer.id, plan.id,
+    );
+
+    await service.processWebhook(buildPaymentPayload(billing.asaasId!));
+
+    const updatedSub = await prisma.subscription.findUnique({
+      where: { id: subscription.id },
+    });
+    expect(updatedSub!.expiresAt).not.toBeNull();
+
+    const expectedExpiry = new Date(updatedSub!.startedAt!);
+    expectedExpiry.setMonth(expectedExpiry.getMonth() + 3);
+    expect(updatedSub!.expiresAt!.getTime()).toBe(expectedExpiry.getTime());
   });
 
   // ─── Cenário 3 — asaasId desconhecido ────────────────────────────────────
