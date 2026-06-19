@@ -1,7 +1,5 @@
 import "@/theme/global.css";
-import { Ionicons } from "@expo/vector-icons";
 import { QueryClientProvider } from "@tanstack/react-query";
-import * as Font from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
@@ -16,19 +14,9 @@ export default function RootLayout() {
   const [appReady, setAppReady] = useState(false);
 
   useEffect(() => {
-    async function prepare() {
-      // Sem plugin nativo (app.json removido), loadAsync não tem conflito de nome 'Ionicons' vs 'ionicons'.
-      // Timeout de 5s só para fonte — sessão sempre é aguardada completamente.
-      await Promise.all([
-        Promise.race([
-          Font.loadAsync(Ionicons.font),
-          new Promise<void>((_, reject) => setTimeout(() => reject(new Error("font timeout")), 5000)),
-        ]).catch(() => { /* se font falhar, app continua sem ícones */ }),
-        restoreSession(),
-      ]);
-      setAppReady(true);
-    }
-    void prepare();
+    // A fonte 'ionicons' é pré-carregada nativamente pelo expo-font plugin (assets/fonts/ionicons.ttf).
+    // Não precisa de loadAsync em JS — apenas restaurar sessão e renderizar.
+    restoreSession().then(() => setAppReady(true));
   }, [restoreSession]);
 
   useEffect(() => {

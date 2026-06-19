@@ -16,7 +16,10 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-asset"
+      "expo-asset",
+      ["expo-font", {
+        "fonts": ["./assets/fonts/ionicons.ttf"]
+      }]
     ],
     "experiments": {
       "typedRoutes": true
