@@ -33,6 +33,7 @@ export class TestCleanup {
 
     if (walletIds.length > 0) {
       await prisma.walletMovement.deleteMany({ where: { walletId: { in: walletIds } } });
+      await prisma.welcomeBonusGrant.deleteMany({ where: { walletId: { in: walletIds } } });
     }
     const shiftIds = this.ids('shifts');
     if (shiftIds.length > 0) {
@@ -52,6 +53,7 @@ export class TestCleanup {
     }
     const vehicleIds = this.ids('vehicles');
     if (vehicleIds.length > 0) {
+      await prisma.dailyWash.deleteMany({ where: { vehicleId: { in: vehicleIds } } });
       await prisma.vehicle.deleteMany({ where: { id: { in: vehicleIds } } });
     }
     if (userIds.length > 0) {
@@ -234,6 +236,7 @@ export async function createTestSubscription(
   customerId: string,
   planId: string,
   billingOverrides: Record<string, unknown> = {},
+  subscriptionOverrides: Record<string, unknown> = {},
 ) {
   const subscription = await prisma.subscription.create({
     data: {
@@ -241,6 +244,7 @@ export async function createTestSubscription(
       planId,
       status: 'PENDING',
       asaasId: `sub_test_${uid()}`,
+      ...subscriptionOverrides,
     },
   });
   cleanup.track('subscriptions', subscription.id);
