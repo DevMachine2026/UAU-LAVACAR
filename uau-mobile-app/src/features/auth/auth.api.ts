@@ -33,3 +33,11 @@ export async function resetPassword(resetToken: string, code: string, newPasswor
   const response = await api.post<ApiEnvelope<void>>("/auth/reset-password", { resetToken, code, newPassword });
   unwrap(response.data);
 }
+
+export async function changePassword(data: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<{ message: string }> {
+  const response = await api.post<ApiEnvelope<{ message: string }>>("/auth/change-password", data);
+  return unwrap(response.data);
+}

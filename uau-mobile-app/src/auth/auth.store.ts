@@ -18,6 +18,7 @@ type AuthState = {
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
   refreshMe: () => Promise<void>;
+  updateUser: (partial: Partial<ApiUser>) => void;
 };
 
 async function persistSession(accessToken: string, user: ApiUser) {
@@ -92,7 +93,16 @@ export const useAuthStore = create<AuthState>((set) => ({
     const user = await getMe();
     await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
     set({ user, isAuthenticated: true });
-  }
+  },
+
+  updateUser(partial) {
+    set((state) => {
+      if (!state.user) return {};
+      const updated = { ...state.user, ...partial };
+      SecureStore.setItemAsync(USER_KEY, JSON.stringify(updated)).catch(() => {});
+      return { user: updated };
+    });
+  },
 }));
 
 configureAuthSession({
