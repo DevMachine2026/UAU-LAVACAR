@@ -30,7 +30,7 @@ const SHORTCUTS = [
   { label: "Carteira",   icon: "wallet-outline",  href: "/(tabs)/wallet"  },
   { label: "Cobranças",  icon: "receipt-outline", href: "/(tabs)/billing" },
   { label: "Veículos",   icon: "car-outline",     href: "/vehicles"       },
-  { label: "Minha Rede", icon: "people-outline",  href: "/referrals"      },
+  { label: "Unidades",   icon: "business-outline", href: "/units"          },
 ] as const;
 
 function formatShortDate(iso: string) {
@@ -453,7 +453,7 @@ export default function HomeScreen() {
             {SHORTCUTS.map(({ label, icon, href }) => (
               <TouchableOpacity
                 key={label}
-                onPress={() => router.push(href)}
+                onPress={() => router.push(href as any)}
                 style={{
                   flex: 1,
                   backgroundColor: "white",
