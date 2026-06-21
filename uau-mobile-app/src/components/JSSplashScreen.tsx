@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Animated, Image, Modal, StyleSheet } from "react-native";
 
-export function JSSplashScreen({ visible }: { visible: boolean }) {
+interface Props {
+  visible: boolean;
+  onCoveringScreen?: () => void;
+}
+
+export function JSSplashScreen({ visible, onCoveringScreen }: Props) {
   const opacity = useRef(new Animated.Value(1)).current;
   const [modalVisible, setModalVisible] = useState(true);
 
@@ -16,7 +21,13 @@ export function JSSplashScreen({ visible }: { visible: boolean }) {
   }, [visible, opacity]);
 
   return (
-    <Modal visible={modalVisible} transparent statusBarTranslucent animationType="none">
+    <Modal
+      visible={modalVisible}
+      transparent
+      statusBarTranslucent
+      animationType="none"
+      onShow={onCoveringScreen}
+    >
       <Animated.View style={[StyleSheet.absoluteFill, { opacity }]}>
         <Image
           source={require("../../assets/splash.png")}

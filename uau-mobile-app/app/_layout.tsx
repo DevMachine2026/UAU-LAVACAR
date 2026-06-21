@@ -2,7 +2,7 @@ import "@/theme/global.css";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ToastProvider } from "@/components/Toast";
 import { JSSplashScreen } from "@/components/JSSplashScreen";
 import { useAuthStore } from "@/auth/auth.store";
@@ -18,9 +18,10 @@ export default function RootLayout() {
     restoreSession().then(() => setAppReady(true));
   }, [restoreSession]);
 
-  useEffect(() => {
-    if (appReady) void SplashScreen.hideAsync();
-  }, [appReady]);
+  // Modal cobre a tela → descarta o splash nativo por baixo sem o usuário ver
+  const handleSplashCovering = useCallback(() => {
+    void SplashScreen.hideAsync();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -36,7 +37,7 @@ export default function RootLayout() {
           <Stack.Screen name="vehicles/index" />
           <Stack.Screen name="history/index" />
         </Stack>
-        <JSSplashScreen visible={!appReady} />
+        <JSSplashScreen visible={!appReady} onCoveringScreen={handleSplashCovering} />
       </ToastProvider>
     </QueryClientProvider>
   );
