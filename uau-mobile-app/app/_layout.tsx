@@ -2,9 +2,8 @@ import "@/theme/global.css";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect } from "react";
 import { ToastProvider } from "@/components/Toast";
-import { JSSplashScreen } from "@/components/JSSplashScreen";
 import { useAuthStore } from "@/auth/auth.store";
 import { queryClient } from "@/store/query-client";
 
@@ -12,16 +11,10 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const restoreSession = useAuthStore((state) => state.restoreSession);
-  const [appReady, setAppReady] = useState(false);
 
   useEffect(() => {
-    restoreSession().then(() => setAppReady(true));
+    restoreSession().then(() => SplashScreen.hideAsync());
   }, [restoreSession]);
-
-  // Modal cobre a tela → descarta o splash nativo por baixo sem o usuário ver
-  const handleSplashCovering = useCallback(() => {
-    void SplashScreen.hideAsync();
-  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -39,7 +32,6 @@ export default function RootLayout() {
           <Stack.Screen name="units/index" />
           <Stack.Screen name="units/[id]" />
         </Stack>
-        <JSSplashScreen visible={!appReady} onCoveringScreen={handleSplashCovering} />
       </ToastProvider>
     </QueryClientProvider>
   );
