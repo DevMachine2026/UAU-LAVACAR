@@ -19,6 +19,11 @@
       "expo-asset",
       ["expo-font", {
         "fonts": ["./assets/fonts/ionicons.ttf"]
+      }],
+      ["expo-splash-screen", {
+        "backgroundColor": "#009688",
+        "image": "./assets/splash.png",
+        "resizeMode": "cover"
       }]
     ],
     "experiments": {
