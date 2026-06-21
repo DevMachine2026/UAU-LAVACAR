@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Modal, Platform, Text, View } from "react-native";
+import { KeyboardAvoidingView, Linking, Modal, Platform, Text, TouchableOpacity, View } from "react-native";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { Screen } from "@/components/Screen";
@@ -208,6 +208,16 @@ export default function ProfileScreen() {
 
         <View className="mt-2">
           <Button onPress={() => void logout()} title="Sair da conta" variant="ghost" />
+        </View>
+
+        <View className="items-center gap-2 pb-2 pt-4">
+          <Text className="text-xs text-uau-gray">UAU+ Lavacar v1.0.0</Text>
+          <TouchableOpacity
+            onPress={() => void Linking.openURL("mailto:suporte@uau.app")}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text className="text-xs text-uau-teal">Precisa de ajuda? Entre em contato</Text>
+          </TouchableOpacity>
         </View>
       </View>
 

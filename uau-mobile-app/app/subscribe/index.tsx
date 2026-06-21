@@ -1,6 +1,6 @@
 import * as Clipboard from "expo-clipboard";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Text, View } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/Button";
@@ -10,9 +10,10 @@ import { ErrorState } from "@/components/ErrorState";
 import { Input } from "@/components/Input";
 import { Loading } from "@/components/Loading";
 import { Screen } from "@/components/Screen";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { CheckoutConfirmResult, CheckoutPreview, SubscriptionCheckoutPayload } from "@/features/checkout/checkout.api";
 import { useSubscriptionConfirm, useSubscriptionPreview } from "@/features/checkout/checkout.hooks";
-import { getCities, getFranchiseUnits, getStates, LocationItem } from "@/features/locations/locations.api";
+import { getFranchiseUnits, LocationItem } from "@/features/locations/locations.api";
 import { getPlans, Plan } from "@/features/plans/plans.api";
 import { CheckoutSummary } from "@/features/subscribe/CheckoutSummary";
 import { PaymentMethodCard } from "@/features/subscribe/PaymentMethodCard";
@@ -21,8 +22,6 @@ import { SelectCard } from "@/features/subscribe/SelectCard";
 import { StepHeader } from "@/features/subscribe/StepHeader";
 import { createVehicle, getVehicles, Vehicle } from "@/features/vehicles/vehicles.api";
 import { asArray, asRecord, getNestedRecord, getNumber, getString } from "@/utils/data";
-
-const TOTAL_STEPS = 8;
 
 function normalizeList<T>(value: unknown): T[] {
   if (Array.isArray(value)) return value as T[];
@@ -38,8 +37,6 @@ export default function SubscribeScreen() {
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
-  const [selectedState, setSelectedState] = useState<LocationItem | null>(null);
-  const [selectedCity, setSelectedCity] = useState<LocationItem | null>(null);
   const [selectedUnit, setSelectedUnit] = useState<LocationItem | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
@@ -49,25 +46,31 @@ export default function SubscribeScreen() {
   const [copied, setCopied] = useState(false);
   const [vehicleForm, setVehicleForm] = useState({ plate: "", brand: "", model: "", color: "" });
 
-  const statesQuery = useQuery({ queryKey: ["locations", "states"], queryFn: getStates });
-  const citiesQuery = useQuery({ queryKey: ["locations", "cities"], queryFn: getCities });
   const unitsQuery = useQuery({ queryKey: ["locations", "units"], queryFn: getFranchiseUnits });
   const plansQuery = useQuery({ queryKey: ["plans"], queryFn: getPlans });
   const vehiclesQuery = useQuery({ queryKey: ["vehicles", "me"], queryFn: getVehicles });
 
-  const states = useMemo(() => normalizeList<LocationItem>(statesQuery.data).filter(isActiveItem), [statesQuery.data]);
-  const cities = useMemo(() => {
-    return normalizeList<LocationItem>(citiesQuery.data)
-      .filter(isActiveItem)
-      .filter((city) => !selectedState || asRecord(city).stateId === selectedState.id);
-  }, [citiesQuery.data, selectedState]);
-  const units = useMemo(() => {
-    return normalizeList<LocationItem>(unitsQuery.data)
-      .filter(isActiveItem)
-      .filter((unit) => !selectedCity || asRecord(unit).cityId === selectedCity.id);
-  }, [selectedCity, unitsQuery.data]);
+  const units = useMemo(() => normalizeList<LocationItem>(unitsQuery.data).filter(isActiveItem), [unitsQuery.data]);
   const plans = useMemo(() => normalizeList<Plan>(plansQuery.data).filter(isActiveItem), [plansQuery.data]);
   const vehicles = useMemo(() => normalizeList<Vehicle>(vehiclesQuery.data).filter(isActiveItem), [vehiclesQuery.data]);
+
+  // Se só há uma unidade ativa, seleciona automaticamente e o cliente nunca vê essa etapa
+  useEffect(() => {
+    if (!unitsQuery.isLoading && units.length === 1) {
+      setSelectedUnit(units[0]);
+    }
+  }, [units, unitsQuery.isLoading]);
+
+  // Decide se a etapa de seleção de unidade deve aparecer
+  const showUnitStep = !unitsQuery.isLoading && units.length !== 1;
+
+  const TOTAL_STEPS  = showUnitStep ? 6 : 5;
+  const STEP_UNIT    = showUnitStep ? 1 : null;
+  const STEP_PLAN    = showUnitStep ? 2 : 1;
+  const STEP_VEHICLE = showUnitStep ? 3 : 2;
+  const STEP_PAYMENT = showUnitStep ? 4 : 3;
+  const STEP_PREVIEW = showUnitStep ? 5 : 4;
+  const STEP_CONFIRM = showUnitStep ? 6 : 5;
 
   const createVehicleMutation = useMutation({
     mutationFn: createVehicle,
@@ -80,15 +83,12 @@ export default function SubscribeScreen() {
   const previewMutation = useSubscriptionPreview();
   const confirmMutation = useSubscriptionConfirm();
 
-  const isLoading =
-    statesQuery.isLoading || citiesQuery.isLoading || unitsQuery.isLoading || plansQuery.isLoading || vehiclesQuery.isLoading;
-  const queryError = statesQuery.error || citiesQuery.error || unitsQuery.error || plansQuery.error || vehiclesQuery.error;
+  const isLoading = unitsQuery.isLoading || plansQuery.isLoading || vehiclesQuery.isLoading;
+  const queryError = unitsQuery.error || plansQuery.error || vehiclesQuery.error;
 
   function payload(): SubscriptionCheckoutPayload | null {
     if (!selectedPlan || !selectedVehicle || !paymentMethod) return null;
     return {
-      stateId: selectedState?.id,
-      cityId: selectedCity?.id,
       unitId: selectedUnit?.id,
       planId: selectedPlan.id,
       vehicleId: selectedVehicle.id,
@@ -97,12 +97,10 @@ export default function SubscribeScreen() {
   }
 
   function validateCurrentStep() {
-    if (step === 1 && !selectedState) return "Escolha um estado para continuar.";
-    if (step === 2 && !selectedCity) return "Escolha uma cidade para continuar.";
-    if (step === 3 && !selectedUnit) return "Escolha uma unidade para continuar.";
-    if (step === 4 && !selectedPlan) return "Escolha um plano para continuar.";
-    if (step === 5 && !selectedVehicle) return "Escolha ou cadastre um veiculo para continuar.";
-    if (step === 6 && !paymentMethod) return "Escolha uma forma de pagamento para continuar.";
+    if (STEP_UNIT !== null && step === STEP_UNIT && !selectedUnit) return "Escolha uma unidade para continuar.";
+    if (step === STEP_PLAN && !selectedPlan) return "Escolha um plano para continuar.";
+    if (step === STEP_VEHICLE && !selectedVehicle) return "Escolha ou cadastre um veiculo para continuar.";
+    if (step === STEP_PAYMENT && !paymentMethod) return "Escolha uma forma de pagamento para continuar.";
     return null;
   }
 
@@ -114,13 +112,13 @@ export default function SubscribeScreen() {
       return;
     }
 
-    if (step === 6) {
+    if (step === STEP_PAYMENT) {
       const checkoutPayload = payload();
       if (!checkoutPayload) return;
       try {
         const result = await previewMutation.mutateAsync(checkoutPayload);
         setPreview(result);
-        setStep(7);
+        setStep(STEP_PREVIEW);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Nao foi possivel gerar o preview.");
       }
@@ -138,7 +136,7 @@ export default function SubscribeScreen() {
     try {
       const result = await confirmMutation.mutateAsync(checkoutPayload);
       setConfirmation(result);
-      setStep(8);
+      setStep(STEP_CONFIRM);
       void queryClient.invalidateQueries({ queryKey: ["billing"] });
       void queryClient.invalidateQueries({ queryKey: ["wallet"] });
     } catch (err) {
@@ -175,47 +173,15 @@ export default function SubscribeScreen() {
   }
 
   return (
-    <Screen>
+    <Screen statusBarStyle="light">
       <View className="gap-6 pb-8">
+        <ScreenHeader title="Assinar plano" subtitle="Escolha seu plano e finalize o checkout." />
         {isLoading ? <Loading /> : null}
         {queryError ? <ErrorState message="Nao foi possivel carregar os dados do checkout agora." /> : null}
         {error ? <ErrorState title="Atencao" message={error} /> : null}
 
-        {step === 1 ? (
-          <Step title="Estado" description="Escolha onde voce quer usar o UAU+." current={step}>
-            {states.map((state) => (
-              <SelectCard
-                key={state.id}
-                onPress={() => {
-                  setSelectedState(state);
-                  setSelectedCity(null);
-                  setSelectedUnit(null);
-                }}
-                selected={selectedState?.id === state.id}
-                title={state.name}
-              />
-            ))}
-          </Step>
-        ) : null}
-
-        {step === 2 ? (
-          <Step title="Cidade" description="Agora escolha a cidade da sua assinatura." current={step}>
-            {cities.map((city) => (
-              <SelectCard
-                key={city.id}
-                onPress={() => {
-                  setSelectedCity(city);
-                  setSelectedUnit(null);
-                }}
-                selected={selectedCity?.id === city.id}
-                title={city.name}
-              />
-            ))}
-          </Step>
-        ) : null}
-
-        {step === 3 ? (
-          <Step title="Unidade" description="Escolha sua unidade principal. Planos nacionais continuam podendo usar outras unidades conforme regra do plano." current={step}>
+        {STEP_UNIT !== null && step === STEP_UNIT ? (
+          <Step title="Unidade" description="Escolha sua unidade principal. Planos nacionais continuam podendo usar outras unidades conforme regra do plano." current={step} total={TOTAL_STEPS}>
             {units.map((unit) => (
               <SelectCard
                 description={getString(asRecord(unit), ["address", "neighborhood", "document"])}
@@ -228,16 +194,16 @@ export default function SubscribeScreen() {
           </Step>
         ) : null}
 
-        {step === 4 ? (
-          <Step title="Plano" description="Escolha o plano ideal para sua rotina." current={step}>
+        {step === STEP_PLAN ? (
+          <Step title="Plano" description="Escolha o plano ideal para sua rotina." current={step} total={TOTAL_STEPS}>
             {plans.map((plan) => (
               <PlanCard key={plan.id} onPress={() => setSelectedPlan(plan)} plan={plan} selected={selectedPlan?.id === plan.id} />
             ))}
           </Step>
         ) : null}
 
-        {step === 5 ? (
-          <Step title="Veiculo" description="Escolha um veiculo cadastrado ou cadastre um novo." current={step}>
+        {step === STEP_VEHICLE ? (
+          <Step title="Veiculo" description="Escolha um veiculo cadastrado ou cadastre um novo." current={step} total={TOTAL_STEPS}>
             {vehicles.length === 0 ? (
               <EmptyState title="Nenhum veiculo cadastrado" description="Cadastre sua placa abaixo para continuar." />
             ) : null}
@@ -286,8 +252,8 @@ export default function SubscribeScreen() {
           </Step>
         ) : null}
 
-        {step === 6 ? (
-          <Step title="Forma de pagamento" description="O cashback sera aplicado automaticamente conforme as regras do UAU+." current={step}>
+        {step === STEP_PAYMENT ? (
+          <Step title="Forma de pagamento" description="O cashback sera aplicado automaticamente conforme as regras do UAU+." current={step} total={TOTAL_STEPS}>
             <PaymentMethodCard
               description="Usa cashback disponivel e gera PIX para pagar o restante."
               onPress={() => setPaymentMethod("PIX")}
@@ -307,23 +273,23 @@ export default function SubscribeScreen() {
           </Step>
         ) : null}
 
-        {step === 7 && preview ? (
-          <Step title="Preview" description="Confira os valores antes de confirmar." current={step}>
+        {step === STEP_PREVIEW && preview ? (
+          <Step title="Preview" description="Confira os valores antes de confirmar." current={step} total={TOTAL_STEPS}>
             <CheckoutSummary preview={preview} unitName={selectedUnit?.name} vehiclePlate={selectedVehicle?.plate} />
           </Step>
         ) : null}
 
-        {step === 8 && confirmation ? (
-          <Step title="Assinatura criada" description="Seu checkout foi confirmado. Acompanhe a cobranca em Minhas Cobrancas." current={step}>
+        {step === STEP_CONFIRM && confirmation ? (
+          <Step title="Assinatura criada" description="Seu checkout foi confirmado. Acompanhe a cobranca em Minhas Cobrancas." current={step} total={TOTAL_STEPS}>
             <SuccessContent confirmation={confirmation} copied={copied} onCopyPix={() => void copyPix()} />
           </Step>
         ) : null}
 
         <View className="gap-3">
-          {step < 7 ? <Button loading={previewMutation.isPending} onPress={() => void next()} title="Continuar" /> : null}
-          {step === 7 ? <Button loading={confirmMutation.isPending} onPress={() => void confirm()} title="Confirmar assinatura" /> : null}
-          {step === 8 ? <Button onPress={() => router.replace("/(tabs)/billing")} title="Ir para Minhas Cobrancas" /> : null}
-          {step > 1 && step < 8 ? (
+          {step < STEP_PREVIEW ? <Button loading={previewMutation.isPending} onPress={() => void next()} title="Continuar" /> : null}
+          {step === STEP_PREVIEW ? <Button loading={confirmMutation.isPending} onPress={() => void confirm()} title="Confirmar assinatura" /> : null}
+          {step === STEP_CONFIRM ? <Button onPress={() => router.replace("/(tabs)/billing")} title="Ir para Minhas Cobrancas" /> : null}
+          {step > 1 && step < STEP_CONFIRM ? (
             <Button onPress={() => setStep((current) => Math.max(current - 1, 1))} title="Voltar" variant="ghost" />
           ) : null}
         </View>
@@ -332,10 +298,22 @@ export default function SubscribeScreen() {
   );
 }
 
-function Step({ title, description, current, children }: { title: string; description: string; current: number; children: React.ReactNode }) {
+function Step({
+  title,
+  description,
+  current,
+  total,
+  children
+}: {
+  title: string;
+  description: string;
+  current: number;
+  total: number;
+  children: React.ReactNode;
+}) {
   return (
     <View className="gap-4">
-      <StepHeader current={current} description={description} title={title} total={TOTAL_STEPS} />
+      <StepHeader current={current} description={description} title={title} total={total} />
       {children}
     </View>
   );

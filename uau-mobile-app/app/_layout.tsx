@@ -36,6 +36,8 @@ export default function RootLayout() {
           <Stack.Screen name="partners/[id]" />
           <Stack.Screen name="vehicles/index" />
           <Stack.Screen name="history/index" />
+          <Stack.Screen name="units/index" />
+          <Stack.Screen name="units/[id]" />
         </Stack>
         <JSSplashScreen visible={!appReady} onCoveringScreen={handleSplashCovering} />
       </ToastProvider>

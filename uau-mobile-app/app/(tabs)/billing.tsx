@@ -1,6 +1,7 @@
 import * as Clipboard from "expo-clipboard";
 import { router } from "expo-router";
 import { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import { Linking, Text, View } from "react-native";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -131,17 +132,53 @@ export default function BillingScreen() {
             </View>
           );
         })() : (
-          <Card>
-            <View className="gap-4">
-              <View className="gap-2">
-                <Text className="text-lg font-semibold text-uau-black">Sem cobrança atual</Text>
-                <Text className="text-sm leading-5 text-uau-gray">
-                  Quando houver uma fatura em aberto, ela aparecerá aqui.
-                </Text>
+          <View className="gap-4">
+            <Card>
+              <View className="gap-4">
+                <View className="gap-2">
+                  <Text className="text-lg font-semibold text-uau-black">Sem cobrança atual</Text>
+                  <Text className="text-sm leading-5 text-uau-gray">
+                    Quando houver uma fatura em aberto, ela aparecerá aqui.
+                  </Text>
+                </View>
+                <Button onPress={() => router.push("/subscribe")} title="Escolher plano" />
               </View>
-              <Button onPress={() => router.push("/subscribe")} title="Escolher plano" />
-            </View>
-          </Card>
+            </Card>
+            <Card>
+              <View className="gap-4">
+                <Text className="text-base font-bold text-uau-black">Como funciona?</Text>
+                <View className="gap-3">
+                  <View className="flex-row items-center gap-3">
+                    <View className="h-9 w-9 items-center justify-center rounded-full bg-uau-teal/10">
+                      <Ionicons name="star-outline" size={18} color="#009688" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-sm font-semibold text-uau-black">Assine um plano</Text>
+                      <Text className="text-xs leading-4 text-uau-gray">Escolha o plano ideal para sua rotina de lavagens</Text>
+                    </View>
+                  </View>
+                  <View className="flex-row items-center gap-3">
+                    <View className="h-9 w-9 items-center justify-center rounded-full bg-uau-teal/10">
+                      <Ionicons name="car-outline" size={18} color="#009688" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-sm font-semibold text-uau-black">Faça check-ins</Text>
+                      <Text className="text-xs leading-4 text-uau-gray">Leve seu carro à unidade e registre o atendimento</Text>
+                    </View>
+                  </View>
+                  <View className="flex-row items-center gap-3">
+                    <View className="h-9 w-9 items-center justify-center rounded-full bg-uau-teal/10">
+                      <Ionicons name="wallet-outline" size={18} color="#009688" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-sm font-semibold text-uau-black">Acumule cashback</Text>
+                      <Text className="text-xs leading-4 text-uau-gray">Use o cashback para abater faturas e em parceiros</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            </Card>
+          </View>
         )}
 
         {/* Histórico */}

@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery } from "@tanstack/react-query";
-import { useLocalSearchParams, useNavigation } from "expo-router";
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import { Image, Linking, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { ErrorState } from "@/components/ErrorState";
 import { Screen } from "@/components/Screen";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { Skeleton } from "@/components/Skeleton";
 import { Equipment, WorkingHours, getUnit } from "@/features/units/units.api";
 
@@ -72,7 +73,6 @@ function EquipmentRow({ item }: { item: Equipment }) {
 
 export default function UnitDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const navigation = useNavigation();
   const [isFavorite, setIsFavorite] = useState(false);
   const todayDow = new Date().getDay();
 
@@ -103,28 +103,30 @@ export default function UnitDetailScreen() {
     });
   }, [id]);
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: unit?.name ?? "Unidade",
-      headerRight: () => (
-        <TouchableOpacity onPress={toggleFavorite} style={{ paddingRight: 4 }}>
-          <Ionicons
-            name={isFavorite ? "star" : "star-outline"}
-            size={22}
-            color={isFavorite ? "#F59E0B" : "#667085"}
-          />
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation, unit?.name, isFavorite, toggleFavorite]);
-
   const addressLine = [unit?.address, unit?.neighborhood, unit?.city?.name, unit?.state?.uf, unit?.zipCode]
     .filter(Boolean)
     .join(", ");
 
   return (
-    <Screen statusBarStyle="light">
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 20, paddingBottom: 32 }}>
+    <Screen statusBarStyle="light" scroll={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 20, paddingBottom: 32, paddingHorizontal: 20, paddingTop: 24 }}>
+
+        <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
+          <View style={{ flex: 1 }}>
+            <ScreenHeader title={unit?.name ?? (isLoading ? "Carregando..." : "Unidade")} />
+          </View>
+          <TouchableOpacity
+            onPress={toggleFavorite}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={{ marginTop: 28, marginLeft: 8 }}
+          >
+            <Ionicons
+              name={isFavorite ? "star" : "star-outline"}
+              size={22}
+              color={isFavorite ? "#F59E0B" : "#667085"}
+            />
+          </TouchableOpacity>
+        </View>
 
         {error ? <ErrorState message="Não foi possível carregar os dados da unidade." /> : null}
 

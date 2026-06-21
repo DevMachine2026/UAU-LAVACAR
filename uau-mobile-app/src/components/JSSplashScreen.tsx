@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Animated, Image, Modal, StyleSheet } from "react-native";
+import { Animated, Image, StyleSheet } from "react-native";
 
 interface Props {
   visible: boolean;
@@ -8,33 +8,44 @@ interface Props {
 
 export function JSSplashScreen({ visible, onCoveringScreen }: Props) {
   const opacity = useRef(new Animated.Value(1)).current;
-  const [modalVisible, setModalVisible] = useState(true);
+  const [show, setShow] = useState(true);
+
+  useEffect(() => {
+    onCoveringScreen?.();
+  }, []);
 
   useEffect(() => {
     if (!visible) {
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 500,
+        duration: 600,
         useNativeDriver: true,
-      }).start(() => setModalVisible(false));
+      }).start(() => setShow(false));
     }
   }, [visible, opacity]);
 
+  if (!show) return null;
+
   return (
-    <Modal
-      visible={modalVisible}
-      transparent
-      statusBarTranslucent
-      animationType="none"
-      onShow={onCoveringScreen}
+    <Animated.View
+      style={[
+        StyleSheet.absoluteFill,
+        styles.container,
+        { opacity },
+      ]}
     >
-      <Animated.View style={[StyleSheet.absoluteFill, { opacity }]}>
-        <Image
-          source={require("../../assets/splash.png")}
-          style={StyleSheet.absoluteFill}
-          resizeMode="cover"
-        />
-      </Animated.View>
-    </Modal>
+      <Image
+        source={require("../../assets/splash.png")}
+        style={StyleSheet.absoluteFill}
+        resizeMode="cover"
+      />
+    </Animated.View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    zIndex: 9999,
+    elevation: 9999,
+  },
+});

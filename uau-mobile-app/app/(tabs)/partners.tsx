@@ -1,7 +1,7 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Text, View } from "react-native";
-import { EmptyState } from "@/components/EmptyState";
+import { Card } from "@/components/Card";
 import { ErrorState } from "@/components/ErrorState";
-import { Loading } from "@/components/Loading";
 import { SkeletonList } from "@/components/Skeleton";
 import { Screen } from "@/components/Screen";
 import { PartnerCard } from "@/features/partners/PartnerCard";
@@ -35,8 +35,40 @@ export default function PartnersScreen() {
 
         {partnersQuery.isLoading ? <SkeletonList count={4} /> : null}
         {partnersQuery.error ? <ErrorState message="Não foi possível carregar os parceiros agora." /> : null}
-        {partners.length === 0 && !partnersQuery.isLoading ? (
-          <EmptyState title="Nenhum parceiro encontrado" description="Parceiros locais aparecerão aqui quando cadastrados." />
+        {partners.length === 0 && !partnersQuery.isLoading && !partnersQuery.error ? (
+          <View className="gap-4">
+            <View className="items-center gap-3 py-6">
+              <View className="h-20 w-20 items-center justify-center rounded-full bg-uau-teal/10">
+                <Ionicons name="storefront-outline" size={40} color="#009688" />
+              </View>
+              <Text className="text-xl font-bold text-uau-black">Nenhum parceiro disponível</Text>
+              <Text className="text-center text-sm leading-5 text-uau-gray">
+                Em breve novos parceiros estarão disponíveis aqui.
+              </Text>
+            </View>
+            <Card>
+              <View className="gap-3">
+                <Text className="text-base font-bold text-uau-black">O que são os parceiros?</Text>
+                <Text className="text-sm leading-5 text-uau-gray">
+                  Use seu cashback como desconto em estabelecimentos parceiros e ganhe novo cashback sobre o valor pago.
+                </Text>
+                <View className="gap-2">
+                  <View className="flex-row items-center gap-2">
+                    <Ionicons name="checkmark-circle-outline" size={16} color="#009688" />
+                    <Text className="text-sm text-uau-gray">Desconto direto no valor da compra</Text>
+                  </View>
+                  <View className="flex-row items-center gap-2">
+                    <Ionicons name="checkmark-circle-outline" size={16} color="#009688" />
+                    <Text className="text-sm text-uau-gray">Gera novo cashback sobre o valor pago</Text>
+                  </View>
+                  <View className="flex-row items-center gap-2">
+                    <Ionicons name="checkmark-circle-outline" size={16} color="#009688" />
+                    <Text className="text-sm text-uau-gray">Parceiros locais verificados pela UAU+</Text>
+                  </View>
+                </View>
+              </View>
+            </Card>
+          </View>
         ) : null}
 
         {partners.map((partner) => (
