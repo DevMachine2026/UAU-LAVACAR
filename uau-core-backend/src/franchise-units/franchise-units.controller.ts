@@ -1,10 +1,12 @@
-import { Controller, Get, Post, Body, Param, Patch, Put } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Put } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { UserRole } from '@prisma/client';
+import { Roles } from '../common/decorators/roles.decorator';
 import { FranchiseUnitsService } from './franchise-units.service';
 import { CreateFranchiseUnitDto } from './dto/create-franchise-unit.dto';
 import { UpdateFranchiseUnitDto } from './dto/update-franchise-unit.dto';
-import { Roles } from '../common/decorators/roles.decorator';
-import { UserRole } from '@prisma/client';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { UpdateEquipmentStatusDto } from './dto/update-equipment-status.dto';
+import { UpsertWorkingHoursDto } from './dto/upsert-working-hours.dto';
 
 @ApiTags('franchise-units')
 @ApiBearerAuth()
@@ -50,5 +52,23 @@ export class FranchiseUnitsController {
   @ApiOperation({ summary: 'Desativa uma unidade franqueada' })
   deactivate(@Param('id') id: string) {
     return this.unitsService.deactivate(id);
+  }
+
+  @Patch(':id/equipment/:equipmentId')
+  @Roles(UserRole.OPERATOR, UserRole.FRANCHISE_OWNER, UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Atualiza o status de um equipamento da unidade' })
+  updateEquipmentStatus(
+    @Param('id') id: string,
+    @Param('equipmentId') equipmentId: string,
+    @Body() dto: UpdateEquipmentStatusDto,
+  ) {
+    return this.unitsService.updateEquipmentStatus(id, equipmentId, dto);
+  }
+
+  @Put(':id/working-hours')
+  @Roles(UserRole.FRANCHISE_OWNER, UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Configura os horários de funcionamento da unidade (bulk upsert)' })
+  upsertWorkingHours(@Param('id') id: string, @Body() dto: UpsertWorkingHoursDto) {
+    return this.unitsService.upsertWorkingHours(id, dto);
   }
 }

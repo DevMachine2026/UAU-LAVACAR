@@ -44,4 +44,12 @@ export class CreateFranchiseUnitDto {
   @IsString()
   @IsOptional()
   franchiseOwnerName?: string;
+
+  @IsString()
+  @IsOptional()
+  phone?: string;
+
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
 }

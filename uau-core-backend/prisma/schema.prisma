@@ -97,6 +97,12 @@ enum AnprEventStatus {
   SUSPECT
 }
 
+enum EquipmentStatus {
+  AVAILABLE
+  UNAVAILABLE
+  MAINTENANCE
+}
+
 enum FranchiseReportStatus {
   OPEN
   CLOSED
@@ -208,6 +214,8 @@ model FranchiseUnit {
   address            String
   neighborhood       String
   zipCode            String
+  phone              String?
+  imageUrl           String?
   latitude           Float?
   longitude          Float?
   isOwnedUnit        Boolean @default(false)
@@ -227,6 +235,8 @@ model FranchiseUnit {
   franchiseReports  FranchiseReport[]
   financialLedger   FinancialLedger[]
   planAvailabilities PlanAvailability[]
+  workingHours      UnitWorkingHours[]
+  equipments        UnitEquipment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -235,6 +245,32 @@ model FranchiseUnit {
   @@index([cityId])
   @@index([isActive])
   @@map("franchise_units")
+}
+
+model UnitWorkingHours {
+  id              String        @id @default(cuid())
+  franchiseUnitId String
+  dayOfWeek       Int
+  openTime        String
+  closeTime       String
+  isClosed        Boolean       @default(false)
+  franchiseUnit   FranchiseUnit @relation(fields: [franchiseUnitId], references: [id])
+
+  @@unique([franchiseUnitId, dayOfWeek])
+  @@index([franchiseUnitId])
+  @@map("unit_working_hours")
+}
+
+model UnitEquipment {
+  id              String          @id @default(cuid())
+  franchiseUnitId String
+  name            String
+  status          EquipmentStatus @default(AVAILABLE)
+  updatedAt       DateTime        @updatedAt
+  franchiseUnit   FranchiseUnit   @relation(fields: [franchiseUnitId], references: [id])
+
+  @@index([franchiseUnitId])
+  @@map("unit_equipments")
 }
 
 model UnitStaff {
