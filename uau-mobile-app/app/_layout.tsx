@@ -4,6 +4,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import { ToastProvider } from "@/components/Toast";
+import { JSSplashScreen } from "@/components/JSSplashScreen";
 import { useAuthStore } from "@/auth/auth.store";
 import { queryClient } from "@/store/query-client";
 
@@ -14,16 +15,12 @@ export default function RootLayout() {
   const [appReady, setAppReady] = useState(false);
 
   useEffect(() => {
-    // A fonte 'ionicons' é pré-carregada nativamente pelo expo-font plugin (assets/fonts/ionicons.ttf).
-    // Não precisa de loadAsync em JS — apenas restaurar sessão e renderizar.
     restoreSession().then(() => setAppReady(true));
   }, [restoreSession]);
 
   useEffect(() => {
     if (appReady) void SplashScreen.hideAsync();
   }, [appReady]);
-
-  if (!appReady) return null;
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -39,6 +36,7 @@ export default function RootLayout() {
           <Stack.Screen name="vehicles/index" />
           <Stack.Screen name="history/index" />
         </Stack>
+        <JSSplashScreen visible={!appReady} />
       </ToastProvider>
     </QueryClientProvider>
   );
