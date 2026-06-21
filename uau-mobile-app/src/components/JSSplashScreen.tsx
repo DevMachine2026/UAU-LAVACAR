@@ -10,9 +10,7 @@ export function JSSplashScreen({ visible, onCoveringScreen }: Props) {
   const opacity = useRef(new Animated.Value(1)).current;
   const [show, setShow] = useState(true);
 
-  useEffect(() => {
-    onCoveringScreen?.();
-  }, []);
+  useEffect(() => { onCoveringScreen?.(); }, []);
 
   useEffect(() => {
     if (!visible) {
@@ -27,13 +25,7 @@ export function JSSplashScreen({ visible, onCoveringScreen }: Props) {
   if (!show) return null;
 
   return (
-    <Animated.View
-      style={[
-        StyleSheet.absoluteFill,
-        styles.container,
-        { opacity },
-      ]}
-    >
+    <Animated.View style={[StyleSheet.absoluteFill, { opacity, zIndex: 9999, elevation: 9999 }]}>
       <Image
         source={require("../../assets/splash.png")}
         style={StyleSheet.absoluteFill}
@@ -42,10 +34,3 @@ export function JSSplashScreen({ visible, onCoveringScreen }: Props) {
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    zIndex: 9999,
-    elevation: 9999,
-  },
-});
