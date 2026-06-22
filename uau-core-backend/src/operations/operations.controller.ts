@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, ForbiddenException } from '@nestjs/common';
 import { OperationsService } from './operations.service';
 import { OpenShiftDto } from './dto/open-shift.dto';
 import { CloseShiftDto } from './dto/close-shift.dto';
@@ -24,8 +24,8 @@ export class OperationsController {
   @Post('shifts/open')
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.OPERATOR)
   @ApiOperation({ summary: 'Abre um expediente na unidade' })
-  openShift(@Body() dto: OpenShiftDto) {
-    return this.svc.openShift(dto);
+  openShift(@Body() dto: OpenShiftDto, @CurrentUser() user: User) {
+    return this.svc.openShift(dto, { id: user.id, role: user.role });
   }
 
   @Get('shifts')
@@ -36,8 +36,16 @@ export class OperationsController {
   getShifts(
     @Query('unitId') unitId?: string,
     @Query('status') status?: string,
+    @CurrentUser() user?: User,
   ) {
-    return this.svc.getShifts({ unitId, status });
+    let resolvedUnitId = unitId;
+    if (user?.role === UserRole.OPERATOR) {
+      if (!user.defaultUnitId) {
+        throw new ForbiddenException('Operador sem unidade padrão configurada');
+      }
+      resolvedUnitId = user.defaultUnitId;
+    }
+    return this.svc.getShifts({ unitId: resolvedUnitId, status });
   }
 
   @Get('shifts/:id/live-summary')
@@ -101,8 +109,8 @@ export class OperationsController {
   @Post('plate-check/:plate/confirm-wash')
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.OPERATOR)
   @ApiOperation({ summary: 'Confirma lavagem do dia para a placa' })
-  confirmPlateWash(@Param('plate') plate: string, @Body() payload: { unitId: string; notes?: string }) {
-    return this.svc.confirmPlateWash(plate, payload);
+  confirmPlateWash(@Param('plate') plate: string, @Body() payload: { unitId: string; notes?: string }, @CurrentUser() user: User) {
+    return this.svc.confirmPlateWash(plate, payload, { id: user.id, role: user.role });
   }
 
   @Get('closures')

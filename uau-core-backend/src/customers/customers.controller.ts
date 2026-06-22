@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Patch, Put, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Put, Query, ForbiddenException } from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { ListCustomersDto } from './dto/list-customers.dto';
@@ -44,8 +44,13 @@ export class CustomersController {
   @Get(':id')
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.OPERATOR, UserRole.CUSTOMER)
   @ApiOperation({ summary: 'Busca um cliente pelo ID' })
-  findOne(@Param('id') id: string) {
-    return this.customersService.findOne(id);
+  async findOne(@Param('id') id: string, @CurrentUser() user: User) {
+    const customer = await this.customersService.findOne(id);
+    // [SECURITY] IDOR fix - 2026-06-22
+    if (user.role === UserRole.CUSTOMER && customer.userId !== user.id) {
+      throw new ForbiddenException('Acesso negado');
+    }
+    return customer;
   }
 
   @Put(':id')

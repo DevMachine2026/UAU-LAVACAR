@@ -1,7 +1,8 @@
 import { Body, Controller, Get, Param, Patch, Post, Put } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
+import { User, UserRole } from '@prisma/client';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { FranchiseUnitsService } from './franchise-units.service';
 import { CreateFranchiseUnitDto } from './dto/create-franchise-unit.dto';
 import { UpdateFranchiseUnitDto } from './dto/update-franchise-unit.dto';
@@ -36,8 +37,9 @@ export class FranchiseUnitsController {
   @Put(':id')
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER)
   @ApiOperation({ summary: 'Atualiza uma unidade' })
-  update(@Param('id') id: string, @Body() updateDto: UpdateFranchiseUnitDto) {
-    return this.unitsService.update(id, updateDto);
+  update(@Param('id') id: string, @Body() updateDto: UpdateFranchiseUnitDto, @CurrentUser() user: User) {
+    const actorId = user.role === UserRole.FRANCHISE_OWNER ? user.id : undefined;
+    return this.unitsService.update(id, updateDto, actorId);
   }
 
   @Patch(':id/activate')
@@ -61,14 +63,17 @@ export class FranchiseUnitsController {
     @Param('id') id: string,
     @Param('equipmentId') equipmentId: string,
     @Body() dto: UpdateEquipmentStatusDto,
+    @CurrentUser() user: User,
   ) {
-    return this.unitsService.updateEquipmentStatus(id, equipmentId, dto);
+    const actorId = user.role === UserRole.FRANCHISE_OWNER ? user.id : undefined;
+    return this.unitsService.updateEquipmentStatus(id, equipmentId, dto, actorId);
   }
 
   @Put(':id/working-hours')
   @Roles(UserRole.FRANCHISE_OWNER, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Configura os horários de funcionamento da unidade (bulk upsert)' })
-  upsertWorkingHours(@Param('id') id: string, @Body() dto: UpsertWorkingHoursDto) {
-    return this.unitsService.upsertWorkingHours(id, dto);
+  upsertWorkingHours(@Param('id') id: string, @Body() dto: UpsertWorkingHoursDto, @CurrentUser() user: User) {
+    const actorId = user.role === UserRole.FRANCHISE_OWNER ? user.id : undefined;
+    return this.unitsService.upsertWorkingHours(id, dto, actorId);
   }
 }

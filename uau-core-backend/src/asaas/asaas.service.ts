@@ -118,9 +118,10 @@ export class AsaasService {
 
   async processWebhook(payload: any) {
     const event = payload.event;
+    const isSubscriptionEvent = typeof event === 'string' && event.startsWith('SUBSCRIPTION_');
     const paymentId = payload.payment?.id;
 
-    if (!paymentId) {
+    if (!isSubscriptionEvent && !paymentId) {
       this.logger.warn('Webhook recebido sem payment.id', { event: payload.event, receivedAt: new Date().toISOString() });
       return { success: false, message: 'ID do pagamento não enviado' };
     }
@@ -132,6 +133,13 @@ export class AsaasService {
         break;
       case 'PAYMENT_OVERDUE':
         await this.handlePaymentOverdue(payload.payment, event);
+        break;
+      case 'PAYMENT_CANCELLED':
+        await this.handlePaymentCancelled(payload.payment, event);
+        break;
+      case 'SUBSCRIPTION_DELETED':
+      case 'SUBSCRIPTION_INACTIVATED':
+        await this.handleSubscriptionEventCancelled(payload.subscription, event);
         break;
       default:
         this.logger.log('Evento Asaas não mapeado recebido', { event: payload.event });
@@ -237,6 +245,57 @@ export class AsaasService {
     );
   }
 
+  private async handlePaymentCancelled(payment: any, event: string) {
+    const billing = await this.prisma.billingHistory.findFirst({
+      where: { asaasId: payment.id },
+    });
+
+    if (!billing) {
+      this.logger.error('BillingHistory não encontrado para asaasId', { asaasId: payment.id, event });
+      return;
+    }
+
+    if (billing.status === 'CANCELLED') return;
+
+    await this.prisma.billingHistory.update({
+      where: { id: billing.id },
+      data: { status: 'CANCELLED' },
+    });
+
+    if (billing.subscriptionId) {
+      await this.prisma.subscription.update({
+        where: { id: billing.subscriptionId },
+        data: { status: 'CANCELLED' },
+      });
+      this.logger.log(`Assinatura ${billing.subscriptionId} cancelada via ${event}`, { asaasId: payment.id });
+    }
+  }
+
+  private async handleSubscriptionEventCancelled(subscription: any, event: string) {
+    if (!subscription?.id) {
+      this.logger.error('Webhook de cancelamento de assinatura sem subscription.id', { event });
+      return;
+    }
+
+    const sub = await this.prisma.subscription.findUnique({
+      where: { asaasId: subscription.id },
+    });
+
+    if (!sub) {
+      this.logger.error('Subscription não encontrada para asaasId', { asaasId: subscription.id, event });
+      return;
+    }
+
+    if (sub.status === 'CANCELLED') return;
+
+    await this.prisma.subscription.update({
+      where: { id: sub.id },
+      data: { status: 'CANCELLED' },
+    });
+
+    this.logger.log(`Assinatura ${sub.id} cancelada via ${event}`, { asaasId: subscription.id });
+  }
+
   private async handlePaymentOverdue(payment: any, event: string) {
     const billing = await this.prisma.billingHistory.findFirst({
       where: { asaasId: payment.id },
@@ -246,6 +305,8 @@ export class AsaasService {
       this.logger.error('BillingHistory não encontrado para asaasId', { asaasId: payment.id, event });
       return;
     }
+
+    if (billing.status === 'OVERDUE') return;
 
     await this.prisma.billingHistory.update({
       where: { id: billing.id },

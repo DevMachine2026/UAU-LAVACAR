@@ -2,6 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { User, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
+import { IsBoolean } from 'class-validator';
+
+export class BetaAccessDto {
+  @IsBoolean()
+  grant: boolean;
+}
 
 @Injectable()
 export class UsersService {
@@ -53,5 +59,18 @@ export class UsersService {
       customerId: profile.customer?.id ?? null,
       wallet,
     };
+  }
+
+  async updateBetaAccess(id: string, grant: boolean) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('Usuário não encontrado');
+
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: { betaAccess: grant },
+      select: { id: true, name: true, email: true, betaAccess: true },
+    });
+
+    return updated;
   }
 }

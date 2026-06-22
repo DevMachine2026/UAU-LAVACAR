@@ -6,6 +6,7 @@ import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { Mailer } from '../third-party/Mailer';
 import * as bcrypt from 'bcrypt';
+import { UserRole } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -34,6 +35,10 @@ export class AuthService {
       throw new UnauthorizedException('Conta bloqueada ou inativa');
     }
 
+    if (user.role !== UserRole.SUPER_ADMIN && !user.betaAccess) {
+      throw new UnauthorizedException('Acesso restrito. Entre em contato para liberar seu acesso.');
+    }
+
     const jti = randomUUID();
     const payload = { sub: user.id, email: user.email, role: user.role, jti };
     const accessToken = this.jwtService.sign(payload);
@@ -52,8 +57,9 @@ export class AuthService {
     const code = randomInt(100000, 1000000).toString();
     const codeHash = await bcrypt.hash(code, 10);
 
+    const jti = randomUUID();
     const resetToken = this.jwtService.sign(
-      { sub: user.id, codeHash, purpose: 'password-reset' },
+      { sub: user.id, codeHash, purpose: 'password-reset', jti },
       { expiresIn: '15m' },
     );
 
@@ -96,7 +102,7 @@ export class AuthService {
   }
 
   async resetPassword(resetToken: string, code: string, newPassword: string): Promise<void> {
-    let payload: { sub: string; codeHash: string; purpose: string };
+    let payload: { sub: string; codeHash: string; purpose: string; jti: string; exp: number };
 
     try {
       payload = this.jwtService.verify(resetToken);
@@ -106,6 +112,11 @@ export class AuthService {
 
     if (payload.purpose !== 'password-reset') {
       throw new UnauthorizedException('Token inválido');
+    }
+
+    if (payload.jti) {
+      const revoked = await this.prisma.revokedToken.findUnique({ where: { jti: payload.jti } });
+      if (revoked) throw new UnauthorizedException('Token já utilizado');
     }
 
     const isCodeValid = await bcrypt.compare(code, payload.codeHash);
@@ -118,5 +129,10 @@ export class AuthService {
       where: { id: payload.sub },
       data: { passwordHash: newHash },
     });
+
+    if (payload.jti) {
+      const expiresAt = new Date(payload.exp * 1000);
+      await this.prisma.revokedToken.create({ data: { jti: payload.jti, expiresAt } });
+    }
   }
 }

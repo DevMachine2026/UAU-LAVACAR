@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpenShiftDto } from './dto/open-shift.dto';
@@ -19,7 +19,19 @@ export class OperationsService {
     return READING_FIELDS;
   }
 
-  async openShift(dto: OpenShiftDto) {
+  private async assertOperatorBelongsToUnit(userId: string, unitId: string): Promise<void> {
+    const membership = await this.prisma.unitStaff.findFirst({
+      where: { unitId, userId, isActive: true },
+    });
+    if (!membership) {
+      throw new ForbiddenException('Operador não pertence a esta unidade');
+    }
+  }
+
+  async openShift(dto: OpenShiftDto, callingUser?: { id: string; role: UserRole }) {
+    if (callingUser?.role === UserRole.OPERATOR) {
+      await this.assertOperatorBelongsToUnit(callingUser.id, dto.unitId);
+    }
     const active = await this.prisma.shift.findFirst({
       where: { unitId: dto.unitId, status: 'OPEN' },
     });
@@ -272,7 +284,10 @@ export class OperationsService {
     };
   }
 
-  async confirmPlateWash(plate: string, payload: { unitId: string; notes?: string }) {
+  async confirmPlateWash(plate: string, payload: { unitId: string; notes?: string }, callingUser?: { id: string; role: UserRole }) {
+    if (callingUser?.role === UserRole.OPERATOR) {
+      await this.assertOperatorBelongsToUnit(callingUser.id, payload.unitId);
+    }
     const normalizedPlate = plate.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
     const vehicle = await this.prisma.vehicle.findUnique({ where: { plate: normalizedPlate } });

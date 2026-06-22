@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateFranchiseUnitDto } from './dto/create-franchise-unit.dto';
 import { UpdateFranchiseUnitDto } from './dto/update-franchise-unit.dto';
@@ -37,7 +37,8 @@ export class FranchiseUnitsService {
     return unit;
   }
 
-  async update(id: string, updateDto: UpdateFranchiseUnitDto) {
+  async update(id: string, updateDto: UpdateFranchiseUnitDto, actorId?: string) {
+    if (actorId) await this.assertFranchiseOwnerOwnsUnit(actorId, id);
     return this.prisma.franchiseUnit.update({
       where: { id },
       data: updateDto,
@@ -62,7 +63,8 @@ export class FranchiseUnitsService {
     }).catch(() => { throw new NotFoundException('Unidade não encontrada'); });
   }
 
-  async updateEquipmentStatus(unitId: string, equipmentId: string, dto: UpdateEquipmentStatusDto) {
+  async updateEquipmentStatus(unitId: string, equipmentId: string, dto: UpdateEquipmentStatusDto, actorId?: string) {
+    if (actorId) await this.assertFranchiseOwnerOwnsUnit(actorId, unitId);
     const equipment = await this.prisma.unitEquipment.findFirst({
       where: { id: equipmentId, franchiseUnitId: unitId },
     });
@@ -74,7 +76,8 @@ export class FranchiseUnitsService {
     });
   }
 
-  async upsertWorkingHours(unitId: string, dto: UpsertWorkingHoursDto) {
+  async upsertWorkingHours(unitId: string, dto: UpsertWorkingHoursDto, actorId?: string) {
+    if (actorId) await this.assertFranchiseOwnerOwnsUnit(actorId, unitId);
     const unit = await this.prisma.franchiseUnit.findUnique({ where: { id: unitId }, select: { id: true } });
     if (!unit) throw new NotFoundException('Unidade não encontrada');
 
@@ -106,5 +109,15 @@ export class FranchiseUnitsService {
       where: { franchiseUnitId: unitId },
       orderBy: { dayOfWeek: 'asc' },
     });
+  }
+
+  private async assertFranchiseOwnerOwnsUnit(userId: string, unitId: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { defaultUnitId: true },
+    });
+    if (!user || user.defaultUnitId !== unitId) {
+      throw new ForbiddenException('Franqueado não tem acesso a esta unidade');
+    }
   }
 }

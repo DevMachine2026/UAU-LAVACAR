@@ -65,8 +65,12 @@ export class PartnersController {
   @Post(':id/transactions/confirm')
   @Roles(UserRole.CUSTOMER, UserRole.PARTNER, UserRole.FRANCHISE_OWNER, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Confirma transação com parceiro e aplica cashback (mobile)' })
-  confirmTransaction(@Param('id') id: string, @Body() dto: PartnerTransactionDto) {
-    return this.partnersService.confirmTransaction(id, dto);
+  confirmTransaction(@Param('id') id: string, @Body() dto: PartnerTransactionDto, @CurrentUser() user: User) {
+    // [SECURITY] IDOR fix - 2026-06-22
+    const safeDto = user.role === UserRole.CUSTOMER
+      ? { ...dto, customerUserId: user.id }
+      : dto;
+    return this.partnersService.confirmTransaction(id, safeDto);
   }
 
   @Post(':id/transactions/create-qr')

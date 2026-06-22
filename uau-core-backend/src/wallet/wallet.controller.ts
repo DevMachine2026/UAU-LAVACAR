@@ -29,7 +29,11 @@ export class WalletController {
   @Get('customer/:customerId')
   @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER, UserRole.OPERATOR, UserRole.CUSTOMER)
   @ApiOperation({ summary: 'Busca o saldo e o extrato da carteira de um cliente' })
-  getWallet(@Param('customerId') customerId: string) {
+  getWallet(@Param('customerId') customerId: string, @CurrentUser() user: User) {
+    // [SECURITY] IDOR fix - 2026-06-22
+    if (user.role === UserRole.CUSTOMER) {
+      return this.walletService.getWalletForUser(user.id);
+    }
     return this.walletService.getWallet(customerId);
   }
 

@@ -136,6 +136,7 @@ model User {
   passwordHash  String
   role          UserRole   @default(CUSTOMER)
   status        UserStatus @default(ACTIVE)
+  betaAccess    Boolean    @default(false)
   defaultUnitId String?
 
   defaultUnit   FranchiseUnit? @relation("UserDefaultUnit", fields: [defaultUnitId], references: [id])
