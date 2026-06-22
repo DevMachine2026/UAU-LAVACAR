@@ -5,14 +5,11 @@ const { width, height } = Dimensions.get("screen");
 
 interface Props {
   visible: boolean;
-  onCoveringScreen?: () => void;
 }
 
-export function JSSplashScreen({ visible, onCoveringScreen }: Props) {
+export function JSSplashScreen({ visible }: Props) {
   const opacity = useRef(new Animated.Value(1)).current;
   const [show, setShow] = useState(true);
-
-  useEffect(() => { onCoveringScreen?.(); }, []);
 
   useEffect(() => {
     if (!visible) {
