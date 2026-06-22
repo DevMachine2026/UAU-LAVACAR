@@ -280,7 +280,7 @@ export default function SubscribeScreen() {
         ) : null}
 
         {step === STEP_CONFIRM && confirmation ? (
-          <Step title="Assinatura criada" description="Seu checkout foi confirmado. Acompanhe a cobranca em Minhas Cobrancas." current={step} total={TOTAL_STEPS}>
+          <Step title="Assinatura criada" description="Seu checkout foi confirmado. Acompanhe a cobrança em Minhas Cobranças." current={step} total={TOTAL_STEPS}>
             <SuccessContent confirmation={confirmation} copied={copied} onCopyPix={() => void copyPix()} />
           </Step>
         ) : null}
