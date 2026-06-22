@@ -188,7 +188,26 @@ export default function BillingScreen() {
           </View>
 
           {history.length === 0 && !historyQuery.isLoading ? (
-            <EmptyState title="Histórico vazio" description="Suas cobranças pagas ou vencidas aparecerão aqui." />
+            <>
+              <EmptyState title="Histórico vazio" description="Suas cobranças pagas ou vencidas aparecerão aqui." />
+              <Card>
+                <View className="gap-3">
+                  <Text className="text-base font-bold text-uau-black">📋 Como funciona o pagamento?</Text>
+                  <View className="gap-2">
+                    {[
+                      "Pagamento automático todo mês via Pix ou cartão",
+                      "Receba notificação 3 dias antes do vencimento",
+                      "Use cashback para abater até 50% da fatura",
+                    ].map((item, i) => (
+                      <View key={i} className="flex-row items-center gap-2">
+                        <Ionicons name="checkmark-circle-outline" size={16} color="#009688" />
+                        <Text className="flex-1 text-sm text-uau-gray">{item}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </Card>
+            </>
           ) : null}
 
           {history.map((item, index) => {

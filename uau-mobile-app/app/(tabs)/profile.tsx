@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { KeyboardAvoidingView, Linking, Modal, Platform, Text, TouchableOpacity, View } from "react-native";
 import { Button } from "@/components/Button";
@@ -217,6 +218,25 @@ export default function ProfileScreen() {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text className="text-xs text-uau-teal">Precisa de ajuda? Entre em contato</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Redes sociais */}
+        <View style={{ backgroundColor: "white", borderRadius: 16, borderWidth: 1, borderColor: "#F0F0F0", padding: 16, gap: 12 }}>
+          <Text style={{ fontSize: 14, fontWeight: "700", color: "#101418" }}>Siga a UAU+</Text>
+          <TouchableOpacity
+            onPress={() => void Linking.openURL("https://instagram.com/uaulavacar")}
+            style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+          >
+            <Ionicons name="logo-instagram" size={20} color="#E1306C" />
+            <Text style={{ fontSize: 13, color: "#101418" }}>@uaulavacar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => void Linking.openURL("https://wa.me/5585987272728")}
+            style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+          >
+            <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+            <Text style={{ fontSize: 13, color: "#101418" }}>WhatsApp</Text>
           </TouchableOpacity>
         </View>
       </View>

@@ -68,6 +68,14 @@ export default function PartnersScreen() {
                 </View>
               </View>
             </Card>
+            <Card>
+              <View className="gap-2">
+                <Text className="text-base font-bold text-uau-black">Parceiros em breve</Text>
+                <Text className="text-sm leading-5 text-uau-gray">
+                  Estamos selecionando os melhores estabelecimentos de Fortaleza para você usar seu cashback. Fique ligado nas novidades!
+                </Text>
+              </View>
+            </Card>
           </View>
         ) : null}
 

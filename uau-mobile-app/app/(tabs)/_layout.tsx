@@ -75,7 +75,7 @@ export default function TabsLayout() {
         name="profile"
         options={{
           title: "Perfil",
-          tabBarIcon: ({ focused }) => tabIcon(focused, "person-circle", "person-circle-outline"),
+          tabBarIcon: ({ focused }) => tabIcon(focused, "person", "person-outline"),
         }}
       />
     </Tabs>

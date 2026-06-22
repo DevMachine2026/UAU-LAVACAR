@@ -5,12 +5,12 @@ import { FadeInView } from "@/components/FadeInView";
 import { DateText } from "@/components/DateText";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
-import { Loading } from "@/components/Loading";
 import { SkeletonList } from "@/components/Skeleton";
 import { MoneyText } from "@/components/MoneyText";
 import { Screen } from "@/components/Screen";
 import { useMyStatement, useMyWallet } from "@/features/wallet/wallet.hooks";
 import { asArray, asRecord, getNumber, getString } from "@/utils/data";
+import { formatCurrency } from "@/utils/format";
 
 function normalizeStatement(value: unknown) {
   if (Array.isArray(value)) return value;
@@ -106,22 +106,24 @@ export default function WalletScreen() {
           {statement.map((item, index) => {
             const record = asRecord(item);
             const amount = getNumber(record, ["amount"], 0);
-            const isCredit = amount >= 0;
+            const rawDesc = getString(record, ["description", "origin", "type"], "Movimentação");
+
+            const decayMatch = /decaimento diário do bônus de boas-vindas \(dia (\d+)\)/i.exec(rawDesc);
+            const isDecay = !!decayMatch;
+            const displayDesc = decayMatch ? `Bônus expirando · dia ${decayMatch[1]}` : rawDesc;
+            const isCredit = !isDecay && amount >= 0;
 
             return (
               <FadeInView key={getString(record, ["id"], String(index))} index={index}>
               <Card>
                 <View className="flex-row items-center justify-between gap-3">
                   <View className="flex-1">
-                    <Text className="font-semibold text-uau-black">
-                      {getString(record, ["description", "origin", "type"], "Movimentação")}
-                    </Text>
+                    <Text className="font-semibold text-uau-black">{displayDesc}</Text>
                     <DateText className="mt-1 text-xs text-uau-gray" value={getString(record, ["createdAt"])} />
                   </View>
-                  <MoneyText
-                    className={`font-bold ${isCredit ? "text-uau-teal" : "text-red-500"}`}
-                    value={amount}
-                  />
+                  <Text className={`font-bold ${isCredit ? "text-uau-teal" : "text-uau-gray"}`}>
+                    {isCredit ? "+" : "−"}{formatCurrency(Math.abs(amount))}
+                  </Text>
                 </View>
               </Card>
               </FadeInView>

@@ -523,6 +523,18 @@ export default function HomeScreen() {
           welcomeBonus={welcomeBonusBalance}
         />
 
+        {/* ── Dica ── */}
+        <View style={{
+          backgroundColor: "white", borderRadius: 16, padding: 16,
+          marginHorizontal: 16, marginBottom: 24,
+          borderWidth: 1, borderColor: "#F0F0F0",
+        }}>
+          <Text style={{ fontSize: 14, fontWeight: "700", color: "#101418" }}>💡 Sabia que?</Text>
+          <Text style={{ fontSize: 13, color: "#667085", marginTop: 6, lineHeight: 20 }}>
+            Quanto mais você lava, mais cashback acumula. Use seu saldo para abater na próxima fatura ou em parceiros UAU+.
+          </Text>
+        </View>
+
         {/* ── Campanhas ── */}
         {campaigns.length > 0 && (
           <View className="gap-3">
