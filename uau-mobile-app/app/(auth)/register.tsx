@@ -50,7 +50,7 @@ export default function RegisterScreen() {
       await register(data);
     } catch (error) {
       setError("root", {
-        message: error instanceof Error ? error.message : "Nao foi possivel criar seu cadastro."
+        message: error instanceof Error ? error.message : "Não foi possível criar seu cadastro."
       });
     }
   }

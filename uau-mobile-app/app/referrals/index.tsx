@@ -71,7 +71,7 @@ export default function ReferralsScreen() {
 
         {networkQuery.isLoading || treeQuery.isLoading ? <Loading /> : null}
         {networkQuery.error || treeQuery.error ? (
-          <ErrorState message="Nao foi possivel carregar sua rede agora." />
+          <ErrorState message="Não foi possível carregar sua rede agora." />
         ) : null}
         {isEmpty ? (
           <EmptyState title="Rede ainda vazia" description="Compartilhe seu codigo para comecar a formar sua rede." />

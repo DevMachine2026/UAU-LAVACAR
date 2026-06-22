@@ -33,11 +33,11 @@ export default function HistoryScreen() {
         />
 
         {attendancesQuery.isLoading ? <SkeletonList count={4} /> : null}
-        {attendancesQuery.error ? <ErrorState message="Nao foi possivel carregar seu historico agora." /> : null}
+        {attendancesQuery.error ? <ErrorState message="Não foi possível carregar seu histórico agora." /> : null}
         {attendances.length === 0 && !attendancesQuery.isLoading ? (
           <EmptyState
-            title="Historico vazio"
-            description="Seu historico de lavagens aparecera aqui assim que sua unidade registrar atendimentos pelo caixa ou camera."
+            title="Histórico vazio"
+            description="Seu histórico de lavagens aparecerá aqui assim que sua unidade registrar atendimentos pelo caixa ou câmera."
           />
         ) : null}
 

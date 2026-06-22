@@ -63,7 +63,7 @@ export default function PartnerDetailScreen() {
     }
 
     if (cashback < 0) {
-      throw new Error("Cashback nao pode ser negativo.");
+      throw new Error("Cashback não pode ser negativo.");
     }
 
     return {
@@ -163,10 +163,10 @@ export default function PartnerDetailScreen() {
                   />
                 </View>
                 <Text className="text-sm leading-5 text-uau-gray">
-                  Cashback usado no parceiro funciona como desconto do parceiro e nao gera divida da UAU.
+                  Cashback usado no parceiro funciona como desconto do parceiro e não gera dívida da UAU.
                 </Text>
                 <Text className="text-sm leading-5 text-uau-gray">
-                  O novo cashback incide somente sobre o valor pago via PIX/cartao.
+                  O novo cashback incide somente sobre o valor pago via PIX/cartão.
                 </Text>
               </View>
             </Card>

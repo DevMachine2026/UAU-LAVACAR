@@ -253,15 +253,15 @@ export default function SubscribeScreen() {
         ) : null}
 
         {step === STEP_PAYMENT ? (
-          <Step title="Forma de pagamento" description="O cashback sera aplicado automaticamente conforme as regras do UAU+." current={step} total={TOTAL_STEPS}>
+          <Step title="Forma de pagamento" description="O cashback será aplicado automaticamente conforme as regras do UAU+." current={step} total={TOTAL_STEPS}>
             <PaymentMethodCard
-              description="Usa cashback disponivel e gera PIX para pagar o restante."
+              description="Usa cashback disponível e gera PIX para pagar o restante."
               onPress={() => setPaymentMethod("PIX")}
               selected={paymentMethod === "PIX"}
               title="Cashback + PIX"
             />
             <PaymentMethodCard
-              description="Usa cashback disponivel e prepara pagamento do restante no cartao."
+              description="Usa cashback disponível e prepara pagamento do restante no cartão."
               onPress={() => setPaymentMethod("CREDIT_CARD")}
               selected={paymentMethod === "CREDIT_CARD"}
               title="Cashback + Cartao"
@@ -288,7 +288,7 @@ export default function SubscribeScreen() {
         <View className="gap-3">
           {step < STEP_PREVIEW ? <Button loading={previewMutation.isPending} onPress={() => void next()} title="Continuar" /> : null}
           {step === STEP_PREVIEW ? <Button loading={confirmMutation.isPending} onPress={() => void confirm()} title="Confirmar assinatura" /> : null}
-          {step === STEP_CONFIRM ? <Button onPress={() => router.replace("/(tabs)/billing")} title="Ir para Minhas Cobrancas" /> : null}
+          {step === STEP_CONFIRM ? <Button onPress={() => router.replace("/(tabs)/billing")} title="Ir para Minhas Cobranças" /> : null}
           {step > 1 && step < STEP_CONFIRM ? (
             <Button onPress={() => setStep((current) => Math.max(current - 1, 1))} title="Voltar" variant="ghost" />
           ) : null}
