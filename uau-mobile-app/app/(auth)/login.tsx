@@ -65,7 +65,7 @@ export default function LoginScreen() {
         <SafeAreaView edges={["top"]}>
           <View className="items-center px-6 pb-2 pt-10">
             <Image
-              source={require("../../assets/icon.png")}
+              source={require("../../assets/adaptive-icon-original.png")}
               style={{ width: 88, height: 88, borderRadius: 20 }}
               resizeMode="contain"
             />
