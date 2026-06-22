@@ -225,14 +225,14 @@ export default function ProfileScreen() {
         <View style={{ backgroundColor: "white", borderRadius: 16, borderWidth: 1, borderColor: "#F0F0F0", padding: 16, gap: 12 }}>
           <Text style={{ fontSize: 14, fontWeight: "700", color: "#101418" }}>Siga a UAU+</Text>
           <TouchableOpacity
-            onPress={() => void Linking.openURL("https://instagram.com/uaulavacar")}
+            onPress={() => void Linking.openURL("https://www.instagram.com/uaulavacarfortaleza")}
             style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
           >
             <Ionicons name="logo-instagram" size={20} color="#E1306C" />
-            <Text style={{ fontSize: 13, color: "#101418" }}>@uaulavacar</Text>
+            <Text style={{ fontSize: 13, color: "#101418" }}>@uaulavacarfortaleza</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => void Linking.openURL("https://wa.me/5585987272728")}
+            onPress={() => void Linking.openURL("https://wa.me/5585986532728")}
             style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
           >
             <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
