@@ -20,6 +20,44 @@ function translateStatus(status: string): { label: string; color: string } {
   }
 }
 
+type SettingsItemProps = {
+  icon: string;
+  label: string;
+  iconBg: string;
+  iconColor: string;
+  labelColor?: string;
+  onPress: () => void;
+  showChevron?: boolean;
+};
+
+function SettingsItem({
+  icon, label, iconBg, iconColor,
+  labelColor = "#101418", onPress, showChevron = true,
+}: SettingsItemProps) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      style={{ flexDirection: "row", alignItems: "center", padding: 16 }}
+    >
+      <View style={{
+        width: 40, height: 40, borderRadius: 10,
+        backgroundColor: iconBg, alignItems: "center", justifyContent: "center",
+      }}>
+        <Ionicons name={icon as any} size={20} color={iconColor} />
+      </View>
+      <Text style={{ marginLeft: 12, fontSize: 15, fontWeight: "600", color: labelColor, flex: 1 }}>
+        {label}
+      </Text>
+      {showChevron && <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />}
+    </TouchableOpacity>
+  );
+}
+
+function Separator() {
+  return <View style={{ height: 1, backgroundColor: "#E5E7EB", marginLeft: 68 }} />;
+}
+
 export default function ProfileScreen() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
@@ -148,37 +186,54 @@ export default function ProfileScreen() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <Screen statusBarStyle="light">
-      <View className="gap-5">
-        {/* Header teal */}
+      <View style={{ gap: 16 }}>
+
+        {/* Header */}
         <View className="-mx-5 -mt-6 rounded-b-3xl bg-uau-teal px-5 pb-6 pt-4">
           <Text className="text-2xl font-bold text-white">Perfil</Text>
           <Text className="mt-1 text-sm text-white/80">Seus dados da conta UAU+</Text>
         </View>
 
-        {/* Avatar + dados */}
-        <View className="items-center gap-4 rounded-2xl border border-gray-100 bg-white p-6">
-          <View className="h-20 w-20 items-center justify-center rounded-full bg-uau-teal">
-            <Text className="text-3xl font-bold text-white">{initials}</Text>
+        {/* Card do usuário */}
+        <View style={{
+          backgroundColor: "white", borderRadius: 16, padding: 20,
+          alignItems: "center", borderWidth: 1, borderColor: "#E5E7EB",
+        }}>
+          <View style={{
+            width: 60, height: 60, borderRadius: 30,
+            backgroundColor: "#009688", alignItems: "center", justifyContent: "center",
+          }}>
+            <Text style={{ color: "white", fontSize: 22, fontWeight: "700" }}>{initials}</Text>
           </View>
-          <View className="items-center gap-1">
-            <Text className="text-xl font-bold text-uau-black">{user?.name ?? "—"}</Text>
-            <Text className="text-sm text-uau-gray">{user?.email ?? "—"}</Text>
-            {user?.phone ? <Text className="text-sm text-uau-gray">{user.phone}</Text> : null}
-          </View>
+          <Text style={{ fontSize: 17, fontWeight: "700", color: "#101418", marginTop: 10 }}>
+            {user?.name ?? "—"}
+          </Text>
+          <Text style={{ fontSize: 13, color: "#667085", marginTop: 2 }}>
+            {user?.email ?? "—"}
+          </Text>
+          {user?.phone ? (
+            <Text style={{ fontSize: 13, color: "#667085", marginTop: 2 }}>{user.phone}</Text>
+          ) : null}
           {user?.status ? (() => {
             const { label, color } = translateStatus(user.status);
             return (
-              <View style={{ backgroundColor: color + "20", borderRadius: 99, paddingHorizontal: 16, paddingVertical: 4 }}>
+              <View style={{
+                backgroundColor: color + "1A", borderRadius: 20,
+                paddingHorizontal: 12, paddingVertical: 4, marginTop: 8,
+              }}>
                 <Text style={{ fontSize: 12, fontWeight: "600", color }}>{label}</Text>
               </View>
             );
           })() : null}
         </View>
 
-        {/* Formulário inline de edição ou botões de ação */}
+        {/* Formulário de edição — visível quando editOpen */}
         {editOpen ? (
-          <View className="gap-4 rounded-2xl border border-gray-100 bg-white p-5">
-            <Text className="text-lg font-bold text-uau-black">Editar perfil</Text>
+          <View style={{
+            backgroundColor: "white", borderRadius: 16, padding: 20,
+            borderWidth: 1, borderColor: "#E5E7EB", gap: 16,
+          }}>
+            <Text style={{ fontSize: 17, fontWeight: "700", color: "#101418" }}>Editar perfil</Text>
             <Input
               label="Nome"
               value={editName}
@@ -200,45 +255,72 @@ export default function ProfileScreen() {
             <Button loading={editLoading} onPress={() => void saveProfile()} title="Salvar alterações" />
             <Button onPress={cancelEdit} title="Cancelar" variant="ghost" />
           </View>
-        ) : (
-          <View className="gap-3">
-            <Button onPress={openEditForm} title="Editar perfil" />
-            <Button onPress={openPwdModal} title="Alterar senha" variant="ghost" />
+        ) : null}
+
+        {/* Card de ações (lista agrupada) */}
+        {!editOpen ? (
+          <View style={{
+            backgroundColor: "white", borderRadius: 16,
+            overflow: "hidden", borderWidth: 1, borderColor: "#E5E7EB",
+          }}>
+            <SettingsItem
+              icon="person-outline"
+              label="Editar perfil"
+              iconBg="rgba(0,150,136,0.09)"
+              iconColor="#009688"
+              onPress={openEditForm}
+            />
+            <Separator />
+            <SettingsItem
+              icon="lock-closed-outline"
+              label="Alterar senha"
+              iconBg="rgba(0,150,136,0.09)"
+              iconColor="#009688"
+              onPress={openPwdModal}
+            />
+            <View style={{ height: 2, backgroundColor: "#F5F7FA" }} />
+            <SettingsItem
+              icon="log-out-outline"
+              label="Sair da conta"
+              iconBg="rgba(217,45,32,0.09)"
+              iconColor="#D92D20"
+              labelColor="#D92D20"
+              onPress={() => void logout()}
+              showChevron={false}
+            />
           </View>
-        )}
+        ) : null}
 
-        <View className="mt-2">
-          <Button onPress={() => void logout()} title="Sair da conta" variant="ghost" />
-        </View>
-
-        <View className="items-center gap-2 pb-2 pt-4">
-          <Text className="text-xs text-uau-gray">UAU+ Lavacar v1.0.0</Text>
-          <TouchableOpacity
-            onPress={() => void Linking.openURL("mailto:suporte@uau.app")}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Text className="text-xs text-uau-teal">Precisa de ajuda? Entre em contato</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Redes sociais */}
-        <View style={{ backgroundColor: "white", borderRadius: 16, borderWidth: 1, borderColor: "#F0F0F0", padding: 16, gap: 12 }}>
-          <Text style={{ fontSize: 14, fontWeight: "700", color: "#101418" }}>Siga a UAU+</Text>
-          <TouchableOpacity
-            onPress={() => void Linking.openURL("https://www.instagram.com/uaulavacarfortaleza")}
-            style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
-          >
-            <Ionicons name="logo-instagram" size={20} color="#E1306C" />
-            <Text style={{ fontSize: 13, color: "#101418" }}>@uaulavacarfortaleza</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+        {/* Card de suporte e redes sociais */}
+        <View style={{
+          backgroundColor: "white", borderRadius: 16,
+          overflow: "hidden", borderWidth: 1, borderColor: "#E5E7EB",
+        }}>
+          <SettingsItem
+            icon="logo-whatsapp"
+            label="Falar com suporte"
+            iconBg="rgba(37,211,102,0.09)"
+            iconColor="#25D366"
             onPress={() => void Linking.openURL("https://wa.me/5585986532728")}
-            style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
-          >
-            <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
-            <Text style={{ fontSize: 13, color: "#101418" }}>WhatsApp</Text>
-          </TouchableOpacity>
+          />
+          <Separator />
+          <SettingsItem
+            icon="logo-instagram"
+            label="Seguir no Instagram"
+            iconBg="rgba(225,48,108,0.09)"
+            iconColor="#E1306C"
+            onPress={() => void Linking.openURL("https://www.instagram.com/uaulavacarfortaleza")}
+          />
         </View>
+
+        {/* Rodapé */}
+        <Text style={{
+          textAlign: "center", fontSize: 12, color: "#667085",
+          marginTop: 8, marginBottom: 24,
+        }}>
+          UAU+ Lavacar v1.0.0
+        </Text>
+
       </View>
 
       {/* Modal de troca de senha */}
@@ -252,23 +334,14 @@ export default function ProfileScreen() {
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={{ flex: 1 }}
         >
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: "rgba(0,0,0,0.5)",
-              justifyContent: "center",
-              paddingHorizontal: 24,
-            }}
-          >
-            <View
-              style={{
-                backgroundColor: "white",
-                borderRadius: 20,
-                padding: 24,
-                gap: 16,
-              }}
-            >
-              <Text style={{ fontSize: 18, fontWeight: "700", color: "#1A1A1A" }}>
+          <View style={{
+            flex: 1, backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "center", paddingHorizontal: 24,
+          }}>
+            <View style={{
+              backgroundColor: "white", borderRadius: 20, padding: 24, gap: 16,
+            }}>
+              <Text style={{ fontSize: 18, fontWeight: "700", color: "#101418" }}>
                 Alterar senha
               </Text>
               <Input
@@ -296,7 +369,7 @@ export default function ProfileScreen() {
                 error={confirmPwdError || undefined}
               />
               {pwdGenericError ? (
-                <Text style={{ color: "#C62828", fontSize: 13 }}>{pwdGenericError}</Text>
+                <Text style={{ color: "#D92D20", fontSize: 13 }}>{pwdGenericError}</Text>
               ) : null}
               <Button
                 loading={pwdLoading}
