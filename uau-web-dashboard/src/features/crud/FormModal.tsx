@@ -17,15 +17,19 @@ export function FormModal({
   busy?: boolean;
 }) {
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/30 p-4">
-      <Card className="max-h-[90vh] w-full max-w-3xl overflow-auto">
+    <div className="fixed inset-0 z-30 flex items-start justify-center overflow-y-auto bg-black/30 p-4 pt-16 sm:items-center sm:pt-4">
+      <Card className="w-full max-w-3xl">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-xl font-bold text-uau-black">{title}</h2>
-          <Button onClick={onClose} type="button" variant="ghost">Fechar</Button>
+          <Button onClick={onClose} type="button" variant="ghost">
+            Fechar
+          </Button>
         </div>
         <div className="mt-5 grid gap-4">{children}</div>
         <div className="mt-6 flex justify-end">
-          <Button disabled={busy} onClick={onSubmit} type="button">{submitLabel}</Button>
+          <Button disabled={busy} onClick={onSubmit} type="button">
+            {busy ? "Salvando..." : submitLabel}
+          </Button>
         </div>
       </Card>
     </div>

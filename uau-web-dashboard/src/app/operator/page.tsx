@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { maskPlate } from "@/utils/masks";
+import { Toast } from "@/components/Toast";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -136,7 +138,7 @@ export default function OperatorPage() {
         <div className="space-y-6">
           {(units.isLoading || readings.isLoading || shifts.isLoading) ? <LoadingState /> : null}
           {(units.error || readings.error || shifts.error || summary.error || error) ? <ErrorState message={error || "Nao foi possivel carregar a operacao."} /> : null}
-          {notice ? <Card className="border-emerald-200 text-emerald-800">{notice}</Card> : null}
+          {notice ? <Toast message={notice} onDismiss={() => setNotice("")} /> : null}
 
           <Card>
             <div className="grid gap-4 lg:grid-cols-[1fr_auto_auto_auto]">
@@ -168,8 +170,21 @@ export default function OperatorPage() {
               <Card>
                 <p className="mb-4 text-lg font-bold text-uau-black">Registrar carro manualmente</p>
                 <div className="grid gap-4 md:grid-cols-[1fr_160px_auto]">
-                  <FormField label="Placa" value={plate} onChange={(event) => setPlate(event.target.value.toUpperCase())} />
-                  <FormField label="Valor" type="number" min="0" step="0.01" value={amountPaid} onChange={(event) => setAmountPaid(event.target.value)} />
+                  <FormField
+                    label="Placa *"
+                    placeholder="Ex: ABC-1234"
+                    value={plate}
+                    onChange={(event) => setPlate(maskPlate(event.target.value))}
+                  />
+                  <FormField
+                    label="Valor R$ *"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0,00"
+                    value={amountPaid}
+                    onChange={(event) => setAmountPaid(event.target.value)}
+                  />
                   <Button className="self-end" disabled={!plate || manual.isPending} onClick={() => manual.mutate()}>Registrar</Button>
                 </div>
               </Card>

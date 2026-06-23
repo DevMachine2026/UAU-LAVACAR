@@ -24,6 +24,7 @@ import {
   setCampaignActive,
   updateCampaign,
 } from "@/features/campaigns/campaigns.api";
+import { Toast } from "@/components/Toast";
 
 type CampaignForm = {
   id?: string; title: string; subtitle: string; body: string; imageUrl: string; ctaLabel: string; ctaUrl: string;
@@ -100,7 +101,7 @@ export default function AdminCampaignsPage() {
         <div className="space-y-6">
           {campaigns.isLoading ? <LoadingState /> : null}
           {(campaigns.error || error) ? <ErrorState message={error || "Nao foi possivel carregar campanhas."} /> : null}
-          {notice ? <Card className="border-emerald-200 text-emerald-800">{notice}</Card> : null}
+          {notice ? <Toast message={notice} onDismiss={() => setNotice("")} /> : null}
           <div className="flex justify-end"><Button onClick={() => setForm(emptyCampaign)}>Nova campanha</Button></div>
           <DataTable
             rows={campaigns.data ?? []}

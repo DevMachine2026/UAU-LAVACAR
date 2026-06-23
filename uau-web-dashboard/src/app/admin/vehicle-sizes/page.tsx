@@ -26,6 +26,7 @@ import {
   updateVehicleModelSizeRule,
   updateVehicleSizeCategory,
 } from "@/features/vehicle-sizes/vehicleSizes.api";
+import { Toast } from "@/components/Toast";
 
 type CategoryForm = { id?: string; name: string; description: string; sortOrder: string; isActive: boolean };
 type RuleForm = { id?: string; brand: string; model: string; sizeCategoryId: string; isActive: boolean };
@@ -114,7 +115,7 @@ export default function VehicleSizesPage() {
         <div className="space-y-6">
           {(categories.isLoading || rules.isLoading) ? <LoadingState /> : null}
           {(categories.error || rules.error || error) ? <ErrorState message={error || "Nao foi possivel carregar portes."} /> : null}
-          {notice ? <Card className="border-emerald-200 text-emerald-800">{notice}</Card> : null}
+          {notice ? <Toast message={notice} onDismiss={() => setNotice("")} /> : null}
 
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => setTab("categories")} variant={tab === "categories" ? "primary" : "ghost"}>Categorias</Button>

@@ -16,6 +16,7 @@ import { StatusBadge } from "@/features/crud/StatusBadge";
 import { errorMessage } from "@/features/crud/feedback";
 import { getCities, getStates, getUnits } from "@/features/locations/locations.api";
 import { PartnerItem, createPartner, getPartners, setPartnerActive, updatePartner } from "@/features/partners/partners.api";
+import { Toast } from "@/components/Toast";
 
 type PartnerForm = {
   id?: string; name: string; document: string; email: string; phone: string; category: string; stateId: string; cityId: string; unitId: string;
@@ -88,7 +89,7 @@ export default function AdminPartnersPage() {
         <div className="space-y-6">
           {(partners.isLoading || states.isLoading || cities.isLoading || units.isLoading) ? <LoadingState /> : null}
           {(partners.error || error) ? <ErrorState message={error || "Nao foi possivel carregar parceiros."} /> : null}
-          {notice ? <Card className="border-emerald-200 text-emerald-800">{notice}</Card> : null}
+          {notice ? <Toast message={notice} onDismiss={() => setNotice("")} /> : null}
           <div className="flex justify-end"><Button onClick={() => setForm(emptyPartner)}>Novo parceiro</Button></div>
 
           <DataTable

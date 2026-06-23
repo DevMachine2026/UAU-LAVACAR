@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { maskCPF, maskPhone } from "@/utils/masks";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { ErrorState, LoadingState } from "@/components/State";
@@ -35,8 +36,18 @@ export default function AdminCustomersPage() {
           <Card>
             <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
               <FormField label="Nome" value={filters.name} onChange={(event) => updateFilters({ ...filters, name: event.target.value })} />
-              <FormField label="CPF" value={filters.cpf} onChange={(event) => updateFilters({ ...filters, cpf: event.target.value })} />
-              <FormField label="Telefone" value={filters.phone} onChange={(event) => updateFilters({ ...filters, phone: event.target.value })} />
+              <FormField
+                label="CPF"
+                placeholder="Ex: 000.000.000-00"
+                value={filters.cpf}
+                onChange={(event) => updateFilters({ ...filters, cpf: maskCPF(event.target.value) })}
+              />
+              <FormField
+                label="Telefone"
+                placeholder="Ex: (85) 99999-9999"
+                value={filters.phone}
+                onChange={(event) => updateFilters({ ...filters, phone: maskPhone(event.target.value) })}
+              />
               <SelectField label="Status" options={["ACTIVE", "INACTIVE", "BLOCKED", "SUSPECT"].map(option)} value={filters.status} onChange={(event) => updateFilters({ ...filters, status: event.target.value })} />
               <SelectField label="Unidade" options={unitOptions} value={filters.unitId} onChange={(event) => updateFilters({ ...filters, unitId: event.target.value })} />
               <SelectField label="Assinatura" options={["ACTIVE", "OVERDUE", "CANCELED", "NONE"].map(option)} value={filters.subscription} onChange={(event) => updateFilters({ ...filters, subscription: event.target.value })} />

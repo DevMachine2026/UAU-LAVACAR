@@ -1,10 +1,11 @@
-type StatusBadgeVariant = "success" | "danger" | "warning" | "inactive";
+type StatusBadgeVariant = "success" | "danger" | "warning" | "overdue" | "inactive";
 
-const colorMap: Record<StatusBadgeVariant, string> = {
-  success: "bg-[#0BA95B]/10 text-[#0BA95B]",
-  danger: "bg-[#D92D20]/10 text-[#D92D20]",
-  warning: "bg-[#F59E0B]/10 text-[#F59E0B]",
-  inactive: "bg-gray-100 text-[#667085]",
+const styleMap: Record<StatusBadgeVariant, string> = {
+  success: "border border-green-200 bg-green-50 text-green-700",
+  danger: "border border-red-200 bg-red-50 text-red-700",
+  warning: "border border-amber-200 bg-amber-50 text-amber-700",
+  overdue: "border border-orange-200 bg-orange-50 text-orange-700",
+  inactive: "border border-gray-200 bg-gray-50 text-gray-500",
 };
 
 export function StatusBadge({
@@ -20,7 +21,9 @@ export function StatusBadge({
   const resolvedVariant = variant ?? (enabled ? "success" : "inactive");
 
   return (
-    <span className={`inline-flex rounded-lg px-3 py-1 text-xs font-bold ${colorMap[resolvedVariant]}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${styleMap[resolvedVariant]}`}
+    >
       {label ?? (enabled ? "Ativo" : "Inativo")}
     </span>
   );

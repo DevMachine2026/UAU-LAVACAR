@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { maskCEP } from "@/utils/masks";
+import { Toast } from "@/components/Toast";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { ErrorState, LoadingState } from "@/components/State";
@@ -131,7 +133,7 @@ export default function AdminLocationsPage() {
         <div className="space-y-6">
           {(states.isLoading || cities.isLoading || units.isLoading) ? <LoadingState /> : null}
           {(states.error || cities.error || units.error || error) ? <ErrorState message={error || "Nao foi possivel carregar localidades."} /> : null}
-          {notice ? <Card className="border-emerald-200 text-emerald-800">{notice}</Card> : null}
+          {notice ? <Toast message={notice} onDismiss={() => setNotice("")} /> : null}
 
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => setTab("states")} variant={tab === "states" ? "primary" : "ghost"}>Estados</Button>
@@ -222,12 +224,17 @@ export default function AdminLocationsPage() {
 
           {unitForm ? (
             <FormModal title={unitForm.id ? "Editar unidade" : "Nova unidade"} onClose={() => setUnitForm(null)} onSubmit={() => saveUnit.mutate()} busy={saveUnit.isPending}>
-              <FormField label="Nome" value={unitForm.name} onChange={(event) => setUnitForm({ ...unitForm, name: event.target.value })} />
+              <FormField label="Nome" placeholder="Ex: Unidade Centro Fortaleza" value={unitForm.name} onChange={(event) => setUnitForm({ ...unitForm, name: event.target.value })} />
               <SelectField label="Estado" options={stateOptions} value={unitForm.stateId} onChange={(event) => setUnitForm({ ...unitForm, stateId: event.target.value, cityId: "" })} />
               <SelectField label="Cidade" options={cityOptions} value={unitForm.cityId} onChange={(event) => setUnitForm({ ...unitForm, cityId: event.target.value })} />
-              <FormField label="Endereco" value={unitForm.address} onChange={(event) => setUnitForm({ ...unitForm, address: event.target.value })} />
-              <FormField label="Bairro" value={unitForm.neighborhood} onChange={(event) => setUnitForm({ ...unitForm, neighborhood: event.target.value })} />
-              <FormField label="CEP" value={unitForm.zipCode} onChange={(event) => setUnitForm({ ...unitForm, zipCode: event.target.value })} />
+              <FormField label="Endereco" placeholder="Ex: Rua das Flores, 123" value={unitForm.address} onChange={(event) => setUnitForm({ ...unitForm, address: event.target.value })} />
+              <FormField label="Bairro" placeholder="Ex: Centro" value={unitForm.neighborhood} onChange={(event) => setUnitForm({ ...unitForm, neighborhood: event.target.value })} />
+              <FormField
+                label="CEP"
+                placeholder="Ex: 60000-000"
+                value={unitForm.zipCode}
+                onChange={(event) => setUnitForm({ ...unitForm, zipCode: maskCEP(event.target.value) })}
+              />
               <FormField label="Proprietario/franqueado" value={unitForm.franchiseOwnerName} onChange={(event) => setUnitForm({ ...unitForm, franchiseOwnerName: event.target.value })} />
               <div className="grid gap-4 md:grid-cols-2">
                 <FormField label="Latitude" type="number" value={unitForm.latitude} onChange={(event) => setUnitForm({ ...unitForm, latitude: event.target.value })} />

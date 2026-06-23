@@ -28,6 +28,7 @@ import {
 } from "@/features/plans/plans.api";
 import { getCities, getStates, getUnits } from "@/features/locations/locations.api";
 import { getVehicleSizeCategories } from "@/features/vehicle-sizes/vehicleSizes.api";
+import { Toast } from "@/components/Toast";
 
 type PlanForm = {
   id: string;
@@ -149,7 +150,7 @@ export default function AdminPlansPage() {
         <div className="space-y-6">
           {(plans.isLoading || categories.isLoading || states.isLoading || cities.isLoading || units.isLoading) ? <LoadingState /> : null}
           {(plans.error || categories.error || error) ? <ErrorState message={error || "Nao foi possivel carregar planos."} /> : null}
-          {notice ? <Card className="border-emerald-200 text-emerald-800">{notice}</Card> : null}
+          {notice ? <Toast message={notice} onDismiss={() => setNotice("")} /> : null}
 
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => setTab("single")} variant={tab === "single" ? "primary" : "ghost"}>Preco unico</Button>

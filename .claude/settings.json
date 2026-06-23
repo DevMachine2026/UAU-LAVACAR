@@ -222,7 +222,8 @@
       "Bash(npm show *)",
       "Bash(rm -rf node_modules/next && npm install 2>&1)",
       "Bash(grep -E '\\\\.\\(tsx|ts|css|js|json\\)$')",
-      "Bash(grep -E '\\\\.\\(tsx|ts|css\\)$')"
+      "Bash(grep -E '\\\\.\\(tsx|ts|css\\)$')",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(k,v\\) for k,v in {**d.get\\('dependencies',{}\\),**d.get\\('devDependencies',{}\\)}.items\\(\\)]\")"
     ],
     "additionalDirectories": [
       "/mnt/hd/SALESNET/docs/superpowers/plans",
