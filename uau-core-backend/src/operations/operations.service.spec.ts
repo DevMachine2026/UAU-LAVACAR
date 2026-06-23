@@ -111,6 +111,41 @@ describe('OperationsService', () => {
     });
   });
 
+  // ─── checkPlate e confirmPlateWash — bloqueio por OVERDUE ───────────────
+
+  describe('checkPlate e confirmPlateWash — bloqueio por OVERDUE', () => {
+    it('cenário 6: checkPlate retorna status OVERDUE e reason com "pagamento em atraso" para assinatura inadimplente', async () => {
+      const { customer } = await createTestCustomer(prisma, cleanup);
+      const plan = await createTestPlan(prisma, cleanup);
+      const vehicle = await createTestVehicle(prisma, cleanup, customer.id);
+
+      await createTestSubscription(prisma, cleanup, customer.id, plan.id, {}, {
+        vehicleId: vehicle.id,
+        status: 'OVERDUE',
+      });
+
+      const result = await service.checkPlate(vehicle.plate);
+
+      expect(result.status).toBe('OVERDUE');
+      expect(result.reason).toContain('pagamento em atraso');
+    });
+
+    it('cenário 7: confirmPlateWash lança BadRequestException com mensagem de inadimplência para assinatura OVERDUE', async () => {
+      const { customer } = await createTestCustomer(prisma, cleanup);
+      const plan = await createTestPlan(prisma, cleanup);
+      const vehicle = await createTestVehicle(prisma, cleanup, customer.id);
+
+      await createTestSubscription(prisma, cleanup, customer.id, plan.id, {}, {
+        vehicleId: vehicle.id,
+        status: 'OVERDUE',
+      });
+
+      await expect(
+        service.confirmPlateWash(vehicle.plate, { unitId: 'unit-test' }),
+      ).rejects.toThrow('pagamento em atraso');
+    });
+  });
+
   // ─── getMyAttendances — IDOR ─────────────────────────────────────────────
 
   describe('getMyAttendances — restrição de acesso para CUSTOMER', () => {

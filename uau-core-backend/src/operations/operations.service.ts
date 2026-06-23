@@ -225,10 +225,17 @@ export class OperationsService {
 
     // Busca por vehicleId para garantir consistência com confirmPlateWash()
     const subscription = await this.prisma.subscription.findFirst({
-      where: { vehicleId: vehicle.id, status: { in: ['ACTIVE', 'OVERDUE'] } },
+      where: { vehicleId: vehicle.id, status: 'ACTIVE' },
       include: { plan: true },
       orderBy: { createdAt: 'desc' },
     });
+
+    const overdueSubscription = !subscription
+      ? await this.prisma.subscription.findFirst({
+          where: { vehicleId: vehicle.id, status: 'OVERDUE' },
+          orderBy: { createdAt: 'desc' },
+        })
+      : null;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -242,18 +249,18 @@ export class OperationsService {
 
     const canWashToday = !lastWash?.used;
     const status = !subscription
-      ? 'NO_SUBSCRIPTION'
-      : subscription.status === 'OVERDUE'
-      ? 'OVERDUE'
+      ? overdueSubscription
+        ? 'OVERDUE'
+        : 'NO_SUBSCRIPTION'
       : lastWash?.used
       ? 'ALREADY_WASHED'
       : 'AUTHORIZED';
 
     const reason =
       !subscription
-        ? 'Sem assinatura ativa'
-        : subscription.status === 'OVERDUE'
-        ? 'Assinatura em atraso'
+        ? overdueSubscription
+          ? 'Assinatura com pagamento em atraso. Cliente deve regularizar para utilizar o serviço.'
+          : 'Sem assinatura ativa'
         : lastWash?.used
         ? 'Veículo já lavado hoje'
         : null;
@@ -294,10 +301,18 @@ export class OperationsService {
     if (!vehicle) throw new NotFoundException('Veículo não encontrado');
 
     const subscription = await this.prisma.subscription.findFirst({
-      where: { vehicleId: vehicle.id, status: { in: ['ACTIVE', 'OVERDUE'] } },
+      where: { vehicleId: vehicle.id, status: 'ACTIVE' },
     });
 
     if (!subscription) {
+      const overdueSubscription = await this.prisma.subscription.findFirst({
+        where: { vehicleId: vehicle.id, status: 'OVERDUE' },
+      });
+      if (overdueSubscription) {
+        throw new BadRequestException(
+          'Assinatura com pagamento em atraso. Cliente deve regularizar para utilizar o serviço.',
+        );
+      }
       throw new BadRequestException(
         'Veículo não possui assinatura ativa. Lavagem não pode ser confirmada.',
       );
@@ -315,9 +330,17 @@ export class OperationsService {
     // Transaction guards against concurrent confirmations: re-reads subscription before writing
     return this.prisma.$transaction(async (tx) => {
       const current = await tx.subscription.findFirst({
-        where: { vehicleId: vehicle.id, status: { in: ['ACTIVE', 'OVERDUE'] } },
+        where: { vehicleId: vehicle.id, status: 'ACTIVE' },
       });
       if (!current || (current.expiresAt && current.expiresAt < new Date())) {
+        const overdueCheck = await tx.subscription.findFirst({
+          where: { vehicleId: vehicle.id, status: 'OVERDUE' },
+        });
+        if (overdueCheck) {
+          throw new BadRequestException(
+            'Assinatura com pagamento em atraso. Cliente deve regularizar para utilizar o serviço.',
+          );
+        }
         throw new BadRequestException(
           'Veículo não possui assinatura ativa. Lavagem não pode ser confirmada.',
         );
