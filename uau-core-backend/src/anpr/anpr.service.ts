@@ -24,7 +24,7 @@ export class AnprService {
         },
       });
       this.logger.warn(`Câmera não autorizada ou inexistente: ${cameraId}`);
-      throw new NotFoundException(`Câmera não encontrada: ${cameraId}`);
+      throw new NotFoundException('Câmera não autorizada');
     }
 
     if (!camera.isActive) {

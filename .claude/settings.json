@@ -213,14 +213,22 @@
       "Bash(mkdir -p /home/ronald/.claude/skills/never-regress-solved-work)",
       "Edit(~/.claude/skills/never-regress-solved-work/**)",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\)['expo']; print\\('splash:', d.get\\('splash'\\)\\); print\\('owner:', d.get\\('owner'\\)\\); print\\('version:', d.get\\('version'\\)\\)\")",
-      "Bash(grep -i \"=.*['\\\\\"][a-zA-Z0-9]\\\\{8,\\\\}\")"
+      "Bash(grep -i \"=.*['\\\\\"][a-zA-Z0-9]\\\\{8,\\\\}\")",
+      "Bash(git -C /mnt/hd/UAU-LAVACAR/uau-web-dashboard ls-files --error-unmatch .env)",
+      "Bash(git -C /mnt/hd/UAU-LAVACAR/uau-web-dashboard log --oneline -- .env)",
+      "Bash(git -C /mnt/hd/UAU-LAVACAR/uau-mobile-app ls-files --error-unmatch .env)",
+      "Bash(git -C /mnt/hd/UAU-LAVACAR/uau-mobile-app log --oneline -- .env)",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/next/package.json'\\).version\\)\")",
+      "Bash(npm show *)",
+      "Bash(rm -rf node_modules/next && npm install 2>&1)"
     ],
     "additionalDirectories": [
       "/mnt/hd/SALESNET/docs/superpowers/plans",
       "/mnt/hd/UAU-LAVACAR/uau-mobile-app/assets",
       "/tmp",
       "/mnt/hd/UAU-LAVACAR/uau-core-backend/scripts",
-      "/home/ronald/.claude/skills"
+      "/home/ronald/.claude/skills",
+      "/mnt/hd/UAU-LAVACAR/uau-web-dashboard/node_modules/next"
     ]
   }
 }

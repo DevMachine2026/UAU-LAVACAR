@@ -45,6 +45,11 @@ export class SubscriptionsService {
   ) {}
 
   async create(createDto: CreateSubscriptionDto, user?: User) {
+    if (user?.role === UserRole.CUSTOMER) {
+      delete createDto.recurringAmount;
+      delete createDto.firstChargeAmount;
+    }
+
     const resolvedCustomerId = await this.resolveCustomerId(createDto.customerId, user);
 
     const customer = await this.prisma.customer.findUnique({
@@ -339,6 +344,13 @@ export class SubscriptionsService {
   }
 
   async update(id: string, updateDto: UpdateSubscriptionDto) {
+    const current = await this.prisma.subscription.findUnique({ where: { id } });
+    if (!current) throw new NotFoundException('Assinatura não encontrada');
+    if (current.status === 'CANCELLED') {
+      throw new BadRequestException(
+        'Assinatura cancelada não pode ser reativada diretamente. Use o fluxo de nova assinatura.',
+      );
+    }
     return this.prisma.subscription
       .update({
         where: { id },

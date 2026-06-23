@@ -6,9 +6,9 @@ export class EnvironmentVariables {
   @IsNotEmpty()
   JWT_SECRET!: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  ANPR_WEBHOOK_SECRET?: string;
+  ANPR_WEBHOOK_SECRET!: string;
 
   @IsString()
   @IsNotEmpty()

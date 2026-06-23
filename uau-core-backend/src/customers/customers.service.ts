@@ -94,7 +94,8 @@ export class CustomersService {
         });
       }
 
-      return { user, customer };
+      const { passwordHash: _, ...safeUser } = user;
+      return { user: safeUser, customer };
     });
   }
 
@@ -228,7 +229,19 @@ export class CustomersService {
           cpf: updateDto.cpf,
           phone: updateDto.phone,
         },
-        include: { user: true },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              status: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
+        },
       });
     });
   }
