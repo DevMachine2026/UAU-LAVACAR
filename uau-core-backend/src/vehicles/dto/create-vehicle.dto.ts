@@ -17,6 +17,10 @@ export class CreateVehicleDto {
   @IsNotEmpty()
   model: string;
 
+  @IsString()
+  @IsOptional()
+  color?: string;
+
   @IsNumber()
   @IsOptional()
   year?: number;
