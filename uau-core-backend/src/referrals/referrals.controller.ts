@@ -41,7 +41,7 @@ export class ReferralsController {
   }
 
   @Get('tree/:userId')
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FRANCHISE_OWNER)
   @ApiOperation({ summary: 'Árvore de indicações de um usuário (admin)' })
   getReferralTree(@Param('userId') userId: string) {
     return this.referralsService.getMyTree(userId);

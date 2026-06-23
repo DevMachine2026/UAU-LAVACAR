@@ -10,6 +10,8 @@ export type CustomerFilters = {
   status?: string;
   unitId?: string;
   subscription?: string;
+  page?: number;
+  limit?: number;
 };
 
 export type Customer = {

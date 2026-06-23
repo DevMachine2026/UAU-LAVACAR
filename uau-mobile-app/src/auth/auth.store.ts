@@ -2,6 +2,7 @@ import * as SecureStore from "expo-secure-store";
 import { router } from "expo-router";
 import { create } from "zustand";
 import { ApiUser, RegisterCustomerPayload } from "@/api/types";
+import { api } from "@/api/client";
 import { configureAuthSession } from "@/auth/auth-session";
 import { getMe, login as loginApi, registerCustomer } from "@/features/auth/auth.api";
 
@@ -51,6 +52,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   async logout() {
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // silencioso — logout local prossegue mesmo se o backend falhar
+    }
     await clearSession();
     set({ accessToken: null, user: null, isAuthenticated: false, isLoading: false });
     router.replace("/(auth)/login");

@@ -2,6 +2,7 @@
 
 import { create } from 'zustand'
 import { ApiUser } from '@/api/types'
+import { api } from '@/api/client'
 import { configureAuthSession } from '@/auth/auth-session'
 import { loginRequest } from '@/auth/auth.api'
 
@@ -44,6 +45,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   async logout() {
+    try {
+      await api.post('/auth/logout')
+    } catch {
+      // silencioso
+    }
     await fetch('/api/auth', { method: 'DELETE' }).catch(() => {})
     set({ accessToken: null, user: null, isAuthenticated: false, isLoading: false })
     window.location.href = '/login'
