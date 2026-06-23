@@ -17,5 +17,5 @@ export function Toast({ message, onDismiss, duration = 5000 }: ToastProps) {
   }, [message, duration, onDismiss]);
 
   if (!message) return null;
-  return <Card className="border-emerald-200 text-emerald-800">{message}</Card>;
+  return <Card className="border-[#0BA95B]/30 text-[#0BA95B]">{message}</Card>;
 }

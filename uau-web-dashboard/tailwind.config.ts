@@ -9,8 +9,12 @@ const config: Config = {
       },
       colors: {
         uau: {
+          primary: "#009688",
+          primaryDark: "#00796B",
           green: "#0BA95B",
-          black: "#101828",
+          amber: "#F59E0B",
+          danger: "#D92D20",
+          black: "#101418",
           gray: "#667085",
           light: "#F5F7FA"
         }

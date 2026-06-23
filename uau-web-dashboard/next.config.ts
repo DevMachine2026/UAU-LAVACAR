@@ -4,12 +4,13 @@ const backendOrigin = process.env.NEXT_PUBLIC_API_URL
   ? new URL(process.env.NEXT_PUBLIC_API_URL).origin
   : "http://localhost:3000";
 
-// unsafe-inline em script-src é necessário para o runtime de hydration do Next.js
-// (inline scripts de __NEXT_DATA__ e chunks de turbopack/webpack em dev).
-// Remover unsafe-inline quebraria a renderização; aceito como trade-off conhecido.
+const isDev = process.env.NODE_ENV !== "production";
+
+// unsafe-inline é necessário para hydration do Next.js.
+// unsafe-eval é necessário apenas em dev para o runtime de Fast Refresh (webpack/turbopack HMR).
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   `connect-src 'self' ${backendOrigin}`,

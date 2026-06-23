@@ -12,7 +12,7 @@ export function SelectField({ label, options, placeholder = "Selecione", classNa
     <label className="grid gap-1 text-sm font-semibold text-uau-black">
       <span>{label}</span>
       <select
-        className={`h-11 rounded-lg border border-gray-300 px-3 text-sm font-normal outline-none focus:border-uau-green ${className}`}
+        className={`h-11 rounded-lg border border-gray-300 px-3 text-sm font-normal outline-none focus:border-uau-primary ${className}`}
         {...props}
       >
         <option value="">{placeholder}</option>

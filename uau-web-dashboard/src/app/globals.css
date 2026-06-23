@@ -14,7 +14,7 @@
 @layer base {
   html,
   body {
-    @apply min-h-screen bg-[#f5f7fa] text-uau-black antialiased selection:bg-uau-green selection:text-white;
+    @apply min-h-screen bg-[#f5f7fa] text-uau-black antialiased selection:bg-uau-primary selection:text-white;
   }
 }
 

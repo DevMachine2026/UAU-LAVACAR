@@ -9,7 +9,7 @@ export function FormField({ label, className = "", ...props }: FormFieldProps) {
     <label className="grid gap-1 text-sm font-semibold text-uau-black">
       <span>{label}</span>
       <input
-        className={`h-11 rounded-lg border border-gray-300 px-3 text-sm font-normal outline-none focus:border-uau-green ${className}`}
+        className={`h-11 rounded-lg border border-gray-300 px-3 text-sm font-normal outline-none focus:border-uau-primary ${className}`}
         {...props}
       />
     </label>

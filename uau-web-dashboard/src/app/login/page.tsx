@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -9,7 +10,7 @@ import { Card } from "@/components/Card";
 import { Input } from "@/components/Input";
 import { getRoleHome, useAuthStore } from "@/auth/auth.store";
 import { motion } from "framer-motion";
-import { Mail, Lock, ShieldCheck, AlertCircle } from "lucide-react";
+import { Mail, Lock, AlertCircle } from "lucide-react";
 
 const schema = z.object({
   email: z.string().email("Informe um e-mail válido"),
@@ -51,11 +52,11 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-uau-light p-5">
-      {/* Background Orbs */}
-      <div className="absolute top-0 -left-4 w-72 h-72 bg-emerald-400 rounded-full mix-blend-multiply filter blur-2xl opacity-30 animate-blob" />
-      <div className="absolute top-0 -right-4 w-72 h-72 bg-teal-400 rounded-full mix-blend-multiply filter blur-2xl opacity-30 animate-blob animation-delay-2000" />
-      <div className="absolute -bottom-8 left-20 w-72 h-72 bg-uau-green rounded-full mix-blend-multiply filter blur-2xl opacity-30 animate-blob animation-delay-4000" />
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-uau-primary p-5">
+      {/* Subtle depth orbs on teal background */}
+      <div className="absolute top-0 -left-4 w-72 h-72 bg-white rounded-full filter blur-3xl opacity-10 animate-blob" />
+      <div className="absolute top-0 -right-4 w-72 h-72 bg-white rounded-full filter blur-3xl opacity-[0.07] animate-blob animation-delay-2000" />
+      <div className="absolute -bottom-8 left-20 w-72 h-72 bg-white rounded-full filter blur-3xl opacity-10 animate-blob animation-delay-4000" />
 
       <motion.div
         initial="hidden"
@@ -63,13 +64,19 @@ export default function LoginPage() {
         variants={containerVariants}
         className="relative z-10 w-full max-w-md"
       >
-        <Card className="w-full">
+        <Card className="w-full rounded-2xl shadow-2xl border-0">
           <motion.div variants={itemVariants} className="mb-8 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-uau-green to-emerald-400 text-white shadow-lg shadow-uau-green/30">
-              <ShieldCheck size={32} />
+            <div className="mx-auto mb-5">
+              <Image
+                src="/logo.png"
+                alt="UAU+"
+                width={120}
+                height={120}
+                className="mx-auto h-[120px] w-auto object-contain"
+              />
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-uau-black">Bem-vindo ao UAU+</h1>
-            <p className="mt-2 text-uau-gray/80">Painel Operacional & Antifraude</p>
+            <p className="mt-2 text-uau-gray">Painel Operacional & Antifraude</p>
           </motion.div>
 
           <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
@@ -82,7 +89,7 @@ export default function LoginPage() {
                 {...register("email")}
               />
             </motion.div>
-            
+
             <motion.div variants={itemVariants}>
               <Input
                 label="Senha"

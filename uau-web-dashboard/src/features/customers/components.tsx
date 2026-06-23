@@ -8,10 +8,10 @@ export function CustomerStatusBadge({ status }: { status?: string }) {
   const normalized = status ?? "UNKNOWN";
   const className =
     normalized === "ACTIVE"
-      ? "bg-emerald-100 text-emerald-800"
+      ? "bg-[#0BA95B]/10 text-[#0BA95B]"
       : normalized === "BLOCKED" || normalized === "SUSPECT"
-        ? "bg-red-100 text-red-800"
-        : "bg-amber-100 text-amber-800";
+        ? "bg-[#D92D20]/10 text-[#D92D20]"
+        : "bg-[#F59E0B]/10 text-[#F59E0B]";
   return <span className={`rounded-lg px-3 py-2 text-xs font-bold ${className}`}>{normalized}</span>;
 }
 

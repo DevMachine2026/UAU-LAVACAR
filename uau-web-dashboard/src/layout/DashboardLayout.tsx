@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/Button";
@@ -56,13 +57,17 @@ export function DashboardLayout({ children, title }: { children: React.ReactNode
 
   return (
     <div className="min-h-screen bg-uau-light">
-      <aside className="fixed left-0 top-0 hidden h-screen w-64 border-r border-gray-200 bg-white p-5 lg:block">
-        <div className="text-2xl font-bold text-uau-black">UAU+</div>
-        <div className="mt-8 space-y-2">
+      <aside className="fixed left-0 top-0 hidden h-screen w-64 bg-uau-primary p-5 lg:block overflow-y-auto">
+        <div className="mb-8 flex items-center">
+          <Image src="/logo.png" alt="UAU+" width={160} height={48} className="h-12 w-auto object-contain" />
+        </div>
+        <nav className="space-y-1">
           {nav.map((item) => (
             <Link
-              className={`block rounded-lg px-4 py-3 text-sm font-semibold ${
-                pathname === item.href ? "bg-uau-green text-white" : "text-uau-gray hover:bg-uau-light"
+              className={`block rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
+                pathname === item.href
+                  ? "bg-uau-primaryDark text-white"
+                  : "text-white/80 hover:bg-white/10 hover:text-white"
               }`}
               href={item.href}
               key={item.href}
@@ -70,10 +75,10 @@ export function DashboardLayout({ children, title }: { children: React.ReactNode
               {item.label}
             </Link>
           ))}
-        </div>
+        </nav>
       </aside>
       <main className="lg:pl-64">
-        <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/95 px-5 py-4 backdrop-blur">
+        <header className="sticky top-0 z-10 border-b border-gray-200 bg-white px-5 py-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold text-uau-black">{title}</h1>

@@ -108,7 +108,7 @@ export function UnitStaffManager() {
                       <p className="mt-1 text-sm text-uau-gray">{item.role} · {item.user.status ?? item.user.role}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`rounded-lg px-3 py-2 text-sm font-bold ${item.isActive ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-uau-gray"}`}>
+                      <span className={`rounded-lg px-3 py-2 text-sm font-bold ${item.isActive ? "bg-[#0BA95B]/10 text-[#0BA95B]" : "bg-gray-100 text-[#667085]"}`}>
                         {item.isActive ? "Ativo" : "Inativo"}
                       </span>
                       <Button

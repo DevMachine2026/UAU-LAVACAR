@@ -150,7 +150,7 @@ export function ReadingFieldsForm({ fields, values, onChange }: { fields: Readin
         <label className="grid gap-1 text-sm font-semibold text-uau-black" key={field.id}>
           <span>{field.name}</span>
           <input
-            className="h-11 rounded-lg border border-gray-300 px-3 text-sm font-normal outline-none focus:border-uau-green"
+            className="h-11 rounded-lg border border-gray-300 px-3 text-sm font-normal outline-none focus:border-uau-primary"
             min="0"
             onChange={(event) => onChange({ ...values, [field.id]: event.target.value })}
             type="number"
@@ -173,9 +173,9 @@ function Info({ label, value, detail }: { label: string; value: string; detail?:
 }
 
 function statusClass(status?: string) {
-  if (status === "AUTHORIZED" || status === "OPEN" || status === "COMPLETED") return "bg-emerald-100 text-emerald-800";
-  if (status === "ALREADY_USED_TODAY" || status === "AVULSO" || status === "UNKNOWN") return "bg-amber-100 text-amber-800";
-  return "bg-red-100 text-red-800";
+  if (status === "AUTHORIZED" || status === "OPEN" || status === "COMPLETED") return "bg-[#0BA95B]/10 text-[#0BA95B]";
+  if (status === "ALREADY_USED_TODAY" || status === "AVULSO" || status === "UNKNOWN") return "bg-[#F59E0B]/10 text-[#F59E0B]";
+  return "bg-[#D92D20]/10 text-[#D92D20]";
 }
 
 function statusMessage(status?: string) {
