@@ -8,7 +8,749 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// ─── Enums ─────────────────────────────────────────────────────────────────
+model User {
+  id                String          @id @default(cuid())
+  name              String
+  email             String          @unique
+  passwordHash      String
+  role              UserRole        @default(CUSTOMER)
+  status            UserStatus      @default(ACTIVE)
+  defaultUnitId     String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  betaAccess        Boolean         @default(false)
+  antiFraudFlags    AntiFraudFlag[]
+  customer          Customer?
+  notifications     Notification[]
+  referralsReceived Referral?       @relation("ReferredUser")
+  referralsMade     Referral[]      @relation("ReferrerUser")
+  securityLogs      SecurityLog[]
+  staffLinks        UnitStaff[]
+  defaultUnit       FranchiseUnit?  @relation("UserDefaultUnit", fields: [defaultUnitId], references: [id])
+
+  @@index([role])
+  @@index([status])
+  @@index([defaultUnitId])
+  @@map("users")
+}
+
+model AdminSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("admin_settings")
+}
+
+model State {
+  id                 String             @id @default(cuid())
+  name               String
+  code               String             @unique
+  isActive           Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  cities             City[]
+  franchiseUnits     FranchiseUnit[]
+  partners           Partner[]
+  planAvailabilities PlanAvailability[]
+
+  @@map("states")
+}
+
+model City {
+  id                 String             @id @default(cuid())
+  name               String
+  stateId            String
+  isActive           Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  state              State              @relation(fields: [stateId], references: [id])
+  franchiseUnits     FranchiseUnit[]
+  partners           Partner[]
+  planAvailabilities PlanAvailability[]
+
+  @@index([stateId])
+  @@index([isActive])
+  @@map("cities")
+}
+
+model FranchiseUnit {
+  id                 String             @id @default(cuid())
+  name               String
+  stateId            String
+  cityId             String
+  address            String
+  neighborhood       String
+  zipCode            String
+  latitude           Float?
+  longitude          Float?
+  isOwnedUnit        Boolean            @default(false)
+  isFranchiseUnit    Boolean            @default(true)
+  franchiseOwnerName String?
+  isActive           Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  imageUrl           String?
+  phone              String?
+  anprCameras        AnprCamera[]
+  anprEvents         AnprEvent[]
+  financialLedger    FinancialLedger[]
+  franchiseReports   FranchiseReport[]
+  franchiseRules     FranchiseRule?
+  city               City               @relation(fields: [cityId], references: [id])
+  state              State              @relation(fields: [stateId], references: [id])
+  planAvailabilities PlanAvailability[]
+  shifts             Shift[]
+  equipments         UnitEquipment[]
+  staff              UnitStaff[]
+  workingHours       UnitWorkingHours[]
+  defaultUsers       User[]             @relation("UserDefaultUnit")
+
+  @@index([stateId])
+  @@index([cityId])
+  @@index([isActive])
+  @@map("franchise_units")
+}
+
+model UnitWorkingHours {
+  id              String        @id @default(cuid())
+  franchiseUnitId String
+  dayOfWeek       Int
+  openTime        String
+  closeTime       String
+  isClosed        Boolean       @default(false)
+  franchiseUnit   FranchiseUnit @relation(fields: [franchiseUnitId], references: [id])
+
+  @@unique([franchiseUnitId, dayOfWeek])
+  @@index([franchiseUnitId])
+  @@map("unit_working_hours")
+}
+
+model UnitEquipment {
+  id              String          @id @default(cuid())
+  franchiseUnitId String
+  name            String
+  status          EquipmentStatus @default(AVAILABLE)
+  updatedAt       DateTime        @updatedAt
+  franchiseUnit   FranchiseUnit   @relation(fields: [franchiseUnitId], references: [id])
+
+  @@index([franchiseUnitId])
+  @@map("unit_equipments")
+}
+
+model UnitStaff {
+  id        String        @id @default(cuid())
+  unitId    String
+  userId    String
+  role      String
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  unit      FranchiseUnit @relation(fields: [unitId], references: [id])
+  user      User          @relation(fields: [userId], references: [id])
+
+  @@unique([unitId, userId])
+  @@index([userId])
+  @@index([isActive])
+  @@map("unit_staff")
+}
+
+model Plan {
+  id                    String                 @id @default(cuid())
+  name                  String
+  description           String?
+  price                 Decimal                @db.Decimal(10, 2)
+  useVehicleSizePricing Boolean                @default(false)
+  coverageType          CoverageType           @default(UNIT)
+  allowedDays           String[]               @default([])
+  allowedStartTime      String?
+  allowedEndTime        String?
+  allowAllDays          Boolean                @default(true)
+  maxVehicles           Int                    @default(1)
+  isActive              Boolean                @default(true)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  periodicity           PlanPeriodicity        @default(MONTHLY)
+  availabilities        PlanAvailability[]
+  vehicleSizePrices     PlanVehicleSizePrice[]
+  subscriptions         Subscription[]
+
+  @@index([isActive])
+  @@index([coverageType])
+  @@map("plans")
+}
+
+model PlanAvailability {
+  id       String         @id @default(cuid())
+  planId   String
+  stateId  String?
+  cityId   String?
+  unitId   String?
+  isActive Boolean        @default(true)
+  city     City?          @relation(fields: [cityId], references: [id])
+  plan     Plan           @relation(fields: [planId], references: [id])
+  state    State?         @relation(fields: [stateId], references: [id])
+  unit     FranchiseUnit? @relation(fields: [unitId], references: [id])
+
+  @@index([planId])
+  @@index([stateId])
+  @@index([cityId])
+  @@index([unitId])
+  @@index([isActive])
+  @@map("plan_availabilities")
+}
+
+model VehicleSizeCategory {
+  id             String                 @id @default(cuid())
+  name           String
+  description    String?
+  sortOrder      Int                    @default(0)
+  isActive       Boolean                @default(true)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  planSizePrices PlanVehicleSizePrice[]
+  modelRules     VehicleModelSizeRule[]
+  vehicles       Vehicle[]
+
+  @@index([isActive])
+  @@map("vehicle_size_categories")
+}
+
+model VehicleModelSizeRule {
+  id             String              @id @default(cuid())
+  brand          String
+  model          String
+  sizeCategoryId String
+  isActive       Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  sizeCategory   VehicleSizeCategory @relation(fields: [sizeCategoryId], references: [id])
+
+  @@unique([brand, model])
+  @@index([sizeCategoryId])
+  @@index([isActive])
+  @@map("vehicle_model_size_rules")
+}
+
+model PlanVehicleSizePrice {
+  id             String              @id @default(cuid())
+  planId         String
+  sizeCategoryId String
+  price          Decimal             @db.Decimal(10, 2)
+  isActive       Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  plan           Plan                @relation(fields: [planId], references: [id])
+  sizeCategory   VehicleSizeCategory @relation(fields: [sizeCategoryId], references: [id])
+
+  @@unique([planId, sizeCategoryId])
+  @@index([sizeCategoryId])
+  @@index([isActive])
+  @@map("plan_vehicle_size_prices")
+}
+
+model Partner {
+  id                           String               @id @default(cuid())
+  name                         String
+  document                     String?
+  email                        String?
+  phone                        String?
+  category                     String?
+  stateId                      String
+  cityId                       String
+  unitId                       String?
+  ownerUserId                  String?
+  generatedCashbackPercent     Decimal              @default(0) @db.Decimal(5, 2)
+  customerCashbackPercent      Decimal              @default(0) @db.Decimal(5, 2)
+  uauCommissionPercent         Decimal              @default(0) @db.Decimal(5, 2)
+  acceptedCashbackLimitPercent Decimal              @default(100) @db.Decimal(5, 2)
+  isActive                     Boolean              @default(true)
+  createdAt                    DateTime             @default(now())
+  updatedAt                    DateTime             @updatedAt
+  campaigns                    Campaign[]
+  financialLedger              FinancialLedger[]
+  partnerTransactions          PartnerTransaction[]
+  city                         City                 @relation(fields: [cityId], references: [id])
+  state                        State                @relation(fields: [stateId], references: [id])
+
+  @@index([stateId])
+  @@index([cityId])
+  @@index([unitId])
+  @@index([ownerUserId])
+  @@index([isActive])
+  @@map("partners")
+}
+
+model Campaign {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean   @default(true)
+  startAt     DateTime?
+  endAt       DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  partnerId   String?
+  partner     Partner?  @relation(fields: [partnerId], references: [id])
+
+  @@index([partnerId])
+  @@index([isActive])
+  @@map("campaigns")
+}
+
+model Customer {
+  id                  String                      @id @default(cuid())
+  userId              String                      @unique
+  cpf                 String?                     @unique
+  phone               String?
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+  asaasCustomerId     String?                     @unique
+  referralCode        String?                     @unique
+  attendances         Attendance[]
+  billingHistory      BillingHistory[]
+  user                User                        @relation(fields: [userId], references: [id])
+  individualPurchases IndividualServicePurchase[]
+  partnerTransactions PartnerTransaction[]
+  subscriptions       Subscription[]
+  vehicles            Vehicle[]
+  wallet              Wallet?
+
+  @@index([createdAt])
+  @@map("customers")
+}
+
+model Vehicle {
+  id                  String                      @id @default(cuid())
+  customerId          String
+  plate               String                      @unique
+  brand               String
+  model               String
+  year                Int?
+  sizeCategoryId      String?
+  isActive            Boolean                     @default(true)
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+  isPrimary           Boolean                     @default(false)
+  attendances         Attendance[]
+  dailyWashes         DailyWash[]
+  individualPurchases IndividualServicePurchase[]
+  subscriptions       Subscription[]
+  customer            Customer                    @relation(fields: [customerId], references: [id])
+  sizeCategory        VehicleSizeCategory?        @relation(fields: [sizeCategoryId], references: [id])
+
+  @@index([customerId])
+  @@index([sizeCategoryId])
+  @@index([isActive])
+  @@map("vehicles")
+}
+
+model Subscription {
+  id             String             @id @default(cuid())
+  customerId     String
+  planId         String
+  status         SubscriptionStatus @default(PENDING)
+  asaasId        String?            @unique
+  startedAt      DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  vehicleId      String?
+  billingHistory BillingHistory[]
+  customer       Customer           @relation(fields: [customerId], references: [id])
+  plan           Plan               @relation(fields: [planId], references: [id])
+  vehicle        Vehicle?           @relation(fields: [vehicleId], references: [id])
+
+  @@index([customerId])
+  @@index([planId])
+  @@index([vehicleId])
+  @@index([status])
+  @@index([customerId, status])
+  @@map("subscriptions")
+}
+
+model BillingHistory {
+  id                   String                     @id @default(cuid())
+  customerId           String
+  subscriptionId       String?
+  amount               Decimal                    @db.Decimal(10, 2)
+  status               BillingStatus              @default(PENDING)
+  asaasId              String?                    @unique
+  dueDate              DateTime?
+  paidAt               DateTime?
+  description          String?
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
+  invoiceUrl           String?
+  pixQrCode            String?
+  pixCopyPaste         String?
+  bankSlipBarCode      String?
+  individualPurchaseId String?                    @unique
+  customer             Customer                   @relation(fields: [customerId], references: [id])
+  individualPurchase   IndividualServicePurchase? @relation(fields: [individualPurchaseId], references: [id])
+  subscription         Subscription?              @relation(fields: [subscriptionId], references: [id])
+
+  @@index([customerId])
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([dueDate])
+  @@map("billing_history")
+}
+
+model Wallet {
+  id                  String             @id @default(cuid())
+  customerId          String             @unique
+  balance             Decimal            @default(0) @db.Decimal(10, 2)
+  promoBalance        Decimal            @default(0) @db.Decimal(10, 2)
+  blockedBalance      Decimal            @default(0) @db.Decimal(10, 2)
+  updatedAt           DateTime           @updatedAt
+  welcomeBonusBalance Decimal            @default(0) @db.Decimal(10, 2)
+  movements           WalletMovement[]
+  customer            Customer           @relation(fields: [customerId], references: [id])
+  welcomeBonusGrant   WelcomeBonusGrant?
+
+  @@map("wallets")
+}
+
+model WalletMovement {
+  id          String               @id @default(cuid())
+  walletId    String
+  type        WalletMovementType
+  origin      WalletMovementOrigin
+  amount      Decimal              @db.Decimal(10, 2)
+  description String?
+  referenceId String?
+  createdAt   DateTime             @default(now())
+  wallet      Wallet               @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("wallet_movements")
+}
+
+model Shift {
+  id          String        @id @default(cuid())
+  unitId      String
+  operatorId  String
+  status      ShiftStatus   @default(OPEN)
+  openedAt    DateTime      @default(now())
+  closedAt    DateTime?
+  readings    Json?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  attendances Attendance[]
+  closure     ShiftClosure?
+  unit        FranchiseUnit @relation(fields: [unitId], references: [id])
+
+  @@index([unitId])
+  @@index([operatorId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("shifts")
+}
+
+model ShiftClosure {
+  id          String   @id @default(cuid())
+  shiftId     String   @unique
+  totalWashes Int      @default(0)
+  divergences Json?
+  notes       String?
+  closedAt    DateTime @default(now())
+  shift       Shift    @relation(fields: [shiftId], references: [id])
+
+  @@map("shift_closures")
+}
+
+model Attendance {
+  id          String           @id @default(cuid())
+  shiftId     String
+  customerId  String?
+  vehicleId   String?
+  plate       String
+  status      AttendanceStatus @default(PENDING)
+  type        AttendanceType   @default(MANUAL)
+  completedAt DateTime?
+  cancelledAt DateTime?
+  reason      String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  customer    Customer?        @relation(fields: [customerId], references: [id])
+  shift       Shift            @relation(fields: [shiftId], references: [id])
+  vehicle     Vehicle?         @relation(fields: [vehicleId], references: [id])
+
+  @@index([shiftId])
+  @@index([customerId])
+  @@index([vehicleId])
+  @@index([status])
+  @@index([plate])
+  @@index([createdAt])
+  @@map("attendances")
+}
+
+model DailyWash {
+  id        String    @id @default(cuid())
+  vehicleId String
+  date      DateTime  @db.Date
+  used      Boolean   @default(false)
+  usedAt    DateTime?
+  vehicle   Vehicle   @relation(fields: [vehicleId], references: [id])
+
+  @@unique([vehicleId, date])
+  @@map("daily_washes")
+}
+
+model AnprCamera {
+  id        String        @id @default(cuid())
+  unitId    String
+  name      String
+  provider  String?
+  streamUrl String?
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  unit      FranchiseUnit @relation(fields: [unitId], references: [id])
+  events    AnprEvent[]
+
+  @@index([unitId])
+  @@index([isActive])
+  @@map("anpr_cameras")
+}
+
+model AnprEvent {
+  id              String          @id @default(cuid())
+  unitId          String
+  cameraId        String?
+  plate           String
+  normalizedPlate String?
+  status          AnprEventStatus @default(UNKNOWN)
+  confidence      Float?
+  reason          String?
+  capturedAt      DateTime        @default(now())
+  createdAt       DateTime        @default(now())
+  camera          AnprCamera?     @relation(fields: [cameraId], references: [id])
+  unit            FranchiseUnit   @relation(fields: [unitId], references: [id])
+
+  @@index([unitId])
+  @@index([cameraId])
+  @@index([plate])
+  @@index([status])
+  @@index([capturedAt])
+  @@map("anpr_events")
+}
+
+model FinancialLedger {
+  id          String         @id @default(cuid())
+  unitId      String?
+  userId      String?
+  partnerId   String?
+  type        String
+  origin      String
+  amount      Decimal        @db.Decimal(10, 2)
+  description String?
+  referenceId String?
+  createdAt   DateTime       @default(now())
+  partner     Partner?       @relation(fields: [partnerId], references: [id])
+  unit        FranchiseUnit? @relation(fields: [unitId], references: [id])
+
+  @@index([unitId])
+  @@index([partnerId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("financial_ledger")
+}
+
+model FranchiseRule {
+  id               String        @id @default(cuid())
+  unitId           String        @unique
+  repassePercent   Decimal       @default(0) @db.Decimal(5, 2)
+  royaltyPercent   Decimal       @default(0) @db.Decimal(5, 2)
+  marketingPercent Decimal       @default(0) @db.Decimal(5, 2)
+  updatedAt        DateTime      @updatedAt
+  unit             FranchiseUnit @relation(fields: [unitId], references: [id])
+
+  @@map("franchise_rules")
+}
+
+model FranchiseReport {
+  id        String                @id @default(cuid())
+  unitId    String
+  period    String
+  status    FranchiseReportStatus @default(OPEN)
+  data      Json?
+  closedAt  DateTime?
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  unit      FranchiseUnit         @relation(fields: [unitId], references: [id])
+
+  @@index([unitId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("franchise_reports")
+}
+
+model AntiFraudFlag {
+  id         String                @id @default(cuid())
+  userId     String
+  type       String
+  severity   AntiFraudFlagSeverity @default(LOW)
+  status     AntiFraudFlagStatus   @default(OPEN)
+  reason     String?
+  reviewedAt DateTime?
+  reviewedBy String?
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+  user       User                  @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([severity])
+  @@index([createdAt])
+  @@map("anti_fraud_flags")
+}
+
+model SecurityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  event     String
+  ip        String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([event])
+  @@index([createdAt])
+  @@map("security_logs")
+}
+
+model Referral {
+  id            String   @id @default(cuid())
+  referrerId    String
+  referredId    String   @unique
+  createdAt     DateTime @default(now())
+  rewardGranted Boolean  @default(false)
+  referred      User     @relation("ReferredUser", fields: [referredId], references: [id])
+  referrer      User     @relation("ReferrerUser", fields: [referrerId], references: [id])
+
+  @@index([referrerId])
+  @@map("referrals")
+}
+
+model WelcomeBonusGrant {
+  id             String    @id @default(cuid())
+  cpf            String    @unique
+  walletId       String    @unique
+  grantedAt      DateTime  @default(now())
+  fullyExpiredAt DateTime?
+  wallet         Wallet    @relation(fields: [walletId], references: [id])
+
+  @@map("welcome_bonus_grants")
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  type      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([userId, readAt])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model PartnerTransaction {
+  id                String   @id @default(cuid())
+  partnerId         String
+  customerId        String
+  grossAmount       Decimal  @db.Decimal(10, 2)
+  cashbackUsed      Decimal  @default(0) @db.Decimal(10, 2)
+  gatewayAmount     Decimal  @db.Decimal(10, 2)
+  generatedCashback Decimal  @default(0) @db.Decimal(10, 2)
+  customerCashback  Decimal  @default(0) @db.Decimal(10, 2)
+  uauCommission     Decimal  @default(0) @db.Decimal(10, 2)
+  status            String   @default("PENDING")
+  paymentMethod     String?
+  qrPayload         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  customer          Customer @relation(fields: [customerId], references: [id])
+  partner           Partner  @relation(fields: [partnerId], references: [id])
+
+  @@index([partnerId])
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("partner_transactions")
+}
+
+model WashService {
+  id            String                          @id @default(cuid())
+  name          String
+  description   String?
+  price         Decimal                         @db.Decimal(10, 2)
+  isActive      Boolean                         @default(true)
+  createdAt     DateTime                        @default(now())
+  updatedAt     DateTime                        @updatedAt
+  purchaseItems IndividualServicePurchaseItem[]
+
+  @@index([isActive])
+  @@map("wash_services")
+}
+
+model IndividualServicePurchase {
+  id             String                          @id @default(cuid())
+  customerId     String
+  vehicleId      String
+  originalAmount Decimal                         @db.Decimal(10, 2)
+  discountAmount Decimal                         @default(0) @db.Decimal(10, 2)
+  finalAmount    Decimal                         @db.Decimal(10, 2)
+  status         BillingStatus                   @default(PENDING)
+  paymentMethod  PurchasePaymentMethod
+  createdAt      DateTime                        @default(now())
+  updatedAt      DateTime                        @updatedAt
+  billing        BillingHistory?
+  items          IndividualServicePurchaseItem[]
+  customer       Customer                        @relation(fields: [customerId], references: [id])
+  vehicle        Vehicle                         @relation(fields: [vehicleId], references: [id])
+
+  @@index([customerId])
+  @@index([vehicleId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("individual_service_purchases")
+}
+
+model IndividualServicePurchaseItem {
+  id         String                    @id @default(cuid())
+  purchaseId String
+  serviceId  String
+  quantity   Int                       @default(1)
+  unitPrice  Decimal                   @db.Decimal(10, 2)
+  purchase   IndividualServicePurchase @relation(fields: [purchaseId], references: [id])
+  service    WashService               @relation(fields: [serviceId], references: [id])
+
+  @@index([purchaseId])
+  @@index([serviceId])
+  @@map("individual_service_purchase_items")
+}
+
+model RevokedToken {
+  id        String   @id @default(cuid())
+  jti       String   @unique
+  expiresAt DateTime
+
+  @@index([expiresAt])
+  @@map("revoked_tokens")
+}
 
 enum UserRole {
   SUPER_ADMIN
@@ -125,856 +867,4 @@ enum AntiFraudFlagSeverity {
 enum PurchasePaymentMethod {
   PIX
   CREDIT_CARD
-}
-
-// ─── User ──────────────────────────────────────────────────────────────────
-
-model User {
-  id            String     @id @default(cuid())
-  name          String
-  email         String     @unique
-  passwordHash  String
-  role          UserRole   @default(CUSTOMER)
-  status        UserStatus @default(ACTIVE)
-  betaAccess    Boolean    @default(false)
-  defaultUnitId String?
-
-  defaultUnit   FranchiseUnit? @relation("UserDefaultUnit", fields: [defaultUnitId], references: [id])
-  customer      Customer?
-  staffLinks    UnitStaff[]
-  antiFraudFlags AntiFraudFlag[]
-  securityLogs  SecurityLog[]
-  referralsMade  Referral[]    @relation("ReferrerUser")
-  referralsReceived Referral[] @relation("ReferredUser")
-  notifications  Notification[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([role])
-  @@index([status])
-  @@index([defaultUnitId])
-  @@map("users")
-}
-
-// ─── Admin Settings ────────────────────────────────────────────────────────
-
-model AdminSetting {
-  id    String @id @default(cuid())
-  key   String @unique
-  value String
-
-  updatedAt DateTime @updatedAt
-
-  @@map("admin_settings")
-}
-
-// ─── Location ──────────────────────────────────────────────────────────────
-
-model State {
-  id       String  @id @default(cuid())
-  name     String
-  code     String  @unique
-  isActive Boolean @default(true)
-
-  cities        City[]
-  franchiseUnits FranchiseUnit[]
-  partners      Partner[]
-  planAvailabilities PlanAvailability[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("states")
-}
-
-model City {
-  id       String  @id @default(cuid())
-  name     String
-  stateId  String
-  isActive Boolean @default(true)
-
-  state         State         @relation(fields: [stateId], references: [id])
-  franchiseUnits FranchiseUnit[]
-  partners      Partner[]
-  planAvailabilities PlanAvailability[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([stateId])
-  @@index([isActive])
-  @@map("cities")
-}
-
-model FranchiseUnit {
-  id                 String  @id @default(cuid())
-  name               String
-  stateId            String
-  cityId             String
-  address            String
-  neighborhood       String
-  zipCode            String
-  phone              String?
-  imageUrl           String?
-  latitude           Float?
-  longitude          Float?
-  isOwnedUnit        Boolean @default(false)
-  isFranchiseUnit    Boolean @default(true)
-  franchiseOwnerName String?
-  isActive           Boolean @default(true)
-
-  state    State @relation(fields: [stateId], references: [id])
-  city     City  @relation(fields: [cityId], references: [id])
-
-  staff             UnitStaff[]
-  defaultUsers      User[]        @relation("UserDefaultUnit")
-  anprCameras       AnprCamera[]
-  anprEvents        AnprEvent[]
-  shifts            Shift[]
-  franchiseRules    FranchiseRule[]
-  franchiseReports  FranchiseReport[]
-  financialLedger   FinancialLedger[]
-  planAvailabilities PlanAvailability[]
-  workingHours      UnitWorkingHours[]
-  equipments        UnitEquipment[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([stateId])
-  @@index([cityId])
-  @@index([isActive])
-  @@map("franchise_units")
-}
-
-model UnitWorkingHours {
-  id              String        @id @default(cuid())
-  franchiseUnitId String
-  dayOfWeek       Int
-  openTime        String
-  closeTime       String
-  isClosed        Boolean       @default(false)
-  franchiseUnit   FranchiseUnit @relation(fields: [franchiseUnitId], references: [id])
-
-  @@unique([franchiseUnitId, dayOfWeek])
-  @@index([franchiseUnitId])
-  @@map("unit_working_hours")
-}
-
-model UnitEquipment {
-  id              String          @id @default(cuid())
-  franchiseUnitId String
-  name            String
-  status          EquipmentStatus @default(AVAILABLE)
-  updatedAt       DateTime        @updatedAt
-  franchiseUnit   FranchiseUnit   @relation(fields: [franchiseUnitId], references: [id])
-
-  @@index([franchiseUnitId])
-  @@map("unit_equipments")
-}
-
-model UnitStaff {
-  id       String  @id @default(cuid())
-  unitId   String
-  userId   String
-  role     String  // MANAGER | OPERATOR
-  isActive Boolean @default(true)
-
-  unit FranchiseUnit @relation(fields: [unitId], references: [id])
-  user User          @relation(fields: [userId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([unitId, userId])
-  @@index([userId])
-  @@index([isActive])
-  @@map("unit_staff")
-}
-
-// ─── Plan ──────────────────────────────────────────────────────────────────
-
-model Plan {
-  id                   String       @id @default(cuid())
-  name                 String
-  description          String?
-  price                Decimal      @db.Decimal(10, 2)
-  useVehicleSizePricing Boolean     @default(false)
-  coverageType         CoverageType @default(UNIT)
-  allowedDays          String[]     @default([])
-  allowedStartTime     String?
-  allowedEndTime       String?
-  allowAllDays         Boolean      @default(true)
-  maxVehicles          Int          @default(1)
-  periodicity          PlanPeriodicity @default(MONTHLY)
-  isActive             Boolean      @default(true)
-
-  availabilities    PlanAvailability[]
-  vehicleSizePrices PlanVehicleSizePrice[]
-  subscriptions     Subscription[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([isActive])
-  @@index([coverageType])
-  @@map("plans")
-}
-
-model PlanAvailability {
-  id       String  @id @default(cuid())
-  planId   String
-  stateId  String?
-  cityId   String?
-  unitId   String?
-  isActive Boolean @default(true)
-
-  plan  Plan           @relation(fields: [planId], references: [id])
-  state State?         @relation(fields: [stateId], references: [id])
-  city  City?          @relation(fields: [cityId], references: [id])
-  unit  FranchiseUnit? @relation(fields: [unitId], references: [id])
-
-  @@index([planId])
-  @@index([stateId])
-  @@index([cityId])
-  @@index([unitId])
-  @@index([isActive])
-  @@map("plan_availabilities")
-}
-
-model VehicleSizeCategory {
-  id          String  @id @default(cuid())
-  name        String
-  description String?
-  sortOrder   Int     @default(0)
-  isActive    Boolean @default(true)
-
-  modelRules        VehicleModelSizeRule[]
-  planSizePrices    PlanVehicleSizePrice[]
-  vehicles          Vehicle[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([isActive])
-  @@map("vehicle_size_categories")
-}
-
-model VehicleModelSizeRule {
-  id             String  @id @default(cuid())
-  brand          String
-  model          String
-  sizeCategoryId String
-  isActive       Boolean @default(true)
-
-  sizeCategory VehicleSizeCategory @relation(fields: [sizeCategoryId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([brand, model])
-  @@index([sizeCategoryId])
-  @@index([isActive])
-  @@map("vehicle_model_size_rules")
-}
-
-model PlanVehicleSizePrice {
-  id             String  @id @default(cuid())
-  planId         String
-  sizeCategoryId String
-  price          Decimal @db.Decimal(10, 2)
-  isActive       Boolean @default(true)
-
-  plan         Plan                @relation(fields: [planId], references: [id])
-  sizeCategory VehicleSizeCategory @relation(fields: [sizeCategoryId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([planId, sizeCategoryId])
-  @@index([sizeCategoryId])
-  @@index([isActive])
-  @@map("plan_vehicle_size_prices")
-}
-
-// ─── Partner ───────────────────────────────────────────────────────────────
-
-model Partner {
-  id                          String  @id @default(cuid())
-  name                        String
-  document                    String?
-  email                       String?
-  phone                       String?
-  category                    String?
-  stateId                     String
-  cityId                      String
-  unitId                      String?
-  ownerUserId                 String?
-  generatedCashbackPercent    Decimal @default(0) @db.Decimal(5, 2)
-  customerCashbackPercent     Decimal @default(0) @db.Decimal(5, 2)
-  uauCommissionPercent        Decimal @default(0) @db.Decimal(5, 2)
-  acceptedCashbackLimitPercent Decimal @default(100) @db.Decimal(5, 2)
-  isActive                    Boolean @default(true)
-
-  state State @relation(fields: [stateId], references: [id])
-  city  City  @relation(fields: [cityId], references: [id])
-
-  financialLedger      FinancialLedger[]
-  partnerTransactions  PartnerTransaction[]
-  campaigns            Campaign[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([stateId])
-  @@index([cityId])
-  @@index([unitId])
-  @@index([ownerUserId])
-  @@index([isActive])
-  @@map("partners")
-}
-
-// ─── Campaign ──────────────────────────────────────────────────────────────
-
-model Campaign {
-  id          String    @id @default(cuid())
-  name        String
-  description String?
-  isActive    Boolean   @default(true)
-  startAt     DateTime?
-  endAt       DateTime?
-  partnerId   String?
-
-  partner   Partner?  @relation(fields: [partnerId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([partnerId])
-  @@index([isActive])
-  @@map("campaigns")
-}
-
-// ─── Customer & Vehicles ───────────────────────────────────────────────────
-
-model Customer {
-  id              String  @id @default(cuid())
-  userId          String  @unique
-  cpf             String? @unique
-  phone           String?
-  asaasCustomerId String? @unique
-  referralCode    String? @unique
-
-  user                User                 @relation(fields: [userId], references: [id])
-  vehicles            Vehicle[]
-  subscriptions       Subscription[]
-  wallet              Wallet?
-  billingHistory      BillingHistory[]
-  attendances         Attendance[]
-  partnerTransactions PartnerTransaction[]
-  individualPurchases IndividualServicePurchase[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([createdAt])
-  @@map("customers")
-}
-
-model Vehicle {
-  id             String  @id @default(cuid())
-  customerId     String
-  plate          String  @unique
-  brand          String
-  model          String
-  year           Int?
-  sizeCategoryId String?
-  isActive       Boolean @default(true)
-  isPrimary      Boolean @default(false)
-
-  customer     Customer             @relation(fields: [customerId], references: [id])
-  sizeCategory VehicleSizeCategory? @relation(fields: [sizeCategoryId], references: [id])
-  dailyWashes   DailyWash[]
-  attendances   Attendance[]
-  subscriptions Subscription[]
-  individualPurchases IndividualServicePurchase[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([customerId])
-  @@index([sizeCategoryId])
-  @@index([isActive])
-  @@map("vehicles")
-}
-
-// ─── Subscription & Billing ────────────────────────────────────────────────
-
-model Subscription {
-  id         String             @id @default(cuid())
-  customerId String
-  planId     String
-  vehicleId  String?
-  status     SubscriptionStatus @default(PENDING)
-  asaasId    String?            @unique
-  startedAt  DateTime?
-  expiresAt  DateTime?
-
-  customer       Customer         @relation(fields: [customerId], references: [id])
-  plan           Plan             @relation(fields: [planId], references: [id])
-  vehicle        Vehicle?         @relation(fields: [vehicleId], references: [id])
-  billingHistory BillingHistory[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([customerId])
-  @@index([planId])
-  @@index([vehicleId])
-  @@index([status])
-  @@index([customerId, status])
-  @@map("subscriptions")
-}
-
-model BillingHistory {
-  id                   String        @id @default(cuid())
-  customerId           String
-  subscriptionId       String?
-  individualPurchaseId String?       @unique
-  amount               Decimal       @db.Decimal(10, 2)
-  status               BillingStatus @default(PENDING)
-  asaasId              String?       @unique
-  dueDate              DateTime?
-  paidAt               DateTime?
-  description          String?
-  invoiceUrl           String?
-  pixQrCode            String?       @db.Text
-  pixCopyPaste         String?       @db.Text
-  bankSlipBarCode      String?
-
-  customer           Customer                   @relation(fields: [customerId], references: [id])
-  subscription       Subscription?              @relation(fields: [subscriptionId], references: [id])
-  individualPurchase IndividualServicePurchase? @relation(fields: [individualPurchaseId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([customerId])
-  @@index([subscriptionId])
-  @@index([status])
-  @@index([createdAt])
-  @@index([dueDate])
-  @@map("billing_history")
-}
-
-// ─── Wallet ────────────────────────────────────────────────────────────────
-
-model Wallet {
-  id                  String  @id @default(cuid())
-  customerId          String  @unique
-  balance             Decimal @default(0) @db.Decimal(10, 2)
-  promoBalance        Decimal @default(0) @db.Decimal(10, 2)
-  welcomeBonusBalance Decimal @default(0) @db.Decimal(10, 2)
-  blockedBalance      Decimal @default(0) @db.Decimal(10, 2)
-
-  customer          Customer           @relation(fields: [customerId], references: [id])
-  movements         WalletMovement[]
-  welcomeBonusGrant WelcomeBonusGrant?
-
-  updatedAt DateTime @updatedAt
-
-  @@map("wallets")
-}
-
-model WalletMovement {
-  id          String               @id @default(cuid())
-  walletId    String
-  type        WalletMovementType
-  origin      WalletMovementOrigin
-  amount      Decimal              @db.Decimal(10, 2)
-  description String?
-  referenceId String?
-
-  wallet Wallet @relation(fields: [walletId], references: [id])
-
-  createdAt DateTime @default(now())
-
-  @@index([walletId])
-  @@index([type])
-  @@index([createdAt])
-  @@map("wallet_movements")
-}
-
-// ─── Operations ────────────────────────────────────────────────────────────
-
-model Shift {
-  id         String      @id @default(cuid())
-  unitId     String
-  operatorId String
-  status     ShiftStatus @default(OPEN)
-  openedAt   DateTime    @default(now())
-  closedAt   DateTime?
-  readings   Json?
-
-  unit        FranchiseUnit @relation(fields: [unitId], references: [id])
-  attendances Attendance[]
-  closure     ShiftClosure?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([unitId])
-  @@index([operatorId])
-  @@index([status])
-  @@index([createdAt])
-  @@map("shifts")
-}
-
-model ShiftClosure {
-  id          String @id @default(cuid())
-  shiftId     String @unique
-  totalWashes Int    @default(0)
-  divergences Json?
-  notes       String?
-  closedAt    DateTime @default(now())
-
-  shift Shift @relation(fields: [shiftId], references: [id])
-
-  @@map("shift_closures")
-}
-
-model Attendance {
-  id          String           @id @default(cuid())
-  shiftId     String
-  customerId  String?
-  vehicleId   String?
-  plate       String
-  status      AttendanceStatus @default(PENDING)
-  type        AttendanceType   @default(MANUAL)
-  completedAt DateTime?
-  cancelledAt DateTime?
-  reason      String?
-
-  shift    Shift     @relation(fields: [shiftId], references: [id])
-  customer Customer? @relation(fields: [customerId], references: [id])
-  vehicle  Vehicle?  @relation(fields: [vehicleId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([shiftId])
-  @@index([customerId])
-  @@index([vehicleId])
-  @@index([status])
-  @@index([plate])
-  @@index([createdAt])
-  @@map("attendances")
-}
-
-model DailyWash {
-  id        String   @id @default(cuid())
-  vehicleId String
-  date      DateTime @db.Date
-  used      Boolean  @default(false)
-  usedAt    DateTime?
-
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
-
-  @@unique([vehicleId, date])
-  @@map("daily_washes")
-}
-
-// ─── ANPR ──────────────────────────────────────────────────────────────────
-
-model AnprCamera {
-  id        String  @id @default(cuid())
-  unitId    String
-  name      String
-  provider  String?
-  streamUrl String?
-  isActive  Boolean @default(true)
-
-  unit   FranchiseUnit @relation(fields: [unitId], references: [id])
-  events AnprEvent[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([unitId])
-  @@index([isActive])
-  @@map("anpr_cameras")
-}
-
-model AnprEvent {
-  id              String          @id @default(cuid())
-  unitId          String
-  cameraId        String?
-  plate           String
-  normalizedPlate String?
-  status          AnprEventStatus @default(UNKNOWN)
-  confidence      Float?
-  reason          String?
-  capturedAt      DateTime        @default(now())
-
-  unit   FranchiseUnit @relation(fields: [unitId], references: [id])
-  camera AnprCamera?   @relation(fields: [cameraId], references: [id])
-
-  createdAt DateTime @default(now())
-
-  @@index([unitId])
-  @@index([cameraId])
-  @@index([plate])
-  @@index([status])
-  @@index([capturedAt])
-  @@map("anpr_events")
-}
-
-// ─── Financial ─────────────────────────────────────────────────────────────
-
-model FinancialLedger {
-  id          String  @id @default(cuid())
-  unitId      String?
-  userId      String?
-  partnerId   String?
-  type        String
-  origin      String
-  amount      Decimal @db.Decimal(10, 2)
-  description String?
-  referenceId String?
-
-  unit    FranchiseUnit? @relation(fields: [unitId], references: [id])
-  partner Partner?       @relation(fields: [partnerId], references: [id])
-
-  createdAt DateTime @default(now())
-
-  @@index([unitId])
-  @@index([partnerId])
-  @@index([userId])
-  @@index([createdAt])
-  @@map("financial_ledger")
-}
-
-model FranchiseRule {
-  id               String  @id @default(cuid())
-  unitId           String  @unique
-  repassePercent   Decimal @default(0) @db.Decimal(5, 2)
-  royaltyPercent   Decimal @default(0) @db.Decimal(5, 2)
-  marketingPercent Decimal @default(0) @db.Decimal(5, 2)
-
-  unit FranchiseUnit @relation(fields: [unitId], references: [id])
-
-  updatedAt DateTime @updatedAt
-
-  @@map("franchise_rules")
-}
-
-model FranchiseReport {
-  id       String                @id @default(cuid())
-  unitId   String
-  period   String
-  status   FranchiseReportStatus @default(OPEN)
-  data     Json?
-  closedAt DateTime?
-
-  unit FranchiseUnit @relation(fields: [unitId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([unitId])
-  @@index([status])
-  @@index([createdAt])
-  @@map("franchise_reports")
-}
-
-// ─── Antifraud ─────────────────────────────────────────────────────────────
-
-model AntiFraudFlag {
-  id         String               @id @default(cuid())
-  userId     String
-  type       String
-  severity   AntiFraudFlagSeverity @default(LOW)
-  status     AntiFraudFlagStatus  @default(OPEN)
-  reason     String?
-  reviewedAt DateTime?
-  reviewedBy String?
-
-  user User @relation(fields: [userId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-  @@index([status])
-  @@index([severity])
-  @@index([createdAt])
-  @@map("anti_fraud_flags")
-}
-
-model SecurityLog {
-  id        String   @id @default(cuid())
-  userId    String?
-  event     String
-  ip        String?
-  userAgent String?
-  metadata  Json?
-
-  user User? @relation(fields: [userId], references: [id])
-
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([event])
-  @@index([createdAt])
-  @@map("security_logs")
-}
-
-// ─── Referrals ─────────────────────────────────────────────────────────────
-
-model Referral {
-  id            String  @id @default(cuid())
-  referrerId    String
-  referredId    String  @unique
-  rewardGranted Boolean @default(false)
-
-  referrer User @relation("ReferrerUser", fields: [referrerId], references: [id])
-  referred User @relation("ReferredUser", fields: [referredId], references: [id])
-
-  createdAt DateTime @default(now())
-
-  @@index([referrerId])
-  @@map("referrals")
-}
-
-// ─── Welcome Bonus ─────────────────────────────────────────────────────────
-
-model WelcomeBonusGrant {
-  id             String    @id @default(cuid())
-  cpf            String    @unique
-  walletId       String    @unique
-  grantedAt      DateTime  @default(now())
-  fullyExpiredAt DateTime?
-
-  wallet Wallet @relation(fields: [walletId], references: [id])
-
-  @@map("welcome_bonus_grants")
-}
-
-// ─── Notifications ─────────────────────────────────────────────────────────
-
-model Notification {
-  id        String    @id @default(cuid())
-  userId    String
-  title     String
-  body      String
-  type      String?
-  readAt    DateTime?
-
-  user User @relation(fields: [userId], references: [id])
-
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([userId, readAt])
-  @@index([createdAt])
-  @@map("notifications")
-}
-
-// ─── Partner Transactions ──────────────────────────────────────────────────
-
-model PartnerTransaction {
-  id                String  @id @default(cuid())
-  partnerId         String
-  customerId        String
-  grossAmount       Decimal @db.Decimal(10, 2)
-  cashbackUsed      Decimal @default(0) @db.Decimal(10, 2)
-  gatewayAmount     Decimal @db.Decimal(10, 2)
-  generatedCashback Decimal @default(0) @db.Decimal(10, 2)
-  customerCashback  Decimal @default(0) @db.Decimal(10, 2)
-  uauCommission     Decimal @default(0) @db.Decimal(10, 2)
-  status            String  @default("PENDING")
-  paymentMethod     String?
-  qrPayload         String? @db.Text
-
-  partner  Partner  @relation(fields: [partnerId], references: [id])
-  customer Customer @relation(fields: [customerId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([partnerId])
-  @@index([customerId])
-  @@index([status])
-  @@index([createdAt])
-  @@map("partner_transactions")
-}
-
-// ─── Wash Services & Individual Purchases ──────────────────────────────────
-
-model WashService {
-  id          String  @id @default(cuid())
-  name        String
-  description String?
-  price       Decimal @db.Decimal(10, 2)
-  isActive    Boolean @default(true)
-
-  purchaseItems IndividualServicePurchaseItem[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([isActive])
-  @@map("wash_services")
-}
-
-model IndividualServicePurchase {
-  id             String                @id @default(cuid())
-  customerId     String
-  vehicleId      String
-  originalAmount Decimal               @db.Decimal(10, 2)
-  discountAmount Decimal               @default(0) @db.Decimal(10, 2)
-  finalAmount    Decimal               @db.Decimal(10, 2)
-  status         BillingStatus         @default(PENDING)
-  paymentMethod  PurchasePaymentMethod
-
-  customer Customer                       @relation(fields: [customerId], references: [id])
-  vehicle  Vehicle                        @relation(fields: [vehicleId], references: [id])
-  items    IndividualServicePurchaseItem[]
-  billing  BillingHistory?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([customerId])
-  @@index([vehicleId])
-  @@index([status])
-  @@index([createdAt])
-  @@map("individual_service_purchases")
-}
-
-model IndividualServicePurchaseItem {
-  id         String  @id @default(cuid())
-  purchaseId String
-  serviceId  String
-  quantity   Int     @default(1)
-  unitPrice  Decimal @db.Decimal(10, 2)
-
-  purchase IndividualServicePurchase @relation(fields: [purchaseId], references: [id])
-  service  WashService               @relation(fields: [serviceId], references: [id])
-
-  @@index([purchaseId])
-  @@index([serviceId])
-  @@map("individual_service_purchase_items")
-}
-
-// ─── Auth ──────────────────────────────────────────────────────────────────
-
-model RevokedToken {
-  id        String   @id @default(cuid())
-  jti       String   @unique
-  expiresAt DateTime
-
-  @@index([expiresAt])
-  @@map("revoked_tokens")
 }
