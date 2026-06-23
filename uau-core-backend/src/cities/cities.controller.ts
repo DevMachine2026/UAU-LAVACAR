@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { CitiesService } from './cities.service';
 import { CreateCityDto } from './dto/create-city.dto';
 import { UpdateCityDto } from './dto/update-city.dto';
@@ -37,6 +37,20 @@ export class CitiesController {
   @ApiOperation({ summary: 'Atualiza uma cidade' })
   update(@Param('id') id: string, @Body() dto: UpdateCityDto) {
     return this.citiesService.update(id, dto);
+  }
+
+  @Patch(':id/activate')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Ativa uma cidade' })
+  activate(@Param('id') id: string) {
+    return this.citiesService.activate(id);
+  }
+
+  @Patch(':id/deactivate')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Desativa uma cidade' })
+  deactivate(@Param('id') id: string) {
+    return this.citiesService.deactivate(id);
   }
 
   @Delete(':id')

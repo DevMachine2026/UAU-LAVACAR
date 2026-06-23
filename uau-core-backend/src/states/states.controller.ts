@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
 import { StatesService } from './states.service';
 import { CreateStateDto } from './dto/create-state.dto';
 import { UpdateStateDto } from './dto/update-state.dto';
@@ -42,6 +42,20 @@ export class StatesController {
   @ApiOperation({ summary: 'Atualiza um estado' })
   update(@Param('id') id: string, @Body() dto: UpdateStateDto) {
     return this.statesService.update(id, dto);
+  }
+
+  @Patch(':id/activate')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Ativa um estado' })
+  activate(@Param('id') id: string) {
+    return this.statesService.activate(id);
+  }
+
+  @Patch(':id/deactivate')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Desativa um estado' })
+  deactivate(@Param('id') id: string) {
+    return this.statesService.deactivate(id);
   }
 
   @Delete(':id')

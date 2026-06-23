@@ -38,6 +38,22 @@ export class StatesService {
     }).catch(() => { throw new NotFoundException('Estado não encontrado'); });
   }
 
+  async activate(id: string) {
+    return this.prisma.state.update({
+      where: { id },
+      data: { isActive: true },
+      select: { id: true, isActive: true },
+    }).catch(() => { throw new NotFoundException('Estado não encontrado'); });
+  }
+
+  async deactivate(id: string) {
+    return this.prisma.state.update({
+      where: { id },
+      data: { isActive: false },
+      select: { id: true, isActive: true },
+    }).catch(() => { throw new NotFoundException('Estado não encontrado'); });
+  }
+
   async remove(id: string) {
     return this.prisma.state.delete({
       where: { id },

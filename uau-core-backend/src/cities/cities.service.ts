@@ -39,6 +39,22 @@ export class CitiesService {
     }).catch(() => { throw new NotFoundException('Cidade não encontrada'); });
   }
 
+  async activate(id: string) {
+    return this.prisma.city.update({
+      where: { id },
+      data: { isActive: true },
+      select: { id: true, isActive: true },
+    }).catch(() => { throw new NotFoundException('Cidade não encontrada'); });
+  }
+
+  async deactivate(id: string) {
+    return this.prisma.city.update({
+      where: { id },
+      data: { isActive: false },
+      select: { id: true, isActive: true },
+    }).catch(() => { throw new NotFoundException('Cidade não encontrada'); });
+  }
+
   async remove(id: string) {
     return this.prisma.city.delete({
       where: { id },
