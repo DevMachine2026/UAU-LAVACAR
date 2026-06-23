@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { KeyboardAvoidingView, Linking, Modal, Platform, Text, TouchableOpacity, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Text, TouchableOpacity, View } from "react-native";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { Screen } from "@/components/Screen";
@@ -149,8 +149,8 @@ export default function ProfileScreen() {
     } else {
       setCurrentPwdError("");
     }
-    if (newPwd.length < 6) {
-      setNewPwdError("Nova senha deve ter pelo menos 6 caracteres.");
+    if (newPwd.length < 8) {
+      setNewPwdError("Senha deve ter no mínimo 8 caracteres");
       valid = false;
     } else {
       setNewPwdError("");
@@ -285,7 +285,14 @@ export default function ProfileScreen() {
               iconBg="rgba(217,45,32,0.09)"
               iconColor="#D92D20"
               labelColor="#D92D20"
-              onPress={() => void logout()}
+              onPress={() => Alert.alert(
+                'Sair da conta',
+                'Tem certeza que deseja sair?',
+                [
+                  { text: 'Cancelar', style: 'cancel' },
+                  { text: 'Sair', style: 'destructive', onPress: logout },
+                ]
+              )}
               showChevron={false}
             />
           </View>

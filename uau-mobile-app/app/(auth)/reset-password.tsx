@@ -1,5 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import * as SecureStore from "expo-secure-store";
 import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Text, View } from "react-native";
 import { z } from "zod";
@@ -11,7 +13,7 @@ import { resetPassword } from "@/features/auth/auth.api";
 const schema = z
   .object({
     code: z.string().length(6, "O código deve ter 6 dígitos"),
-    newPassword: z.string().min(8, "A senha deve ter pelo menos 8 caracteres"),
+    newPassword: z.string().min(8, "Senha deve ter no mínimo 8 caracteres"),
     confirmPassword: z.string().min(1, "Confirme sua senha"),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
@@ -22,7 +24,18 @@ const schema = z
 type Form = z.infer<typeof schema>;
 
 export default function ResetPasswordScreen() {
-  const { resetToken, email } = useLocalSearchParams<{ resetToken: string; email: string }>();
+  const { email } = useLocalSearchParams<{ email: string }>();
+  const [resetToken, setResetToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    SecureStore.getItemAsync("uau.resetToken").then((token) => {
+      if (!token) {
+        router.replace({ pathname: "/(auth)/forgot-password", params: { message: "Link inválido ou expirado" } });
+        return;
+      }
+      setResetToken(token);
+    });
+  }, []);
 
   const {
     control,
@@ -37,6 +50,7 @@ export default function ResetPasswordScreen() {
   async function onSubmit(data: Form) {
     try {
       await resetPassword(resetToken ?? "", data.code, data.newPassword);
+      await SecureStore.deleteItemAsync("uau.resetToken");
       router.replace("/(auth)/login");
     } catch (error) {
       setError("root", {

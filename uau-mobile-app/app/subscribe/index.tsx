@@ -346,7 +346,6 @@ function SuccessContent({
         {pixQrCode || pixCopyPaste ? (
           <View className="gap-3 rounded-lg bg-uau-light p-3">
             <Text className="font-semibold text-uau-black">PIX</Text>
-            {pixQrCode ? <Text className="text-xs leading-5 text-uau-gray">{pixQrCode}</Text> : null}
             {pixCopyPaste ? <Text className="text-xs leading-5 text-uau-gray">{pixCopyPaste}</Text> : null}
             <Button onPress={onCopyPix} title={copied ? "Codigo copiado" : "Copiar codigo PIX"} />
           </View>

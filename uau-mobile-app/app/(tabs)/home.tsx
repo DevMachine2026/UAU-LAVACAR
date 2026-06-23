@@ -329,18 +329,22 @@ export default function HomeScreen() {
                     style={{ color: "white", fontSize: 28, fontWeight: "700" }}
                   />
                 )}
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 }}>
-                  <Ionicons name="time-outline" size={12} color={diasRestantes === 1 ? "#D97706" : AMBER} />
-                  <Text style={{
-                    color: diasRestantes === 1 ? "#D97706" : AMBER,
-                    fontSize: 11,
-                    fontWeight: diasRestantes === 1 ? "700" : "500",
-                  }}>
-                    {diasRestantes === 1
-                      ? "Expira amanhã! · use na sua assinatura"
-                      : `Expira em ${diasRestantes} dias · use na sua assinatura`}
-                  </Text>
-                </View>
+                {statementQuery.isLoading ? (
+                  <Skeleton style={{ width: 160, height: 14, borderRadius: 4, marginTop: 8 }} />
+                ) : diasRestantes > 0 ? (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 }}>
+                    <Ionicons name="time-outline" size={12} color={diasRestantes === 1 ? "#D97706" : AMBER} />
+                    <Text style={{
+                      color: diasRestantes === 1 ? "#D97706" : AMBER,
+                      fontSize: 11,
+                      fontWeight: diasRestantes === 1 ? "700" : "500",
+                    }}>
+                      {diasRestantes === 1
+                        ? "Expira amanhã! · use na sua assinatura"
+                        : `Expira em ${diasRestantes} dias · use na sua assinatura`}
+                    </Text>
+                  </View>
+                ) : null}
               </>
             ) : headerMode === "cashback" ? (
               <>

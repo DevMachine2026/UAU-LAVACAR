@@ -9,17 +9,12 @@ import { Screen } from "@/components/Screen";
 import { useAuthStore } from "@/auth/auth.store";
 import { maskCPF, maskPhone, unmaskCPF, unmaskPhone } from "@/utils/masks";
 
-const optionalId = z.string().trim().optional().transform((value) => (value ? value : undefined));
-
 const registerSchema = z.object({
   name: z.string().min(2, "Informe seu nome"),
   email: z.string().min(1, "Informe seu e-mail").email("Informe um e-mail valido"),
   phone: z.string().min(8, "Informe um telefone valido"),
   cpf: z.string().min(11, "Informe um CPF valido"),
-  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
-  stateId: optionalId,
-  cityId: optionalId,
-  defaultUnitId: optionalId
+  password: z.string().min(8, "Senha deve ter no mínimo 8 caracteres"),
 });
 
 type RegisterForm = z.infer<typeof registerSchema>;
@@ -39,9 +34,6 @@ export default function RegisterScreen() {
       phone: "",
       cpf: "",
       password: "",
-      stateId: "",
-      cityId: "",
-      defaultUnitId: ""
     }
   });
 
@@ -135,34 +127,6 @@ export default function RegisterScreen() {
             />
           )}
         />
-
-        <View className="gap-3">
-          <Text className="text-sm font-semibold text-uau-gray">Localizacao opcional</Text>
-
-          <Controller
-            control={control}
-            name="stateId"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input label="Estado ID" onBlur={onBlur} onChangeText={onChange} value={value} />
-            )}
-          />
-
-          <Controller
-            control={control}
-            name="cityId"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input label="Cidade ID" onBlur={onBlur} onChangeText={onChange} value={value} />
-            )}
-          />
-
-          <Controller
-            control={control}
-            name="defaultUnitId"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input label="Unidade padrao ID" onBlur={onBlur} onChangeText={onChange} value={value} />
-            )}
-          />
-        </View>
 
         {errors.root?.message ? <Text className="text-sm text-red-600">{errors.root.message}</Text> : null}
 

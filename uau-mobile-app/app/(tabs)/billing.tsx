@@ -114,7 +114,6 @@ export default function BillingScreen() {
                 {pixQrCode || pixCopyPaste ? (
                   <View className="mt-4 gap-3 rounded-xl bg-uau-light p-4">
                     <Text className="font-semibold text-uau-teal">Pagar via PIX</Text>
-                    {pixQrCode ? <Text className="text-xs leading-5 text-uau-gray" numberOfLines={3}>{pixQrCode}</Text> : null}
                     {pixCopyPaste ? <Text className="text-xs leading-5 text-uau-gray" numberOfLines={3}>{pixCopyPaste}</Text> : null}
                     <Button onPress={() => void copyPix()} title={copied ? "✓ Código copiado" : "Copiar código PIX"} />
                   </View>

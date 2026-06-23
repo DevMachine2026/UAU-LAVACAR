@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { router } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { router, useLocalSearchParams } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import { Text, View } from "react-native";
 import { z } from "zod";
@@ -15,6 +16,8 @@ const schema = z.object({
 type Form = z.infer<typeof schema>;
 
 export default function ForgotPasswordScreen() {
+  const { message } = useLocalSearchParams<{ message?: string }>();
+
   const {
     control,
     handleSubmit,
@@ -28,10 +31,8 @@ export default function ForgotPasswordScreen() {
   async function onSubmit(data: Form) {
     try {
       const result = await forgotPassword(data.email);
-      router.push({
-        pathname: "/(auth)/reset-password",
-        params: { resetToken: result.resetToken, email: data.email },
-      });
+      await SecureStore.setItemAsync("uau.resetToken", result.resetToken);
+      router.push({ pathname: "/(auth)/reset-password", params: { email: data.email } });
     } catch (error) {
       setError("root", {
         message: error instanceof Error ? error.message : "Não foi possível enviar o e-mail.",
@@ -67,6 +68,10 @@ export default function ForgotPasswordScreen() {
               />
             )}
           />
+
+          {message ? (
+            <Text className="text-sm text-red-600">{message}</Text>
+          ) : null}
 
           {errors.root?.message ? (
             <Text className="text-sm text-red-600">{errors.root.message}</Text>
