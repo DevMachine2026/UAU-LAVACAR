@@ -1,6 +1,18 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import {
+  AlertCircle,
+  CreditCard,
+  Handshake,
+  MapPin,
+  Percent,
+  PiggyBank,
+  TrendingUp,
+  UserCheck,
+  Users,
+  Wallet,
+} from "lucide-react";
 import { DashboardLayout } from "@/layout/DashboardLayout";
 import { ProtectedRoute } from "@/layout/ProtectedRoute";
 import { ErrorState, LoadingState } from "@/components/State";
@@ -26,24 +38,69 @@ export default function AdminPage() {
     <ProtectedRoute roles={["SUPER_ADMIN"]}>
       <DashboardLayout title="Super Admin">
         <div className="space-y-8">
-          {(overview.isLoading || financial.isLoading || alerts.isLoading) ? <LoadingState /> : null}
-          {(overview.error || financial.error || alerts.error) ? <ErrorState /> : null}
+          {overview.isLoading || financial.isLoading || alerts.isLoading ? <LoadingState /> : null}
+          {overview.error || financial.error || alerts.error ? <ErrorState /> : null}
           <Section title="Geral">
             <MetricGrid>
-              <MetricCard label="Usuarios" value={getNumber(overviewData, ["totalUsers"], 0)} />
-              <MetricCard label="Clientes" value={getNumber(overviewData, ["totalCustomers"], 0)} />
-              <MetricCard label="Assinaturas ativas" value={getNumber(overviewData, ["activeSubscriptions"], 0)} />
-              <MetricCard label="Cobrancas abertas" value={getNumber(overviewData, ["openBillingCycles"], 0)} />
-              <MetricCard label="Parceiros" value={getNumber(overviewData, ["totalPartners"], 0)} />
-              <MetricCard label="Unidades" value={getNumber(overviewData, ["totalUnits"], 0)} />
+              <MetricCard
+                icon={Users}
+                label="Usuários"
+                value={getNumber(overviewData, ["totalUsers"], 0)}
+              />
+              <MetricCard
+                icon={UserCheck}
+                label="Clientes"
+                value={getNumber(overviewData, ["totalCustomers"], 0)}
+              />
+              <MetricCard
+                icon={CreditCard}
+                label="Assinaturas ativas"
+                value={getNumber(overviewData, ["activeSubscriptions"], 0)}
+              />
+              <MetricCard
+                alert
+                icon={AlertCircle}
+                label="Cobranças abertas"
+                value={getNumber(overviewData, ["openBillingCycles"], 0)}
+              />
+              <MetricCard
+                icon={Handshake}
+                label="Parceiros"
+                value={getNumber(overviewData, ["totalPartners"], 0)}
+              />
+              <MetricCard
+                icon={MapPin}
+                label="Unidades"
+                value={getNumber(overviewData, ["totalUnits"], 0)}
+              />
             </MetricGrid>
           </Section>
           <Section title="Financeiro">
             <MetricGrid>
-              <MetricCard money label="Receita billing" value={getNumber(financialData, ["totalGatewayAmount", "totalBaseAmountBilling"], 0)} />
-              <MetricCard money label="Cashback circulacao" value={getNumber(financialData, ["totalCashbackInCirculation"], 0)} />
-              <MetricCard money label="Wallet disponivel" value={getNumber(financialData, ["totalWalletAvailableBalance"], 0)} />
-              <MetricCard money label="Comissao parceiros" value={getNumber(financialData, ["totalPartnerUauCommission"], 0)} />
+              <MetricCard
+                money
+                icon={TrendingUp}
+                label="Receita billing"
+                value={getNumber(financialData, ["totalGatewayAmount", "totalBaseAmountBilling"], 0)}
+              />
+              <MetricCard
+                money
+                icon={Wallet}
+                label="Cashback circulação"
+                value={getNumber(financialData, ["totalCashbackInCirculation"], 0)}
+              />
+              <MetricCard
+                money
+                icon={PiggyBank}
+                label="Wallet disponível"
+                value={getNumber(financialData, ["totalWalletAvailableBalance"], 0)}
+              />
+              <MetricCard
+                money
+                icon={Percent}
+                label="Comissão parceiros"
+                value={getNumber(financialData, ["totalPartnerUauCommission"], 0)}
+              />
             </MetricGrid>
           </Section>
           <Section title="Alertas">

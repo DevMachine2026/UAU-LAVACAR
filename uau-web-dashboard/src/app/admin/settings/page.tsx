@@ -11,27 +11,139 @@ import { DashboardLayout } from "@/layout/DashboardLayout";
 import { ProtectedRoute } from "@/layout/ProtectedRoute";
 import { FormField } from "@/features/crud/FormField";
 import { errorMessage } from "@/features/crud/feedback";
-import { AdminSettings, getAdminSettings, updateAdminSettings } from "@/features/admin-settings/adminSettings.api";
+import {
+  AdminSettings,
+  getAdminSettings,
+  updateAdminSettings,
+} from "@/features/admin-settings/adminSettings.api";
 
-const LABELS: Record<string, string> = {
-  valor_bonus_cadastro_inicial: "Bonus inicial de cadastro",
-  bonus_cadastro_decaimento_diario: "Decaimento diario do bonus",
-  bonus_cadastro_validade_dias: "Validade do bonus em dias",
-  plano_cashback_limite_percentual_plano: "Limite cashback sobre plano (%)",
-  plano_cashback_limite_percentual_saldo: "Limite cashback sobre saldo (%)",
-  mmn_bonus_ativacao_linha_1: "MMN ativacao linha 1",
-  mmn_bonus_ativacao_linha_2: "MMN ativacao linha 2",
-  mmn_bonus_ativacao_linha_3: "MMN ativacao linha 3",
-  mmn_bonus_recorrente_linha_1: "MMN recorrente linha 1",
-  mmn_bonus_recorrente_linha_2: "MMN recorrente linha 2",
-  mmn_bonus_recorrente_linha_3: "MMN recorrente linha 3",
-  mmn_dias_atraso_perde_bonus_mes: "Dias atraso perde bonus mes",
-  mmn_dias_atraso_perde_rede: "Dias atraso perde rede",
-  permitir_alterar_forma_pagamento_ate_dias_antes: "Dias limite para alterar pagamento",
-  parceiro_comissao_padrao_percentual: "Comissao padrao parceiro (%)",
-  parceiro_cashback_cliente_padrao_percentual: "Cashback cliente padrao (%)",
-  parceiro_comissao_uau_padrao_percentual: "Comissao UAU padrao (%)",
+type FieldDef = {
+  key: string;
+  label: string;
+  prefix?: string;
+  placeholder?: string;
 };
+
+type SectionDef = {
+  title: string;
+  fields: FieldDef[];
+};
+
+const SECTIONS: SectionDef[] = [
+  {
+    title: "Bônus de Cadastro",
+    fields: [
+      {
+        key: "valor_bonus_cadastro_inicial",
+        label: "Bônus inicial de cadastro",
+        prefix: "R$",
+        placeholder: "ex: 10.00",
+      },
+      {
+        key: "bonus_cadastro_decaimento_diario",
+        label: "Decaimento diário do bônus",
+        prefix: "R$",
+        placeholder: "ex: 0.50",
+      },
+      {
+        key: "bonus_cadastro_validade_dias",
+        label: "Validade do bônus (dias)",
+        placeholder: "ex: 30",
+      },
+    ],
+  },
+  {
+    title: "Cashback de Planos",
+    fields: [
+      {
+        key: "plano_cashback_limite_percentual_plano",
+        label: "Limite de cashback sobre o plano (%)",
+        placeholder: "ex: 20",
+      },
+      {
+        key: "plano_cashback_limite_percentual_saldo",
+        label: "Limite de cashback sobre o saldo (%)",
+        placeholder: "ex: 50",
+      },
+    ],
+  },
+  {
+    title: "Rede MMN",
+    fields: [
+      {
+        key: "mmn_bonus_ativacao_linha_1",
+        label: "Bônus de ativação — linha 1",
+        prefix: "R$",
+        placeholder: "ex: 5.00",
+      },
+      {
+        key: "mmn_bonus_ativacao_linha_2",
+        label: "Bônus de ativação — linha 2",
+        prefix: "R$",
+        placeholder: "ex: 3.00",
+      },
+      {
+        key: "mmn_bonus_ativacao_linha_3",
+        label: "Bônus de ativação — linha 3",
+        prefix: "R$",
+        placeholder: "ex: 1.00",
+      },
+      {
+        key: "mmn_bonus_recorrente_linha_1",
+        label: "Bônus recorrente — linha 1",
+        prefix: "R$",
+        placeholder: "ex: 2.00",
+      },
+      {
+        key: "mmn_bonus_recorrente_linha_2",
+        label: "Bônus recorrente — linha 2",
+        prefix: "R$",
+        placeholder: "ex: 1.00",
+      },
+      {
+        key: "mmn_bonus_recorrente_linha_3",
+        label: "Bônus recorrente — linha 3",
+        prefix: "R$",
+        placeholder: "ex: 0.50",
+      },
+      {
+        key: "mmn_dias_atraso_perde_bonus_mes",
+        label: "Dias de atraso para perder bônus do mês",
+        placeholder: "ex: 5",
+      },
+      {
+        key: "mmn_dias_atraso_perde_rede",
+        label: "Dias de atraso para perder a rede",
+        placeholder: "ex: 30",
+      },
+    ],
+  },
+  {
+    title: "Pagamento e Parceiros",
+    fields: [
+      {
+        key: "permitir_alterar_forma_pagamento_ate_dias_antes",
+        label: "Dias limite para alterar forma de pagamento",
+        placeholder: "ex: 3",
+      },
+      {
+        key: "parceiro_comissao_padrao_percentual",
+        label: "Comissão padrão do parceiro (%)",
+        placeholder: "ex: 10",
+      },
+      {
+        key: "parceiro_cashback_cliente_padrao_percentual",
+        label: "Cashback padrão ao cliente (%)",
+        placeholder: "ex: 5",
+      },
+      {
+        key: "parceiro_comissao_uau_padrao_percentual",
+        label: "Comissão UAU padrão (%)",
+        placeholder: "ex: 2",
+      },
+    ],
+  },
+];
 
 export default function AdminSettingsPage() {
   const [notice, setNotice] = useState("");
@@ -56,7 +168,7 @@ export default function AdminSettingsPage() {
       return updateAdminSettings(payload);
     },
     onSuccess: (data) => {
-      setNotice("Configuracoes salvas.");
+      setNotice("Configurações salvas.");
       setError("");
       reset(Object.fromEntries(Object.entries(data).map(([key, value]) => [key, String(value)])));
     },
@@ -65,29 +177,38 @@ export default function AdminSettingsPage() {
 
   return (
     <ProtectedRoute roles={["SUPER_ADMIN"]}>
-      <DashboardLayout title="Settings">
+      <DashboardLayout title="Configurações">
         <div className="space-y-6">
           {settings.isLoading ? <LoadingState /> : null}
-          {(settings.error || error) ? <ErrorState message={error || "Nao foi possivel carregar configuracoes."} /> : null}
+          {settings.error || error ? (
+            <ErrorState message={error || "Não foi possível carregar as configurações."} />
+          ) : null}
           <Toast message={notice} onDismiss={() => setNotice("")} />
-          <Card>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {Object.keys(form).map((key) => (
-                <FormField
-                  key={key}
-                  label={LABELS[key] ?? key}
-                  min="0"
-                  step="0.01"
-                  type="number"
-                  value={form[key]}
-                  onChange={(event) => setValue(key, event.target.value)}
-                />
-              ))}
-            </div>
-            <div className="mt-6 flex justify-end">
-              <Button disabled={save.isPending || settings.isLoading} onClick={() => save.mutate()}>Salvar configuracoes</Button>
-            </div>
-          </Card>
+          {SECTIONS.map((section) => (
+            <Card key={section.title}>
+              <h2 className="mb-4 text-base font-bold text-uau-black">{section.title}</h2>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {section.fields.map(({ key, label, prefix, placeholder }) => (
+                  <FormField
+                    key={key}
+                    label={label}
+                    min="0"
+                    placeholder={placeholder}
+                    prefix={prefix}
+                    step="0.01"
+                    type="number"
+                    value={form[key] ?? ""}
+                    onChange={(event) => setValue(key, event.target.value)}
+                  />
+                ))}
+              </div>
+            </Card>
+          ))}
+          <div className="flex justify-end">
+            <Button disabled={save.isPending || settings.isLoading} onClick={() => save.mutate()}>
+              Salvar configurações
+            </Button>
+          </div>
         </div>
       </DashboardLayout>
     </ProtectedRoute>

@@ -3,75 +3,121 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import {
+  Menu,
+  X,
+  LayoutDashboard,
+  Users,
+  CreditCard,
+  Car,
+  BarChart2,
+  Settings,
+  UserCheck,
+  Clock,
+  Camera,
+  Search,
+  Handshake,
+  type LucideIcon,
+} from "lucide-react";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/Button";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useAuthStore } from "@/auth/auth.store";
 
-type NavItem = { href: string; label: string };
+type NavItem = { href: string; label: string; icon: LucideIcon };
+type NavSection = { sectionLabel?: string; items: NavItem[] };
 
-const NAV_BY_ROLE: Record<string, NavItem[]> = {
+const NAV_SECTIONS_BY_ROLE: Record<string, NavSection[]> = {
   SUPER_ADMIN: [
-    { href: "/admin", label: "Dashboard" },
-    { href: "/admin/settings", label: "Settings" },
-    { href: "/admin/plans", label: "Plans" },
-    { href: "/admin/vehicle-sizes", label: "Portes" },
-    { href: "/admin/locations", label: "Locations" },
-    { href: "/admin/partners", label: "Partners" },
-    { href: "/admin/customers", label: "Clientes" },
-    { href: "/admin/units/staff", label: "Equipe" },
-    { href: "/admin/campaigns", label: "Campaigns" },
-    { href: "/admin/financial", label: "Financial" },
-    { href: "/admin/antifraud", label: "Antifraud" },
-    { href: "/admin/operations", label: "Operacoes" },
-    { href: "/operator/anpr", label: "ANPR" },
-    { href: "/operator/shifts", label: "Expedientes" },
-    { href: "/operator/plate-check", label: "Placas" },
+    {
+      items: [
+        { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+        { href: "/admin/customers", label: "Clientes", icon: Users },
+        { href: "/admin/plans", label: "Planos", icon: CreditCard },
+        { href: "/admin/operations", label: "Operações", icon: Car },
+      ],
+    },
+    {
+      sectionLabel: "GESTÃO",
+      items: [
+        { href: "/admin/financial", label: "Financeiro", icon: BarChart2 },
+        { href: "/admin/settings", label: "Configurações", icon: Settings },
+      ],
+    },
   ],
   FRANCHISE_OWNER: [
-    { href: "/franchise", label: "Minha Franquia" },
-    { href: "/franchise/customers", label: "Clientes" },
-    { href: "/franchise/staff", label: "Equipe" },
-    { href: "/franchise/operations", label: "Operacoes" },
-    { href: "/operator", label: "Operador" },
-    { href: "/operator/anpr", label: "ANPR" },
-    { href: "/operator/shifts", label: "Expedientes" },
-    { href: "/operator/plate-check", label: "Placas" },
+    {
+      items: [
+        { href: "/franchise", label: "Minha Franquia", icon: LayoutDashboard },
+        { href: "/franchise/customers", label: "Clientes", icon: Users },
+        { href: "/franchise/staff", label: "Equipe", icon: UserCheck },
+        { href: "/franchise/operations", label: "Operações", icon: Car },
+        { href: "/operator", label: "Operador", icon: Settings },
+        { href: "/operator/anpr", label: "ANPR", icon: Camera },
+        { href: "/operator/shifts", label: "Expedientes", icon: Clock },
+        { href: "/operator/plate-check", label: "Placas", icon: Search },
+      ],
+    },
   ],
-  PARTNER: [{ href: "/partner", label: "Meu Parceiro" }],
+  PARTNER: [
+    {
+      items: [{ href: "/partner", label: "Meu Parceiro", icon: Handshake }],
+    },
+  ],
   OPERATOR: [
-    { href: "/operator", label: "Operacao" },
-    { href: "/operator/shifts", label: "Expedientes" },
-    { href: "/operator/anpr", label: "ANPR" },
-    { href: "/operator/plate-check", label: "Placas" },
+    {
+      items: [
+        { href: "/operator", label: "Operação", icon: Car },
+        { href: "/operator/shifts", label: "Expedientes", icon: Clock },
+        { href: "/operator/anpr", label: "ANPR", icon: Camera },
+        { href: "/operator/plate-check", label: "Placas", icon: Search },
+      ],
+    },
   ],
 };
 
 function NavLinks({
-  nav,
+  sections,
   pathname,
   onNavigate,
 }: {
-  nav: NavItem[];
+  sections: NavSection[];
   pathname: string;
   onNavigate: () => void;
 }) {
   return (
-    <nav className="space-y-1">
-      {nav.map((item) => (
-        <Link
-          className={`block rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
-            pathname === item.href
-              ? "bg-uau-primaryDark text-white"
-              : "text-white/80 hover:bg-white/10 hover:text-white"
-          }`}
-          href={item.href}
-          key={item.href}
-          onClick={onNavigate}
-        >
-          {item.label}
-        </Link>
+    <nav className="space-y-4">
+      {sections.map((section, idx) => (
+        <div key={idx}>
+          {section.sectionLabel && (
+            <div className="mb-2">
+              <hr className="mb-3 border-white/20" />
+              <p className="px-4 text-xs font-semibold uppercase tracking-wider text-white/50">
+                {section.sectionLabel}
+              </p>
+            </div>
+          )}
+          <div className="space-y-1">
+            {section.items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
+                    pathname === item.href
+                      ? "bg-uau-primaryDark text-white"
+                      : "text-white/80 hover:bg-white/10 hover:text-white"
+                  }`}
+                  href={item.href}
+                  key={item.href}
+                  onClick={onNavigate}
+                >
+                  <Icon size={18} />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
       ))}
     </nav>
   );
@@ -87,7 +133,7 @@ export function DashboardLayout({
   const pathname = usePathname();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
-  const nav = NAV_BY_ROLE[user?.role ?? ""] ?? [];
+  const sections = NAV_SECTIONS_BY_ROLE[user?.role ?? ""] ?? [];
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
@@ -103,7 +149,7 @@ export function DashboardLayout({
             className="h-12 w-auto object-contain"
           />
         </div>
-        <NavLinks nav={nav} pathname={pathname} onNavigate={() => {}} />
+        <NavLinks sections={sections} pathname={pathname} onNavigate={() => {}} />
       </aside>
 
       {/* Mobile drawer backdrop */}
@@ -138,7 +184,7 @@ export function DashboardLayout({
           </button>
         </div>
         <NavLinks
-          nav={nav}
+          sections={sections}
           pathname={pathname}
           onNavigate={() => setDrawerOpen(false)}
         />
@@ -164,22 +210,15 @@ export function DashboardLayout({
                 className="h-7 w-auto object-contain"
               />
             </div>
-            {/* Desktop: title + user */}
+            {/* Desktop: page title + welcome */}
             <div className="hidden lg:block">
               <h1 className="text-2xl font-bold text-uau-black">{title}</h1>
-              <p className="text-sm text-uau-gray">
-                {user?.name} · {user?.role}
-              </p>
+              <p className="text-sm text-uau-gray">Bem-vindo, {user?.name}</p>
             </div>
-            {/* Right: mobile user name + Sair */}
-            <div className="flex items-center gap-3">
-              <p className="max-w-[120px] truncate text-sm text-uau-gray lg:hidden">
-                {user?.name}
-              </p>
-              <Button onClick={logout} variant="ghost">
-                Sair
-              </Button>
-            </div>
+            {/* Right: Sair button */}
+            <Button onClick={logout} variant="ghost">
+              Sair
+            </Button>
           </div>
           {/* Mobile page title */}
           <div className="mt-2 lg:hidden">
