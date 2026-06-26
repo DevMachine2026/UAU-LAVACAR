@@ -1,9 +1,10 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateFranchiseUnitDto } from './dto/create-franchise-unit.dto';
 import { UpdateFranchiseUnitDto } from './dto/update-franchise-unit.dto';
 import { UpdateEquipmentStatusDto } from './dto/update-equipment-status.dto';
 import { UpsertWorkingHoursDto } from './dto/upsert-working-hours.dto';
+import { AddUnitStaffDto } from './dto/add-unit-staff.dto';
 
 const UNIT_INCLUDE = {
   state: true,
@@ -108,6 +109,60 @@ export class FranchiseUnitsService {
     return this.prisma.unitWorkingHours.findMany({
       where: { franchiseUnitId: unitId },
       orderBy: { dayOfWeek: 'asc' },
+    });
+  }
+
+  async getStaff(unitId: string, actorId?: string) {
+    const unit = await this.prisma.franchiseUnit.findUnique({ where: { id: unitId }, select: { id: true } });
+    if (!unit) throw new NotFoundException('Unidade não encontrada');
+    if (actorId) await this.assertFranchiseOwnerOwnsUnit(actorId, unitId);
+    return this.prisma.unitStaff.findMany({
+      where: { unitId },
+      include: {
+        user: { select: { id: true, name: true, email: true, role: true, status: true } },
+        unit: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async addStaff(unitId: string, dto: AddUnitStaffDto, actorId?: string) {
+    const unit = await this.prisma.franchiseUnit.findUnique({ where: { id: unitId }, select: { id: true } });
+    if (!unit) throw new NotFoundException('Unidade não encontrada');
+    const user = await this.prisma.user.findUnique({ where: { id: dto.userId }, select: { id: true } });
+    if (!user) throw new NotFoundException('Usuário não encontrado');
+    if (actorId) await this.assertFranchiseOwnerOwnsUnit(actorId, unitId);
+    return this.prisma.unitStaff.create({
+      data: { unitId, userId: dto.userId, role: dto.role },
+      include: {
+        user: { select: { id: true, name: true, email: true, role: true, status: true } },
+        unit: { select: { id: true, name: true } },
+      },
+    }).catch((err: { code?: string }) => {
+      if (err?.code === 'P2002') throw new ConflictException('Usuário já vinculado a esta unidade');
+      throw err;
+    });
+  }
+
+  async activateStaff(unitId: string, staffId: string, actorId?: string) {
+    if (actorId) await this.assertFranchiseOwnerOwnsUnit(actorId, unitId);
+    const link = await this.prisma.unitStaff.findFirst({ where: { id: staffId, unitId } });
+    if (!link) throw new NotFoundException('Vínculo de staff não encontrado');
+    return this.prisma.unitStaff.update({
+      where: { id: staffId },
+      data: { isActive: true },
+      select: { id: true, isActive: true },
+    });
+  }
+
+  async deactivateStaff(unitId: string, staffId: string, actorId?: string) {
+    if (actorId) await this.assertFranchiseOwnerOwnsUnit(actorId, unitId);
+    const link = await this.prisma.unitStaff.findFirst({ where: { id: staffId, unitId } });
+    if (!link) throw new NotFoundException('Vínculo de staff não encontrado');
+    return this.prisma.unitStaff.update({
+      where: { id: staffId },
+      data: { isActive: false },
+      select: { id: true, isActive: true },
     });
   }
 
