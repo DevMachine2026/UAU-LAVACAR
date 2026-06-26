@@ -115,6 +115,18 @@ describe('FranchiseUnitsService — staff', () => {
     expect(result.isActive).toBe(true);
   });
 
+  it('activateStaff: lança ForbiddenException quando FRANCHISE_OWNER acessa unidade alheia', async () => {
+    const { unit } = await createTestFranchiseUnit(prisma, cleanup);
+    const owner = await createTestUser(prisma, cleanup, 'FRANCHISE_OWNER');
+    const user = await createTestUser(prisma, cleanup, 'OPERATOR');
+    const link = await prisma.unitStaff.create({
+      data: { unitId: unit.id, userId: user.id, role: 'OPERATOR' },
+    });
+
+    await expect(service.activateStaff(unit.id, link.id, owner.id))
+      .rejects.toThrow(ForbiddenException);
+  });
+
   // ─── deactivateStaff ─────────────────────────────────────────────────────
 
   it('deactivateStaff: define isActive = false', async () => {
@@ -127,5 +139,17 @@ describe('FranchiseUnitsService — staff', () => {
     const result = await service.deactivateStaff(unit.id, link.id);
     expect(result.id).toBe(link.id);
     expect(result.isActive).toBe(false);
+  });
+
+  it('deactivateStaff: lança ForbiddenException quando FRANCHISE_OWNER acessa unidade alheia', async () => {
+    const { unit } = await createTestFranchiseUnit(prisma, cleanup);
+    const owner = await createTestUser(prisma, cleanup, 'FRANCHISE_OWNER');
+    const user = await createTestUser(prisma, cleanup, 'OPERATOR');
+    const link = await prisma.unitStaff.create({
+      data: { unitId: unit.id, userId: user.id, role: 'OPERATOR' },
+    });
+
+    await expect(service.deactivateStaff(unit.id, link.id, owner.id))
+      .rejects.toThrow(ForbiddenException);
   });
 });

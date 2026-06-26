@@ -113,9 +113,9 @@ export class FranchiseUnitsService {
   }
 
   async getStaff(unitId: string, actorId?: string) {
+    if (actorId) await this.assertFranchiseOwnerOwnsUnit(actorId, unitId);
     const unit = await this.prisma.franchiseUnit.findUnique({ where: { id: unitId }, select: { id: true } });
     if (!unit) throw new NotFoundException('Unidade não encontrada');
-    if (actorId) await this.assertFranchiseOwnerOwnsUnit(actorId, unitId);
     return this.prisma.unitStaff.findMany({
       where: { unitId },
       include: {
@@ -127,11 +127,11 @@ export class FranchiseUnitsService {
   }
 
   async addStaff(unitId: string, dto: AddUnitStaffDto, actorId?: string) {
+    if (actorId) await this.assertFranchiseOwnerOwnsUnit(actorId, unitId);
     const unit = await this.prisma.franchiseUnit.findUnique({ where: { id: unitId }, select: { id: true } });
     if (!unit) throw new NotFoundException('Unidade não encontrada');
     const user = await this.prisma.user.findUnique({ where: { id: dto.userId }, select: { id: true } });
     if (!user) throw new NotFoundException('Usuário não encontrado');
-    if (actorId) await this.assertFranchiseOwnerOwnsUnit(actorId, unitId);
     return this.prisma.unitStaff.create({
       data: { unitId, userId: dto.userId, role: dto.role },
       include: {
