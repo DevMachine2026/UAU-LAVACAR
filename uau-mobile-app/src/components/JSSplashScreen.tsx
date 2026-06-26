@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Animated, Dimensions, Image, StyleSheet, View } from "react-native";
+import { Animated, Dimensions, Image, StyleSheet } from "react-native";
 
 const { width, height } = Dimensions.get("screen");
 
@@ -15,7 +15,7 @@ export function JSSplashScreen({ visible }: Props) {
     if (!visible) {
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 500,
+        duration: 300,
         useNativeDriver: true,
       }).start(() => setShow(false));
     }
@@ -25,12 +25,6 @@ export function JSSplashScreen({ visible }: Props) {
 
   return (
     <Animated.View style={[styles.container, { opacity }]}>
-      <Image
-        source={require("../../assets/bg.png")}
-        style={styles.background}
-        resizeMode="cover"
-      />
-      <View style={styles.overlay} />
       <Image
         source={require("../../assets/adaptive-icon-original.png")}
         style={styles.logo}
@@ -49,27 +43,12 @@ const styles = StyleSheet.create({
     height,
     zIndex: 99999,
     elevation: 99999,
-  },
-  background: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width,
-    height,
-  },
-  overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width,
-    height,
-    backgroundColor: "rgba(0, 150, 136, 0.45)",
+    backgroundColor: "#009688",
+    alignItems: "center",
+    justifyContent: "center",
   },
   logo: {
-    position: "absolute",
     width: 220,
     height: 220,
-    top: height / 2 - 110,
-    left: width / 2 - 110,
   },
 });
