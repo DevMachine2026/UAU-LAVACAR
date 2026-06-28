@@ -9,6 +9,13 @@ import { getMe, login as loginApi, registerCustomer } from "@/features/auth/auth
 const ACCESS_TOKEN_KEY = "uau.accessToken";
 const USER_KEY = "uau.user";
 
+function secureGet(key: string): Promise<string | null> {
+  return Promise.race([
+    SecureStore.getItemAsync(key),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+  ]);
+}
+
 type AuthState = {
   accessToken: string | null;
   user: ApiUser | null;
@@ -64,15 +71,17 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   async restoreSession() {
     try {
+      console.log("[auth] restoreSession start");
       set({ isLoading: true });
-      const accessToken = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+      const accessToken = await secureGet(ACCESS_TOKEN_KEY);
+      console.log("[auth] accessToken:", accessToken ? "found" : "null");
 
       if (!accessToken) {
         set({ accessToken: null, user: null, isAuthenticated: false, isLoading: false });
         return;
       }
 
-      const cachedUser = await SecureStore.getItemAsync(USER_KEY);
+      const cachedUser = await secureGet(USER_KEY);
       if (!cachedUser) {
         await clearSession();
         set({ accessToken: null, user: null, isAuthenticated: false, isLoading: false });
@@ -81,13 +90,13 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       const user = JSON.parse(cachedUser) as ApiUser;
       set({ accessToken, user, isAuthenticated: true, isLoading: false });
-      try {
-        const fresh = await getMe();
-        await SecureStore.setItemAsync(USER_KEY, JSON.stringify(fresh));
-        set({ user: fresh });
-      } catch {
-        // Mantém usuário em cache até existir rota de perfil no backend.
-      }
+      // fire-and-forget: não bloqueia a splash enquanto a API responde
+      getMe()
+        .then(async (fresh) => {
+          await SecureStore.setItemAsync(USER_KEY, JSON.stringify(fresh));
+          set({ user: fresh });
+        })
+        .catch(() => {});
     } catch {
       // Qualquer falha inesperada do SecureStore ou keystore → vai para login
       await clearSession().catch(() => {});

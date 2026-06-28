@@ -69,10 +69,6 @@ export default function LoginScreen() {
               style={{ width: 88, height: 88, borderRadius: 20 }}
               resizeMode="contain"
             />
-            <Text className="mt-4 text-3xl font-bold text-white">UAU+</Text>
-            <Text className="mt-1 text-sm text-white/75">
-              Lava Car · Clube de Benefícios
-            </Text>
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -224,22 +220,16 @@ export default function LoginScreen() {
                 </LinearGradient>
               </Pressable>
 
-              <View className="flex-row items-center gap-3 py-2">
-                <View className="h-px flex-1 bg-gray-200" />
-                <Text className="text-xs text-gray-400">ou</Text>
-                <View className="h-px flex-1 bg-gray-200" />
+              <View className="items-center pt-2">
+                <Link href="/(auth)/register" asChild>
+                  <Pressable style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}>
+                    <Text className="text-sm text-gray-500">
+                      Não tem conta?{" "}
+                      <Text className="font-semibold text-uau-teal">Criar cadastro</Text>
+                    </Text>
+                  </Pressable>
+                </Link>
               </View>
-
-              <Link href="/(auth)/register" asChild>
-                <Pressable
-                  className="items-center justify-center rounded-xl border border-uau-teal"
-                  style={({ pressed }) => ({ height: 52, opacity: pressed ? 0.75 : 1 })}
-                >
-                  <Text className="text-base font-semibold text-uau-teal">
-                    Criar cadastro
-                  </Text>
-                </Pressable>
-              </Link>
             </View>
           </View>
         </ScrollView>

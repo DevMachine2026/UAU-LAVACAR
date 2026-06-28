@@ -24,9 +24,9 @@ export function JSSplashScreen({ visible }: Props) {
       pointerEvents="none"
     >
       <Image
-        source={require("../../assets/splash.png")}
+        source={require("../../assets/splash-new.png")}
         style={StyleSheet.absoluteFill}
-        resizeMode="cover"
+        resizeMode="contain"
       />
       <View style={StyleSheet.absoluteFill} />
     </Animated.View>
