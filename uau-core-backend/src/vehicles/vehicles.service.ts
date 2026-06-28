@@ -45,17 +45,12 @@ export class VehiclesService {
   }
 
   private async resolveCustomerId(customerId: string | undefined, user?: User) {
-    if (user?.role === UserRole.CUSTOMER) {
+    if (user) {
       const customer = await this.prisma.customer.findUnique({
         where: { userId: user.id },
         select: { id: true },
       });
-
-      if (!customer) {
-        throw new NotFoundException('Cliente não encontrado para este usuário');
-      }
-
-      return customer.id;
+      if (customer) return customer.id;
     }
 
     if (!customerId) {
