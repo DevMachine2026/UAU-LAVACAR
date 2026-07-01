@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { signSession, SESSION_COOKIE } from '@/lib/session'
 
-const SESSION_COOKIE = '__uau_session'
 const MAX_AGE = 60 * 60 * 24 * 7
 
 export async function POST(request: NextRequest) {
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
   const { accessToken, user } = envelope.data
 
-  const cookieValue = encodeURIComponent(JSON.stringify({ accessToken, user }))
+  const cookieValue = await signSession({ accessToken, user })
   const securePart = process.env.NODE_ENV === 'production' ? '; Secure' : ''
   const cookieHeader = `${SESSION_COOKIE}=${cookieValue}; Path=/; Max-Age=${MAX_AGE}; HttpOnly${securePart}; SameSite=Lax`
 

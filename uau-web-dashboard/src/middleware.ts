@@ -1,20 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { verifySession, SESSION_COOKIE } from '@/lib/session'
 
-const SESSION_COOKIE = '__uau_session'
+const ROLE_HOMES: Record<string, string> = {
+  SUPER_ADMIN: '/admin',
+  FRANCHISE_OWNER: '/franchise',
+  PARTNER: '/partner',
+  OPERATOR: '/operator',
+}
 
-const PROTECTED_PREFIXES = ['/admin', '/franchise', '/partner', '/operator']
+const PROTECTED_ROUTES: Array<{ prefix: string; allowedRoles: string[] }> = [
+  { prefix: '/admin', allowedRoles: ['SUPER_ADMIN'] },
+  { prefix: '/franchise', allowedRoles: ['FRANCHISE_OWNER', 'SUPER_ADMIN'] },
+  { prefix: '/partner', allowedRoles: ['PARTNER', 'SUPER_ADMIN'] },
+  { prefix: '/operator', allowedRoles: ['OPERATOR'] },
+]
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const hasSession = request.cookies.has(SESSION_COOKIE)
+  const cookie = request.cookies.get(SESSION_COOKIE)
+  const session = cookie?.value ? await verifySession(cookie.value) : null
 
-  const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))
+  const route = PROTECTED_ROUTES.find(({ prefix }) => pathname.startsWith(prefix))
 
-  if (isProtected && !hasSession) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  if (route) {
+    if (!session) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+    if (!route.allowedRoles.includes(session.user.role)) {
+      const home = ROLE_HOMES[session.user.role] ?? '/login'
+      return NextResponse.redirect(new URL(home, request.url))
+    }
+    return NextResponse.next()
   }
 
-  if (pathname === '/login' && hasSession) {
+  if (pathname === '/login' && session) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 

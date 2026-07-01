@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
+process.env.SESSION_SECRET = 'test-secret-for-unit-tests-only'
+
 const mockFetch = vi.fn()
 global.fetch = mockFetch
 
@@ -46,6 +48,10 @@ describe('POST /api/auth (login)', () => {
     expect(setCookie).toContain('SameSite=Lax')
     expect(setCookie).toContain('Path=/')
     expect(setCookie).toContain('Max-Age=604800')
+
+    const cookieValue = setCookie.match(/__uau_session=([^;]+)/)?.[1] ?? ''
+    expect(cookieValue.split('.')).toHaveLength(3)
+    expect(() => JSON.parse(decodeURIComponent(cookieValue))).toThrow()
   })
 
   it('repassa erro do backend sem setar cookie', async () => {

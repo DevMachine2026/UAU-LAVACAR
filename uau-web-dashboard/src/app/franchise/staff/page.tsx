@@ -6,7 +6,7 @@ import { UnitStaffManager } from "@/features/staff/UnitStaffManager";
 
 export default function FranchiseStaffPage() {
   return (
-    <ProtectedRoute roles={["FRANCHISE_OWNER"]}>
+    <ProtectedRoute roles={["FRANCHISE_OWNER", "SUPER_ADMIN"]}>
       <DashboardLayout title="Equipe da Franquia">
         <UnitStaffManager />
       </DashboardLayout>
