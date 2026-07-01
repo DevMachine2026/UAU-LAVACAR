@@ -345,7 +345,10 @@
       "Bash(git -C /mnt/hd/UAU-LAVACAR diff HEAD -- .claude/settings.json)",
       "Bash(git -C /mnt/hd/UAU-LAVACAR add uau-web-dashboard/src/lib/session.ts uau-web-dashboard/src/app/api/auth/route.ts uau-web-dashboard/src/app/api/auth/session/route.ts uau-web-dashboard/middleware.ts uau-web-dashboard/src/middleware.ts uau-web-dashboard/.env.example uau-web-dashboard/.env.production.example uau-web-dashboard/.env.staging.example uau-web-dashboard/package.json uau-web-dashboard/package-lock.json uau-web-dashboard/src/__tests__/api/auth-session.test.ts uau-web-dashboard/src/__tests__/api/auth.test.ts uau-web-dashboard/src/__tests__/middleware.test.ts uau-web-dashboard/src/app/franchise/staff/page.tsx uau-web-dashboard/tsconfig.tsbuildinfo)",
       "Bash(git -C /mnt/hd/UAU-LAVACAR add uau-mobile-app/assets/fonts/ionicons.ttf uau-mobile-app/package.json uau-mobile-app/package-lock.json)",
-      "Bash(git -C /mnt/hd/UAU-LAVACAR add .claude/settings.json)"
+      "Bash(git -C /mnt/hd/UAU-LAVACAR add .claude/settings.json)",
+      "Bash(git -C /mnt/hd/UAU-LAVACAR config --list)",
+      "Bash(git -C /mnt/hd/UAU-LAVACAR log -5 --oneline)",
+      "Bash(git -C /mnt/hd/UAU-LAVACAR log -3 --oneline)"
     ],
     "additionalDirectories": [
       "/mnt/hd/SALESNET/docs/superpowers/plans",
