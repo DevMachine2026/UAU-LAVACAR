@@ -1,4 +1,5 @@
 import { Controller, Post, Body, Headers, UnauthorizedException } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { AsaasService } from './asaas.service';
 import { Public } from '../common/decorators/public.decorator';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
@@ -9,6 +10,7 @@ export class AsaasController {
   constructor(private readonly asaasService: AsaasService) {}
 
   @Public()
+  @SkipThrottle()
   @Post('webhook')
   @ApiOperation({ summary: 'Recebe notificações (webhooks) do Asaas' })
   async handleWebhook(

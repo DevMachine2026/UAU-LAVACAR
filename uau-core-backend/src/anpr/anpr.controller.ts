@@ -1,4 +1,5 @@
 import { Controller, Post, Body, Get, Param, Headers, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { AnprService } from './anpr.service';
 import { CameraEventDto } from './dto/camera-event.dto';
 import { Public } from '../common/decorators/public.decorator';
@@ -13,6 +14,7 @@ export class AnprController {
   constructor(private readonly anprService: AnprService) {}
 
   @Public()
+  @SkipThrottle()
   @Post('webhook')
   @ApiOperation({ summary: 'Recebe eventos das câmeras LPR/ANPR' })
   async handleWebhook(
