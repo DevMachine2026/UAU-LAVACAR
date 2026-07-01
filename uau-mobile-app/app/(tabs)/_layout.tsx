@@ -2,6 +2,7 @@ import { Redirect, Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Loading } from "@/components/Loading";
 import { useAuthStore } from "@/auth/auth.store";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -12,6 +13,7 @@ function tabIcon(focused: boolean, icon: IoniconName, iconOutline: IoniconName) 
 export default function TabsLayout() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isLoading = useAuthStore((state) => state.isLoading);
+  const { bottom } = useSafeAreaInsets();
 
   if (isLoading) {
     return <Loading />;
@@ -31,9 +33,9 @@ export default function TabsLayout() {
           backgroundColor: "#FFFFFF",
           borderTopColor: "#E5E7EB",
           borderTopWidth: 1,
-          height: 64,
+          height: 64 + bottom,
           paddingTop: 6,
-          paddingBottom: 10,
+          paddingBottom: 10 + bottom,
           elevation: 8,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: -2 },
