@@ -1,7 +1,7 @@
 import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
-import { TestCleanup, createTestFranchiseUnit, createTestUser } from '../test/helpers';
+import { TestCleanup, createTestFranchiseUnit, createTestUser, flushTestCleanup } from '../test/helpers';
 import { FranchiseUnitsService } from './franchise-units.service';
 
 describe('FranchiseUnitsService — staff', () => {
@@ -21,7 +21,7 @@ describe('FranchiseUnitsService — staff', () => {
 
   beforeEach(() => { cleanup = new TestCleanup(); });
 
-  afterEach(async () => { await cleanup.flush(prisma); });
+  afterEach(async () => { await flushTestCleanup(cleanup, prisma); });
 
   afterAll(async () => {
     await prisma.$disconnect();

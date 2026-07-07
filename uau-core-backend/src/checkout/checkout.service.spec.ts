@@ -10,6 +10,7 @@ import {
   createTestPlan,
   createTestUser,
   createTestVehicle,
+  flushTestCleanup,
 } from '../test/helpers';
 
 const ASAAS_SUB_ID = 'sub_test_integration';
@@ -18,6 +19,7 @@ const ASAAS_CUS_ID = 'cus_test_integration';
 
 function buildMockAsaas() {
   return {
+    findCustomerByCpfCnpj: jest.fn().mockResolvedValue(null),
     createCustomer: jest.fn().mockResolvedValue({ id: ASAAS_CUS_ID }),
     createSubscription: jest.fn().mockResolvedValue({ id: ASAAS_SUB_ID }),
     listSubscriptionPayments: jest.fn().mockResolvedValue([
@@ -74,7 +76,7 @@ describe('CheckoutService — integração', () => {
   });
 
   afterEach(async () => {
-    await cleanup.flush(prisma);
+    await flushTestCleanup(cleanup, prisma);
   });
 
   afterAll(async () => {

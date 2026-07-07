@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ReferralsService } from './referrals.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { TestCleanup, createTestCustomer, createTestUser } from '../test/helpers';
+import { TestCleanup, createTestCustomer, createTestUser, flushTestCleanup } from '../test/helpers';
 
 describe('ReferralsService — rede MMN', () => {
   let module: TestingModule;
@@ -24,7 +24,7 @@ describe('ReferralsService — rede MMN', () => {
   });
 
   afterEach(async () => {
-    await cleanup.flush(prisma);
+    await flushTestCleanup(cleanup, prisma);
   });
 
   afterAll(async () => {

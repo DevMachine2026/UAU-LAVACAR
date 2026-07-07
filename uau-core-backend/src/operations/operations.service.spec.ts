@@ -8,6 +8,7 @@ import {
   createTestPlan,
   createTestSubscription,
   createTestVehicle,
+  flushTestCleanup,
 } from '../test/helpers';
 import { OperationsService } from './operations.service';
 
@@ -32,7 +33,7 @@ describe('OperationsService', () => {
   });
 
   afterEach(async () => {
-    await cleanup.flush(prisma);
+    await flushTestCleanup(cleanup, prisma);
   });
 
   afterAll(async () => {

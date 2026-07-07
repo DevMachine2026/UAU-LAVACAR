@@ -20,8 +20,10 @@
     "migrate:from-old-db": "ts-node -r tsconfig-paths/register scripts/migrate-from-old-db.ts",
     "typecheck": "tsc --noEmit",
     "test": "jest",
+    "test:local": "node scripts/with-test-env.js jest",
     "test:cov": "jest --coverage",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "prisma:deploy:test": "node scripts/with-test-env.js prisma migrate deploy"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",

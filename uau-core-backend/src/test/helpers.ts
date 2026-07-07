@@ -88,6 +88,14 @@ export class TestCleanup {
   }
 }
 
+export async function flushTestCleanup(
+  cleanup: TestCleanup | undefined,
+  prisma: PrismaClient | undefined,
+) {
+  if (!cleanup || !prisma) return;
+  await cleanup.flush(prisma);
+}
+
 // ─── Factories ──────────────────────────────────────────────────────────────
 
 export async function createTestUser(

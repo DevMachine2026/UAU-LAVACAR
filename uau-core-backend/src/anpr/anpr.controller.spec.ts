@@ -12,6 +12,7 @@ import {
   createTestFranchiseUnit,
   createTestPlan,
   createTestSubscription,
+  flushTestCleanup,
   signJwt,
 } from '../test/helpers';
 
@@ -44,7 +45,7 @@ describe('ANPR & Billing — IDOR e2e (Supertest)', () => {
   });
 
   afterEach(async () => {
-    await cleanup.flush(prisma);
+    await flushTestCleanup(cleanup, prisma);
   });
 
   afterAll(async () => {
