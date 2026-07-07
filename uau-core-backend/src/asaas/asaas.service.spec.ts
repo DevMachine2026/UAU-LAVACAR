@@ -15,6 +15,7 @@ import {
   createTestCustomer,
   createTestPlan,
   createTestSubscription,
+  flushTestCleanup,
 } from '../test/helpers';
 
 describe('AsaasService.processWebhook — idempotência', () => {
@@ -45,7 +46,7 @@ describe('AsaasService.processWebhook — idempotência', () => {
   });
 
   afterEach(async () => {
-    await cleanup.flush(prisma);
+    await flushTestCleanup(cleanup, prisma);
   });
 
   afterAll(async () => {
@@ -162,5 +163,53 @@ describe('AsaasService.processWebhook — idempotência', () => {
 
     const afterCount = await prisma.billingHistory.count();
     expect(afterCount).toBe(beforeCount);
+  });
+});
+
+describe('AsaasService.findCustomerByCpfCnpj', () => {
+  let module: TestingModule;
+  let service: AsaasService;
+
+  beforeAll(async () => {
+    module = await Test.createTestingModule({
+      providers: [
+        AsaasService,
+        PrismaService,
+        {
+          provide: AdminSettingsService,
+          useValue: { getCached: jest.fn().mockResolvedValue('10.00') },
+        },
+      ],
+    }).compile();
+
+    service = module.get(AsaasService);
+  });
+
+  afterAll(async () => {
+    await module.close();
+  });
+
+  it('retorna o primeiro cliente da lista quando a busca por cpfCnpj encontra resultado', async () => {
+    const requestSpy = jest
+      .spyOn(service as unknown as { request: jest.Mock }, 'request')
+      .mockResolvedValue({ data: { data: [{ id: 'cus_existing_123' }], hasMore: false } });
+
+    const result = await service.findCustomerByCpfCnpj('12.345.678/0001-90');
+
+    expect(requestSpy).toHaveBeenCalledWith(
+      'get',
+      '/customers?cpfCnpj=12.345.678%2F0001-90',
+    );
+    expect(result).toEqual({ id: 'cus_existing_123' });
+  });
+
+  it('retorna null quando a busca por cpfCnpj não encontra nenhum cliente', async () => {
+    jest
+      .spyOn(service as unknown as { request: jest.Mock }, 'request')
+      .mockResolvedValue({ data: { data: [], hasMore: false } });
+
+    const result = await service.findCustomerByCpfCnpj('00000000000');
+
+    expect(result).toBeNull();
   });
 });

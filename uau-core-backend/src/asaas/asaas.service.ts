@@ -45,6 +45,15 @@ export class AsaasService {
     return data;
   }
 
+  async findCustomerByCpfCnpj(cpfCnpj: string): Promise<AsaasCustomerResponse | null> {
+    const encodedCpfCnpj = encodeURIComponent(cpfCnpj);
+    const { data } = await this.request<AsaasListResponse<AsaasCustomerResponse>>(
+      'get',
+      `/customers?cpfCnpj=${encodedCpfCnpj}`,
+    );
+    return data.data?.[0] ?? null;
+  }
+
   async createSubscription(
     payload: AsaasSubscriptionPayload,
   ): Promise<AsaasSubscriptionResponse> {
