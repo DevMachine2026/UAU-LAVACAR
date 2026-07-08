@@ -6,10 +6,24 @@ import { useEffect } from "react";
 import { ToastProvider } from "@/components/Toast";
 import { useAuthStore } from "@/auth/auth.store";
 import { queryClient } from "@/store/query-client";
+import * as Sentry from "@sentry/react-native";
+
+const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
+
+if (sentryDsn) {
+  Sentry.init({
+    dsn: sentryDsn,
+    sendDefaultPii: false,
+    enableLogs: true,
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1,
+    integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
+  });
+}
 
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootLayout() {
   const restoreSession = useAuthStore((state) => state.restoreSession);
 
   useEffect(() => {
@@ -38,3 +52,5 @@ export default function RootLayout() {
     </QueryClientProvider>
   );
 }
+
+export default sentryDsn ? Sentry.wrap(RootLayout) : RootLayout;
