@@ -155,15 +155,38 @@ export class SubscriptionsService {
     let asaasCustomerIsNew = false;
 
     if (!asaasCustomerId) {
-      const asaasCustomer = await this.asaasService.createCustomer({
-        name: customer.user.name,
-        email: customer.user.email,
-        cpfCnpj,
-        phone: customer.phone ?? undefined,
-        mobilePhone: customer.phone ?? undefined,
-      });
-      asaasCustomerId = asaasCustomer.id;
-      asaasCustomerIsNew = true;
+      const existingAsaasCustomer = await this.asaasService.findCustomerByCpfCnpj(cpfCnpj);
+
+      if (existingAsaasCustomer) {
+        asaasCustomerId = existingAsaasCustomer.id;
+        // Persiste imediatamente (fora da transação de criação) para não repetir a busca em chamadas futuras
+        try {
+          await this.prisma.customer.update({
+            where: { id: customer.id },
+            data: { asaasCustomerId },
+          });
+        } catch (error) {
+          if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === 'P2002'
+          ) {
+            throw new ConflictException(
+              'Cliente Asaas já está vinculado a outro cliente local. Revise o cadastro antes de gerar cobrança.',
+            );
+          }
+          throw error;
+        }
+      } else {
+        const asaasCustomer = await this.asaasService.createCustomer({
+          name: customer.user.name,
+          email: customer.user.email,
+          cpfCnpj,
+          phone: customer.phone ?? undefined,
+          mobilePhone: customer.phone ?? undefined,
+        });
+        asaasCustomerId = asaasCustomer.id;
+        asaasCustomerIsNew = true;
+      }
     }
 
     const billingType = this.resolveBillingType(createDto.paymentMethodId);

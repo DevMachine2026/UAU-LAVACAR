@@ -278,4 +278,52 @@ describe('SubscriptionsService.resolveAsaasData — dedup de cliente Asaas por C
     const updatedCustomer = await prisma.customer.findUnique({ where: { id: customer.id } });
     expect(updatedCustomer!.asaasCustomerId).toBeNull();
   });
+
+  // ─── Cenário 3 — cliente local já tem asaasCustomerId: não busca nem cria ──
+
+  it('cenário 3: se cliente já tem asaasCustomerId, não busca por CPF nem cria cliente Asaas', async () => {
+    const { user, customer } = await createTestCustomer(prisma, cleanup, {
+      asaasCustomerId: 'cus_already_linked_local',
+    });
+    const plan = await createTestPlan(prisma, cleanup, { periodicity: 'QUARTERLY' });
+
+    asaasService.createPayment.mockResolvedValue({ id: 'pay_3', dueDate: '2026-07-10' });
+
+    const result = await service.resolveAsaasData(
+      toCustomerForAsaas(user, customer),
+      { name: plan.name, periodicity: plan.periodicity },
+      { paymentMethodId: 'BOLETO', vehicleId: 'vehicle-test-id' },
+      99.9,
+      99.9,
+    );
+
+    expect(asaasService.findCustomerByCpfCnpj).not.toHaveBeenCalled();
+    expect(asaasService.createCustomer).not.toHaveBeenCalled();
+    expect(result.asaasCustomerId).toBe('cus_already_linked_local');
+  });
+
+  // ─── Cenário 4 — cliente Asaas já vinculado em outro customer local ────────
+
+  it('cenário 4: conflito de asaasCustomerId já vinculado a outro customer local falha antes de criar cobrança', async () => {
+    await createTestCustomer(prisma, cleanup, {
+      asaasCustomerId: 'cus_existing_from_asaas',
+    });
+    const { user, customer } = await createTestCustomer(prisma, cleanup);
+    const plan = await createTestPlan(prisma, cleanup, { periodicity: 'QUARTERLY' });
+
+    asaasService.findCustomerByCpfCnpj.mockResolvedValue({ id: 'cus_existing_from_asaas' });
+
+    await expect(
+      service.resolveAsaasData(
+        toCustomerForAsaas(user, customer),
+        { name: plan.name, periodicity: plan.periodicity },
+        { paymentMethodId: 'BOLETO', vehicleId: 'vehicle-test-id' },
+        99.9,
+        99.9,
+      ),
+    ).rejects.toThrow('Cliente Asaas já está vinculado a outro cliente local');
+
+    expect(asaasService.createCustomer).not.toHaveBeenCalled();
+    expect(asaasService.createPayment).not.toHaveBeenCalled();
+  });
 });
