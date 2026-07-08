@@ -166,6 +166,7 @@ Dashboard:
 Mobile:
 
 - `EXPO_PUBLIC_API_URL=http://localhost:3000/api/v1`
+- `EXPO_PUBLIC_SENTRY_DSN` opcional. Se nao existir, o app roda normalmente sem inicializar Sentry.
 
 No Android Emulator, usar:
 
@@ -658,7 +659,16 @@ Arquivos importantes:
 - `src/store/query-client.ts`: React Query.
 - `src/components/*`: componentes visuais base.
 - `src/features/*`: APIs, hooks e componentes por dominio.
-- `app.json`: metadados Expo, bundle/package id, splash, Sentry e EAS project id.
+- `app/_layout.tsx`: inicializa providers e Sentry somente quando `EXPO_PUBLIC_SENTRY_DSN` existe.
+- `app.json`: metadados Expo, bundle/package id, `privacy: public`, splash, plugin Sentry e EAS project id.
+- `eas.json`: perfis de build com `EXPO_PUBLIC_API_URL` e placeholder vazio para `EXPO_PUBLIC_SENTRY_DSN`.
+
+Publicacao mobile:
+
+- `owner` no `app.json` ainda precisa ser trocado de `dev-machine` para o usuario real Expo antes de publicar.
+- `EXPO_PUBLIC_API_URL` deve apontar para o dominio definitivo da API em staging/producao.
+- `EXPO_PUBLIC_SENTRY_DSN` deve ser configurado no EAS/ambiente sem commitar segredo real.
+- Guia de publicacao: `uau-mobile-app/PUBLICACAO_STORES.md`.
 
 ## 13. Seeds e configuracoes iniciais
 
@@ -691,6 +701,21 @@ cd uau-core-backend
 npm run typecheck
 npm test
 ```
+
+Para desenvolvimento local com banco isolado de teste:
+
+```bash
+cd uau-core-backend
+npm run prisma:deploy:test
+npm run test:local
+```
+
+Notas:
+
+- `src/test/setup.ts` carrega `.env.test` e aceita `TEST_DATABASE_URL`.
+- Quando `TEST_DATABASE_URL` existe, ele sobrescreve `DATABASE_URL` e `DIRECT_URL` nos testes.
+- `npm test` nao deve usar banco real por acidente; prefira `npm run test:local` com Postgres local/Docker.
+- `cleanup.flush` foi protegido via helpers para evitar falhas em cascata quando `beforeAll` falha.
 
 Specs existentes:
 
@@ -754,16 +779,21 @@ Mobile:
 
 ## 16. Pontos de atencao e possiveis inconsistencias
 
-- Ha arquivos modificados nao commitados no workspace, principalmente em backend Asaas/checkout/subscriptions e mobile auth/config. Evite reverter mudancas sem revisar.
+- Workspace recente pode conter arquivos modificados nao commitados em mobile/config, docs e artefatos locais. Evite reverter mudancas sem revisar.
 - O dashboard README cita alguns endpoints antigos de ANPR/vehicle-size/referrals que podem nao bater 100% com os controllers atuais. Conferir controller antes de implementar.
 - `schema.prisma` usa `directUrl = env("DIRECT_URL")`; garantir que `DIRECT_URL` exista em ambientes que rodam Prisma se necessario.
 - `ALLOWED_ORIGINS` e obrigatorio no backend.
 - O login bloqueia usuarios sem `betaAccess`, exceto Super Admin.
 - Webhook Asaas deve ser configurado com token/segredo correto e validado no controller.
+- Webhook Asaas documentado para producao/staging: `POST /api/v1/asaas/webhook` com header `asaas-access-token=<ASAAS_WEBHOOK_TOKEN>`.
+- `findCustomerByCpfCnpj()` deve manter encoding seguro de CPF/CNPJ ao chamar Asaas.
 - Ao mexer em assinatura/cobranca, cuidar de consistencia entre Asaas, `Subscription`, `BillingHistory` e wallet.
+- `Subscription.vehicleId` deve continuar opcional para compatibilidade com assinaturas legadas/importadas; checkout do cliente continua exigindo `vehicleId`.
 - Ao mexer em lavagem por placa, preservar a trava de uma lavagem por veiculo/dia.
 - Ao mexer em roles, atualizar backend, dashboard middleware, layouts e rotas.
 - Ao alterar envelope de resposta, ajustar web e mobile, pois ambos esperam `{ success, data }` ou `{ success:false, error }`.
+- Paginas publicas finais para lojas e clientes: `/privacidade` e `/suporte`; e-mail oficial `contato@uaulavacar.com.br`, WhatsApp `5585986532728`.
+- Artefatos locais/gerados como `*.tsbuildinfo` e `.claude/settings.json` nao devem ser tratados como codigo de produto.
 
 ## 17. Prompt sugerido para usar no ChatGPT
 

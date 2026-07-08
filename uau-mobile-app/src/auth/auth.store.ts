@@ -12,7 +12,7 @@ const USER_KEY = "uau.user";
 function secureGet(key: string): Promise<string | null> {
   return Promise.race([
     SecureStore.getItemAsync(key),
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
   ]);
 }
 
@@ -73,7 +73,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       console.log("[auth] restoreSession start");
       set({ isLoading: true });
-      const accessToken = await secureGet(ACCESS_TOKEN_KEY);
+      const [accessToken, cachedUser] = await Promise.all([
+        secureGet(ACCESS_TOKEN_KEY),
+        secureGet(USER_KEY),
+      ]);
       console.log("[auth] accessToken:", accessToken ? "found" : "null");
 
       if (!accessToken) {
@@ -81,7 +84,6 @@ export const useAuthStore = create<AuthState>((set) => ({
         return;
       }
 
-      const cachedUser = await secureGet(USER_KEY);
       if (!cachedUser) {
         await clearSession();
         set({ accessToken: null, user: null, isAuthenticated: false, isLoading: false });

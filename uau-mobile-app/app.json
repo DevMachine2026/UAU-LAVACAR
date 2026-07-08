@@ -1,12 +1,11 @@
 {
   "expo": {
-    "name": "UAU+ Lavacar",
+    "name": "UAU LAVA CAR +",
     "slug": "uau-mobile-app",
     "scheme": "uauplus",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "privacy": "public",
     "newArchEnabled": false,
     "icon": "./assets/icon.png",
     "splash": {

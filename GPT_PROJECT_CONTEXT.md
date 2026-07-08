@@ -264,6 +264,7 @@ Dashboard:
 Mobile:
 
 - `EXPO_PUBLIC_API_URL=http://localhost:3000/api/v1`
+- `EXPO_PUBLIC_SENTRY_DSN` opcional; se nao existir, o app nao inicializa Sentry e continua funcionando localmente.
 - Android Emulator: `http://10.0.2.2:3000/api/v1`
 - celular fisico Expo Go: usar IP LAN da maquina.
 
@@ -780,6 +781,7 @@ Padroes:
 - Erros de conectividade devem usar mensagens amigaveis via NetInfo.
 - React Query para chamadas.
 - Mobile nao deve receber dashboards administrativos.
+- Sentry React Native fica configurado via plugin Expo, mas `app/_layout.tsx` so chama `Sentry.init` quando `EXPO_PUBLIC_SENTRY_DSN` existe.
 
 Publicacao lojas:
 
@@ -788,8 +790,11 @@ Publicacao lojas:
 - Versao documentada: `1.0.0`, versionCode `1`
 - Expo SDK 54, RN 0.81.5, `newArchEnabled=false`
 - Corrigir `owner` no `app.json` antes de publicar.
-- Adicionar metadata `privacy: public` se ainda nao houver.
-- Politica de privacidade e URL de suporte sao obrigatorias.
+- Metadata `privacy: public` ja foi adicionada no `app.json`.
+- Politica de privacidade e URL de suporte sao obrigatorias; rotas web atuais: `/privacidade` e `/suporte`.
+- E-mail oficial de suporte/documentos legais: `contato@uaulavacar.com.br`.
+- WhatsApp oficial de suporte: `5585986532728`.
+- Configurar `EXPO_PUBLIC_API_URL` e `EXPO_PUBLIC_SENTRY_DSN` nos ambientes EAS/staging/producao sem commitar segredo real.
 - Play Console exige conta, service account JSON e AAB.
 - App Store exige Apple Developer, Bundle ID, screenshots, conta demo e privacy manifest.
 - Usar EAS builds preview antes de producao.
@@ -805,6 +810,14 @@ npm run typecheck
 npm test
 ```
 
+Fluxo local recomendado para testes backend isolados:
+
+```bash
+cd uau-core-backend
+npm run prisma:deploy:test
+npm run test:local
+```
+
 Specs existentes/documentadas:
 
 - `src/anpr/anpr.controller.spec.ts`
@@ -818,10 +831,11 @@ Specs existentes/documentadas:
 Padrao de teste backend:
 
 - Jest serial (`maxWorkers=1`)
-- `src/test/setup.ts` carrega envs minimas
-- `src/test/helpers.ts` tem factories e `TestCleanup`
+- `src/test/setup.ts` carrega `.env.test`, aceita `TEST_DATABASE_URL` e evita uso acidental do banco real do `.env`.
+- Se `TEST_DATABASE_URL` existir, ele sobrescreve `DATABASE_URL` e `DIRECT_URL` durante testes.
+- `src/test/helpers.ts` tem factories, `TestCleanup` e helper de flush seguro para evitar cascata quando setup falha.
 - Dependencias externas como Asaas devem ser mockadas quando possivel
-- Banco real/dev exige cleanup cuidadoso por FK
+- Banco real/dev nao deve ser usado para teste automatizado; prefira Postgres local/Docker dedicado.
 
 Dashboard:
 
@@ -1063,7 +1077,18 @@ Ao mexer em assinatura/veiculo:
 - Cuidado com clientes multi-veiculo.
 - Nao assumir que toda subscription tem `vehicleId`.
 
-## 23. Pontos de atencao para qualquer GPT
+## 23. Estado recente de finalizacao
+
+Blocos recentes ja tratados:
+
+- Infra de testes backend isolada com `.env.test`, `TEST_DATABASE_URL`, `test:local` e `prisma:deploy:test`.
+- `Subscription.vehicleId` preservado como opcional em criacao administrativa/legada; checkout do cliente continua exigindo `vehicleId`.
+- Asaas: busca por CPF/CNPJ deve usar encoding seguro, webhook documentado em `/api/v1/asaas/webhook` com `asaas-access-token=<ASAAS_WEBHOOK_TOKEN>`.
+- Mobile P0: DSN do Sentry removido do codigo e movido para `EXPO_PUBLIC_SENTRY_DSN`; app roda sem Sentry localmente.
+- Paginas legais finalizadas no dashboard: `/privacidade` e `/suporte`, com `contato@uaulavacar.com.br` e WhatsApp `5585986532728`.
+- Limpeza de docs/configs: `GPT_PROJECT_CONTEXT.md`, `DOC.MD` e `uau-mobile-app/PUBLICACAO_STORES.md` sao docs uteis; `*.tsbuildinfo` e `.claude/settings.json` sao artefatos/config local e nao devem virar codigo de produto.
+
+## 24. Pontos de atencao para qualquer GPT
 
 - Docs antigos podem estar parcialmente desatualizados; sempre confira codigo atual.
 - `uau-clube-api` nao e backend oficial.
@@ -1079,9 +1104,10 @@ Ao mexer em assinatura/veiculo:
 - Nao quebrar trava de uma lavagem por veiculo/dia.
 - Mudancas em roles exigem ajuste backend + middleware + layouts + rotas.
 - Nao commitar `.env`, service account JSON, keystores ou segredos.
-- Antes de lojas mobile, corrigir `owner`, politica de privacidade, suporte, screenshots e conta demo.
+- Antes de lojas mobile, corrigir `owner`, confirmar URLs publicas de politica/suporte, preparar screenshots e conta demo.
+- Nao commitar `tsconfig.tsbuildinfo` ou `.claude/settings.json`; se ja estiverem rastreados, remover do indice com cuidado em commit de limpeza.
 
-## 24. Checklist rapido por tipo de tarefa
+## 25. Checklist rapido por tipo de tarefa
 
 Nova feature backend:
 
@@ -1124,4 +1150,3 @@ Incidente:
 - Preservar logs.
 - Rollback plataforma.
 - Restaurar backup so com incidente de dados confirmado.
-
