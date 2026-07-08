@@ -30,6 +30,7 @@ export type Customer = {
   unit?: { id: string; name: string } | null;
   subscriptionStatus?: string | null;
   subscription?: Subscription | null;
+  subscriptions?: Subscription[];
   wallet?: Wallet | null;
   createdAt?: string;
   updatedAt?: string;

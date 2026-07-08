@@ -34,9 +34,9 @@ export function CustomerTable({ customers, basePath }: { customers: Customer[]; 
               <td className="px-4 py-3">{maskCpf(customer.cpf ?? customer.document)}</td>
               <td className="px-4 py-3">{maskPhone(customer.phone)}</td>
               <td className="px-4 py-3">{customer.defaultUnit?.name ?? customer.unit?.name ?? customer.defaultUnitId ?? "-"}</td>
-              <td className="px-4 py-3"><CustomerStatusBadge status={customer.status} /></td>
-              <td className="px-4 py-3">{customer.subscription?.status ?? customer.subscriptionStatus ?? "-"}</td>
-              <td className="px-4 py-3">{money(customer.wallet?.totalBalance ?? customer.wallet?.availableBalance)}</td>
+              <td className="px-4 py-3"><CustomerStatusBadge status={customer.user?.status ?? customer.status} /></td>
+              <td className="px-4 py-3">{customer.subscriptions?.[0]?.status ?? customer.subscription?.status ?? customer.subscriptionStatus ?? "-"}</td>
+              <td className="px-4 py-3">{money(customer.wallet?.totalBalance ?? customer.wallet?.availableBalance ?? Number(customer.wallet?.balance ?? 0))}</td>
               <td className="px-4 py-3"><Link href={`${basePath}/${customer.id}`}><Button type="button" variant="ghost">Detalhe</Button></Link></td>
             </tr>
           ))}
@@ -148,7 +148,7 @@ function Balance({ label, value }: { label: string; value?: number }) {
 }
 
 export function customerName(customer?: Customer | null) {
-  return customer?.name ?? customer?.fullName ?? customer?.email ?? customer?.id ?? "-";
+  return customer?.user?.name ?? customer?.name ?? customer?.fullName ?? customer?.user?.email ?? customer?.email ?? customer?.id ?? "-";
 }
 
 export function maskCpf(value?: string) {

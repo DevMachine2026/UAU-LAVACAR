@@ -122,6 +122,7 @@ export class CustomersService {
           user: { select: { name: true, email: true, status: true } },
           vehicles: true,
           subscriptions: { where: { status: 'ACTIVE' } },
+          wallet: true,
         },
         skip,
         take: limit,

@@ -15,8 +15,7 @@ export class WalletService {
     });
     if (!customer) throw new NotFoundException('Carteira não encontrada para este cliente');
 
-    const wallet = await this.getWallet(customer.id);
-    return this.mapWalletForMobile(wallet);
+    return this.getWallet(customer.id);
   }
 
   async getStatementForUser(userId: string) {
@@ -137,7 +136,7 @@ export class WalletService {
     });
 
     if (!wallet) throw new NotFoundException('Carteira não encontrada para este cliente');
-    return wallet;
+    return this.mapWalletBalances(wallet);
   }
 
   async addMovement(createDto: CreateMovementDto) {
@@ -176,7 +175,7 @@ export class WalletService {
     });
   }
 
-  private mapWalletForMobile(wallet: {
+  private mapWalletBalances(wallet: {
     balance: { toString(): string } | number | string;
     promoBalance: { toString(): string } | number | string;
     blockedBalance: { toString(): string } | number | string;
