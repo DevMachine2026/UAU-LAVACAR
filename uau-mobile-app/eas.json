@@ -10,7 +10,7 @@
       "android": { "buildType": "apk" },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://uau-core-backend.onrender.com/api/v1",
-        "EXPO_PUBLIC_SENTRY_DSN": ""
+        "EXPO_PUBLIC_SENTRY_DSN": "https://541bc03b464b599493b98363a0199474@o4511673197133824.ingest.us.sentry.io/4511673284427776"
       }
     },
     "preview": {
@@ -19,7 +19,7 @@
       "ios": { "distribution": "internal" },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://uau-core-backend.onrender.com/api/v1",
-        "EXPO_PUBLIC_SENTRY_DSN": ""
+        "EXPO_PUBLIC_SENTRY_DSN": "https://541bc03b464b599493b98363a0199474@o4511673197133824.ingest.us.sentry.io/4511673284427776"
       }
     },
     "production": {
@@ -28,7 +28,7 @@
       "ios": { "distribution": "store" },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://uau-core-backend.onrender.com/api/v1",
-        "EXPO_PUBLIC_SENTRY_DSN": ""
+        "EXPO_PUBLIC_SENTRY_DSN": "https://541bc03b464b599493b98363a0199474@o4511673197133824.ingest.us.sentry.io/4511673284427776"
       }
     }
   },
