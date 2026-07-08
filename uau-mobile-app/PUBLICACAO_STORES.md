@@ -110,7 +110,7 @@ Obrigatória em ambas as lojas para qualquer app com login/dados de usuário.
 
 ### 3.2 Criar o app na Play Console
 
-1. **Criar aplicativo** → nome: "UAU LAVA CAR +"
+1. **Criar aplicativo** → nome: "Uau Lava Car+"
 2. Idioma padrão: Português (Brasil)
 3. Tipo: Aplicativo (não jogo)
 4. Gratuito ou pago: definir
@@ -149,7 +149,7 @@ O EAS salva automaticamente o keystore no seu projeto Expo. **Guarde o backup** 
   - Celular: resolução mínima 320px, máxima 3840px, proporção entre 16:9 e 9:16
 
 **Texto da listagem:**
-- Nome do app: até 30 caracteres → `UAU LAVA CAR +`
+- Nome do app: até 30 caracteres → `Uau Lava Car+`
 - Descrição curta: até 80 caracteres
 - Descrição completa: até 4000 caracteres
 - URL da política de privacidade
@@ -196,7 +196,7 @@ O processo de revisão leva de algumas horas até 7 dias na primeira submissão.
 ### 4.2 Criar o app no App Store Connect
 
 1. appstoreconnect.apple.com → Meus Apps → "+"
-2. Nome: "UAU LAVA CAR +"
+2. Nome: "Uau Lava Car+"
 3. Bundle ID: `com.uauplus.mobile`
 4. SKU: qualquer string única (ex: `uauplus-lavacar-001`)
 

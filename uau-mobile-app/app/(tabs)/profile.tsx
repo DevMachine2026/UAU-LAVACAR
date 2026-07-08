@@ -325,7 +325,7 @@ export default function ProfileScreen() {
           textAlign: "center", fontSize: 12, color: "#667085",
           marginTop: 8, marginBottom: 24,
         }}>
-          UAU LAVA CAR + v1.0.0
+          Uau Lava Car+ v1.0.0
         </Text>
 
       </View>

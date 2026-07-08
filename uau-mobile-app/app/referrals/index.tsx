@@ -48,8 +48,8 @@ export default function ReferralsScreen() {
 
   async function shareReferral() {
     await Share.share({
-      message: `Baixe o UAU LAVA CAR + e ganhe R$21 de bônus! Use meu código: ${referralCode}\nhttps://uau.app/convite/${referralCode}`,
-      title: "UAU LAVA CAR +",
+      message: `Baixe o Uau Lava Car+ e ganhe R$21 de bônus! Use meu código: ${referralCode}\nhttps://uau.app/convite/${referralCode}`,
+      title: "Uau Lava Car+",
     });
   }
 
