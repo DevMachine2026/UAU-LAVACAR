@@ -1,1 +1,14 @@
 .superpowers/
+
+# Local environment files and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Generated artifacts
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# Local assistant/tooling configuration
+.claude/settings.json
