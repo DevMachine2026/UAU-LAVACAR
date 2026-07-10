@@ -71,13 +71,11 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   async restoreSession() {
     try {
-      console.log("[auth] restoreSession start");
       set({ isLoading: true });
       const [accessToken, cachedUser] = await Promise.all([
         secureGet(ACCESS_TOKEN_KEY),
         secureGet(USER_KEY),
       ]);
-      console.log("[auth] accessToken:", accessToken ? "found" : "null");
 
       if (!accessToken) {
         set({ accessToken: null, user: null, isAuthenticated: false, isLoading: false });
