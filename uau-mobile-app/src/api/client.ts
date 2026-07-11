@@ -38,7 +38,16 @@ api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<{ success?: false; error?: { code?: string; message?: string } }>) => {
     if (error.response?.status === 401) {
-      handleUnauthorizedSession();
+      // Só invalida a sessão se a requisição estava autenticada: um 401 do
+      // /auth/login (senha errada) ou de chamadas sem token não pode derrubar
+      // a sessão — isso disparava logout() com router.replace repetido e
+      // congelava a UI com telas sobrepostas. O próprio /auth/logout também
+      // não pode disparar logout de novo (reentrância).
+      const requestUrl = error.config?.url ?? "";
+      const hadAuthHeader = Boolean(error.config?.headers?.Authorization);
+      if (hadAuthHeader && !requestUrl.includes("/auth/logout")) {
+        handleUnauthorizedSession();
+      }
     }
 
     // Sem `error.response` = a requisição não completou (timeout ou falha de conectividade),

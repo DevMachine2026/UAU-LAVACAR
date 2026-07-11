@@ -39,6 +39,8 @@ async function clearSession() {
   await SecureStore.deleteItemAsync(USER_KEY);
 }
 
+let isLoggingOut = false;
+
 export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
   user: null,
@@ -59,14 +61,22 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   async logout() {
+    // Reentrância: um 401 durante o próprio logout não pode disparar outro
+    // logout — o router.replace repetido congelava a UI com telas sobrepostas.
+    if (isLoggingOut) return;
+    isLoggingOut = true;
     try {
-      await api.post('/auth/logout');
-    } catch {
-      // silencioso — logout local prossegue mesmo se o backend falhar
+      try {
+        await api.post('/auth/logout');
+      } catch {
+        // silencioso — logout local prossegue mesmo se o backend falhar
+      }
+      await clearSession();
+      set({ accessToken: null, user: null, isAuthenticated: false, isLoading: false });
+      router.replace("/(auth)/login");
+    } finally {
+      isLoggingOut = false;
     }
-    await clearSession();
-    set({ accessToken: null, user: null, isAuthenticated: false, isLoading: false });
-    router.replace("/(auth)/login");
   },
 
   async restoreSession() {
