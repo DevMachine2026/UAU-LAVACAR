@@ -22,7 +22,12 @@
         {
           "backgroundColor": "#009688",
           "image": "./assets/splash.png",
-          "resizeMode": "cover"
+          "resizeMode": "cover",
+          "android": {
+            "backgroundColor": "#009688",
+            "image": "./assets/splash-icon-padded.png",
+            "resizeMode": "contain"
+          }
         }
       ],
       [
