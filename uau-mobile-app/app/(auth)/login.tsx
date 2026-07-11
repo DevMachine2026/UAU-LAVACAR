@@ -75,7 +75,7 @@ export default function LoginScreen() {
 
       {/* Card branco sobrepondo o hero */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         className="flex-1"
         style={{ marginTop: -40 }}
       >
