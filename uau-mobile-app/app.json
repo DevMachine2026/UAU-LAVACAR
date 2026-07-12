@@ -37,8 +37,7 @@
           "project": "react-native",
           "organization": "uau-plus"
         }
-      ],
-      "@sentry/react-native"
+      ]
     ],
     "experiments": {
       "typedRoutes": true

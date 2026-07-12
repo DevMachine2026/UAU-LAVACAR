@@ -16,6 +16,13 @@ function secureGet(key: string): Promise<string | null> {
   ]);
 }
 
+function withTimeout<T>(operation: Promise<T>, fallback: T, timeoutMs = 1500): Promise<T> {
+  return Promise.race([
+    operation,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
+  ]);
+}
+
 type AuthState = {
   accessToken: string | null;
   user: ApiUser | null;
@@ -30,13 +37,15 @@ type AuthState = {
 };
 
 async function persistSession(accessToken: string, user: ApiUser) {
-  await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
-  await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
+  await withTimeout(SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken), undefined);
+  await withTimeout(SecureStore.setItemAsync(USER_KEY, JSON.stringify(user)), undefined);
 }
 
 async function clearSession() {
-  await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
-  await SecureStore.deleteItemAsync(USER_KEY);
+  await Promise.all([
+    withTimeout(SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY), undefined),
+    withTimeout(SecureStore.deleteItemAsync(USER_KEY), undefined),
+  ]);
 }
 
 let isLoggingOut = false;
@@ -103,7 +112,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       // fire-and-forget: não bloqueia a splash enquanto a API responde
       getMe()
         .then(async (fresh) => {
-          await SecureStore.setItemAsync(USER_KEY, JSON.stringify(fresh));
+          await withTimeout(SecureStore.setItemAsync(USER_KEY, JSON.stringify(fresh)), undefined);
           set({ user: fresh });
         })
         .catch(() => {});
@@ -116,7 +125,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   async refreshMe() {
     const user = await getMe();
-    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
+    await withTimeout(SecureStore.setItemAsync(USER_KEY, JSON.stringify(user)), undefined);
     set({ user, isAuthenticated: true });
   },
 
@@ -124,7 +133,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set((state) => {
       if (!state.user) return {};
       const updated = { ...state.user, ...partial };
-      SecureStore.setItemAsync(USER_KEY, JSON.stringify(updated)).catch(() => {});
+      withTimeout(SecureStore.setItemAsync(USER_KEY, JSON.stringify(updated)), undefined).catch(() => {});
       return { user: updated };
     });
   },

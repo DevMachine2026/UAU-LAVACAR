@@ -15,9 +15,6 @@ if (sentryDsn) {
     dsn: sentryDsn,
     sendDefaultPii: false,
     enableLogs: true,
-    replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1,
-    integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
   });
 }
 
@@ -27,7 +24,7 @@ function RootLayout() {
   const restoreSession = useAuthStore((state) => state.restoreSession);
 
   useEffect(() => {
-    restoreSession().then(() => {
+    restoreSession().finally(() => {
       void SplashScreen.hideAsync();
     });
   }, [restoreSession]);
