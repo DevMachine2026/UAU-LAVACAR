@@ -26,7 +26,8 @@
           "android": {
             "backgroundColor": "#009688",
             "image": "./assets/splash-icon-padded.png",
-            "resizeMode": "contain"
+            "resizeMode": "contain",
+            "imageWidth": 288
           }
         }
       ],
