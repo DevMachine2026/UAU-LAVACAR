@@ -5,7 +5,7 @@
   "main": "expo-router/entry",
   "expo": {
     "autolinking": {
-      "exclude": ["react-native-reanimated"]
+      "exclude": ["react-native-reanimated", "react-native-worklets"]
     }
   },
   "scripts": {
