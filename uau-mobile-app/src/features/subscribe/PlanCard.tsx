@@ -9,9 +9,21 @@ type PlanCardProps = {
   onPress: () => void;
 };
 
+function formatList(value: unknown): string | null {
+  if (Array.isArray(value)) {
+    const items = value.map((item) => String(item).trim()).filter(Boolean);
+    return items.length ? items.join(", ") : null;
+  }
+  if (typeof value === "string") return value.trim() || null;
+  if (typeof value === "number") return String(value);
+  return null;
+}
+
 export function PlanCard({ plan, selected = false, onPress }: PlanCardProps) {
   const record = asRecord(plan);
   const coverage = getString(record, ["coverage", "scope"], "UNIT");
+  const allowedDays = formatList(plan.allowedDays);
+  const allowedHours = formatList(plan.allowedHours);
 
   return (
     <Pressable
@@ -26,9 +38,9 @@ export function PlanCard({ plan, selected = false, onPress }: PlanCardProps) {
           </View>
           <MoneyText className="text-lg font-bold text-uau-black" value={getNumber(record, ["price", "monthlyPrice", "amount"], 0)} />
         </View>
-        <Text className="text-xs font-semibold text-uau-green">Abrangencia: {coverage}</Text>
-        {plan.allowedDays ? <Text className="text-xs text-uau-gray">Dias: {String(plan.allowedDays)}</Text> : null}
-        {plan.allowedHours ? <Text className="text-xs text-uau-gray">Horarios: {String(plan.allowedHours)}</Text> : null}
+        <Text className="text-xs font-semibold text-uau-green">Abrangência: {coverage}</Text>
+        {allowedDays ? <Text className="text-xs text-uau-gray">Dias: {allowedDays}</Text> : null}
+        {allowedHours ? <Text className="text-xs text-uau-gray">Horários: {allowedHours}</Text> : null}
       </View>
     </Pressable>
   );
