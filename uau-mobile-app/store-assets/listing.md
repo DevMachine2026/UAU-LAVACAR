@@ -63,8 +63,8 @@ Dúvidas ou sugestões? Fale com a gente: contato@uaulavacar.com.br
 | Categoria | Auto e veículos |
 | Tags | lava car, lavagem de carro, assinatura, cashback, clube de vantagens |
 | E-mail de contato | contato@uaulavacar.com.br |
-| Site | ⚠️ CONFIRMAR domínio público do dashboard |
-| Política de privacidade | ⚠️ CONFIRMAR URL pública: `https://<dominio-dashboard>/privacidade` |
+| Site | https://uau-lavacar.vercel.app |
+| Política de privacidade | https://uau-lavacar.vercel.app/privacidade (testada, HTTP 200) |
 
 ## Classificação de conteúdo (questionário IARC)
 
