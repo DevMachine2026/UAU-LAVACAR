@@ -138,7 +138,7 @@ https://api-staging.seudominio.com/api/v1/health/ready
 Esperado:
 
 - `/health`: `status` igual a `ok`.
-- `/health/ready`: `status` igual a `ready`.
+- `/health/ready`: `status` igual a `ready` (HTTP 503 se o banco estiver fora).
 
 Se ainda estiver usando URL `.onrender.com`, teste primeiro com ela. Depois configure o dominio customizado `api-staging.seudominio.com`.
 
@@ -252,7 +252,7 @@ cd uau-core-backend
 $env:E2E_BASE_URL="https://api-staging.seudominio.com/api/v1"
 $env:SUPER_ADMIN_EMAIL="admin-staging@uauplus.local"
 $env:SUPER_ADMIN_PASSWORD="<senha staging>"
-npm run smoke:staging
+# Nao existe script smoke:staging no package.json; siga POST_DEPLOY_SMOKE_TEST.md manualmente
 ```
 
 ## Pendencias manuais

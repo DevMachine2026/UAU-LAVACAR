@@ -93,7 +93,7 @@ npx prisma validate
 npm run build
 npx tsc --noEmit
 npm run openapi:export
-npm run test:smoke
+npm run test
 ```
 
 Para producao:

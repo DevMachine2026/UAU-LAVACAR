@@ -41,7 +41,7 @@ Passos:
 npm ci
 npm run prisma:generate
 npm run prisma:deploy
-npm run build:prod
+npm run build
 npm run start:prod
 ```
 

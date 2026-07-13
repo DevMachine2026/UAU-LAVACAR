@@ -93,7 +93,7 @@ Build e start sem Docker:
 
 ```bash
 cd uau-core-backend
-npm run build:prod
+npm run build
 npm run start:prod
 ```
 
@@ -155,7 +155,7 @@ PowerShell:
 $env:E2E_BASE_URL="https://api-staging.seudominio.com/api/v1"
 $env:SUPER_ADMIN_EMAIL="admin-staging@uauplus.local"
 $env:SUPER_ADMIN_PASSWORD="<senha-staging>"
-npm run smoke:staging
+# Nao existe script smoke:staging no package.json; siga POST_DEPLOY_SMOKE_TEST.md manualmente
 ```
 
 Bash:
@@ -164,7 +164,7 @@ Bash:
 E2E_BASE_URL=https://api-staging.seudominio.com/api/v1 \
 SUPER_ADMIN_EMAIL=admin-staging@uauplus.local \
 SUPER_ADMIN_PASSWORD='<senha-staging>' \
-npm run smoke:staging
+true # Nao existe script smoke:staging no package.json; siga POST_DEPLOY_SMOKE_TEST.md manualmente
 ```
 
 Smoke test documentado:

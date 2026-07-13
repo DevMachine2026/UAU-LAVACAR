@@ -37,7 +37,7 @@ Esperado: `status=ok`.
 GET /health/ready
 ```
 
-Esperado: `status=ready`.
+Esperado: `status=ready` (HTTP 503 com `status=not_ready` se o banco estiver fora).
 
 3. Login Super Admin:
 

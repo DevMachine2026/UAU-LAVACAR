@@ -193,7 +193,7 @@ npm run typecheck
 
 Atencao:
 
-- Docs antigos citam `npm run build:prod`, `npm run smoke:staging`, `npm run test:smoke` e `/health/ready`. Confira antes de usar: no estado atual visto, backend tem `build`, `start:prod`, `health`, mas nao tem `build:prod`, `smoke:staging`, `test:smoke` ou endpoint `health/ready`.
+- Docs antigos citam `npm run build:prod`, `npm run smoke:staging` e `npm run test:smoke`. Confira antes de usar: no estado atual visto, backend tem `build`, `start:prod`, `test`, mas nao tem `build:prod`, `smoke:staging` ou `test:smoke`. O endpoint `GET /health/ready` existe (readiness com checagem de banco via Prisma, implementado em 2026-07-13).
 - Docs antigos tambem citam `RATE_LIMIT_TTL=60`; o validador atual exige valor em milissegundos e minimo `1000`. Use `60000` para 60 segundos.
 
 ## 7. Como rodar localmente
@@ -332,7 +332,7 @@ Modulos principais carregados:
 Health atual:
 
 - `GET /api/v1/health` publico retorna status `ok` e timestamp.
-- Docs antigos citam `/health/ready`; conferir/implementar se plataforma exigir readiness.
+- `GET /api/v1/health/ready` publico retorna status `ready` apos validar a conexao com o banco (`SELECT 1` via Prisma); retorna HTTP 503 com `status=not_ready` se o banco estiver fora.
 
 ## 10. Banco de dados e modelos
 
@@ -949,7 +949,7 @@ Pos-deploy:
 - Conferir cashback/ledger
 - Abrir rotas dashboard por perfil
 
-Observacao: docs antigos citam `/health/ready`. Se precisar de readiness real, implementar endpoint dedicado.
+Observacao: `GET /api/v1/health/ready` e o readiness real (valida conexao com o banco); use-o nos smoke tests pos-deploy.
 
 ## 19. Rollback e incidente
 
