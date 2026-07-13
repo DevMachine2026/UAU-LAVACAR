@@ -9,6 +9,7 @@
 # Generated artifacts
 *.tsbuildinfo
 **/*.tsbuildinfo
+.graphify/
 
 # Local assistant/tooling configuration
 .claude/settings.json
