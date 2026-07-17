@@ -46,7 +46,10 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.uauplus.mobile",
-      "buildNumber": "1"
+      "buildNumber": "2",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.uauplus.mobile",

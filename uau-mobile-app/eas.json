@@ -38,8 +38,11 @@
         "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "internal"
       },
-      "ios": {}
-
+      "ios": {
+        "appleId": "uaulavacar@gmail.com",
+        "ascAppId": "6792063963",
+        "appleTeamId": "M8ZNNXS8P6"
+      }
     }
   }
 }
