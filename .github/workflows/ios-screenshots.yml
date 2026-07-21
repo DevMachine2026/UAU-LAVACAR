@@ -56,9 +56,15 @@ jobs:
           set -e
           xcrun simctl boot "${SIMULATOR_NAME}"
           xcrun simctl bootstatus "${SIMULATOR_NAME}" -b
+          # Varios runtimes de iOS compartilham o mesmo nome de simulador (ex: "iPhone 16 Pro Max"
+          # existe pra iOS 18.5, 18.6, 26.0.1, 26.1, 26.2); pega o UDID exato que ficou Booted
+          # pra usar em comandos que nao resolvem por nome de forma confiavel (ex: pbcopy).
+          DEVICE_UDID=$(xcrun simctl list devices | grep -F "${SIMULATOR_NAME} (" | grep "(Booted)" | grep -oE '[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}' | head -1)
+          echo "Booted device UDID: $DEVICE_UDID"
+          echo "DEVICE_UDID=$DEVICE_UDID" >> "$GITHUB_ENV"
           APP_PATH=$(find ios/build -name "*.app" -maxdepth 6 | head -1)
           echo "APP_PATH=$APP_PATH"
-          xcrun simctl install "${SIMULATOR_NAME}" "$APP_PATH"
+          xcrun simctl install "$DEVICE_UDID" "$APP_PATH"
 
       - name: Install Maestro
         run: curl -Ls "https://get.maestro.mobile.dev" | bash
@@ -69,9 +75,9 @@ jobs:
           export PATH="$PATH:$HOME/.maestro/bin"
           # Usa paste em vez de digitar caractere a caractere: a barra de sugestoes
           # QuickType do teclado do simulador embaralhava o texto digitado pelo Maestro.
-          printf '%s' "teste.fase6@uauteste.com" | xcrun simctl pbcopy "${SIMULATOR_NAME}"
+          printf '%s' "teste.fase6@uauteste.com" | xcrun simctl pbcopy "${DEVICE_UDID}"
           maestro test .maestro/01-login-email.yaml
-          printf '%s' "SenhaTeste@123" | xcrun simctl pbcopy "${SIMULATOR_NAME}"
+          printf '%s' "SenhaTeste@123" | xcrun simctl pbcopy "${DEVICE_UDID}"
           maestro test .maestro/02-password-and-navigate.yaml
 
       - name: Upload Maestro debug artifacts
