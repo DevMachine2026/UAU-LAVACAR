@@ -13,7 +13,7 @@ jobs:
       EXPO_PUBLIC_API_URL: https://uau-core-backend.onrender.com/api/v1
       EXPO_PUBLIC_SENTRY_DSN: https://541bc03b464b599493b98363a0199474@o4511673197133824.ingest.us.sentry.io/4511673284427776
       SENTRY_DISABLE_AUTO_UPLOAD: "true"
-      SIMULATOR_NAME: iPhone 14 Pro Max
+      SIMULATOR_NAME: iPhone 16 Pro Max
 
     steps:
       - uses: actions/checkout@v4
