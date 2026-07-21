@@ -67,7 +67,16 @@ jobs:
           export PATH="$PATH:$HOME/.maestro/bin"
           maestro test .maestro/screenshots.yaml
 
+      - name: Upload Maestro debug artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-debug
+          path: /Users/runner/.maestro/tests
+          if-no-files-found: ignore
+
       - name: Collect screenshots
+        if: always()
         run: |
           mkdir -p store-assets/screenshots/ios-simulator
           # Maestro's takeScreenshot saves PNGs in the current working directory by default;
@@ -76,7 +85,9 @@ jobs:
           find ~/.maestro -iname "0*.png" -exec cp {} store-assets/screenshots/ios-simulator/ \; 2>/dev/null || true
           ls -la store-assets/screenshots/ios-simulator/
 
-      - uses: actions/upload-artifact@v4
+      - if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: ios-screenshots
           path: uau-mobile-app/store-assets/screenshots/ios-simulator/*.png
+          if-no-files-found: ignore

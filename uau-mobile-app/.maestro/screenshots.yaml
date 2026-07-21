@@ -10,6 +10,9 @@ appId: com.uauplus.mobile
 - tapOn: "Entrar"
 - waitForAnimationToEnd
 - takeScreenshot: 02-home
+- extendedWaitUntil:
+    visible: "Perfil"
+    timeout: 15000
 - tapOn: "Perfil"
 - waitForAnimationToEnd
 - takeScreenshot: 03-perfil
