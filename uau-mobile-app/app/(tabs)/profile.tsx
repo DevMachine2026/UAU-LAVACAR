@@ -6,7 +6,7 @@ import { Input } from "@/components/Input";
 import { Screen } from "@/components/Screen";
 import { useToast } from "@/components/Toast";
 import { useAuthStore } from "@/auth/auth.store";
-import { changePassword } from "@/features/auth/auth.api";
+import { changePassword, deleteAccount } from "@/features/auth/auth.api";
 import { updateMyProfile } from "@/features/customers/customers.api";
 import { maskPhone, unmaskPhone } from "@/utils/masks";
 
@@ -183,6 +183,35 @@ export default function ProfileScreen() {
     }
   }
 
+  // ── Delete Account ────────────────────────────────────────────────────────
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  async function handleDeleteAccount() {
+    setDeletingAccount(true);
+    try {
+      await deleteAccount();
+      toast.show("Conta excluída com sucesso", "success");
+      await logout();
+    } catch (err: unknown) {
+      const apiMsg = (err as { response?: { data?: { error?: { message?: string } } } })
+        ?.response?.data?.error?.message;
+      toast.show(apiMsg ?? (err instanceof Error ? err.message : "Erro ao excluir conta."), "error");
+    } finally {
+      setDeletingAccount(false);
+    }
+  }
+
+  function confirmDeleteAccount() {
+    Alert.alert(
+      "Excluir conta",
+      "Isso vai apagar seus dados pessoais permanentemente e você perderá acesso à conta. Essa ação não pode ser desfeita. Tem certeza que deseja continuar?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Excluir", style: "destructive", onPress: () => void handleDeleteAccount() },
+      ]
+    );
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <Screen statusBarStyle="light">
@@ -293,6 +322,16 @@ export default function ProfileScreen() {
                   { text: 'Sair', style: 'destructive', onPress: logout },
                 ]
               )}
+              showChevron={false}
+            />
+            <Separator />
+            <SettingsItem
+              icon="trash-outline"
+              label={deletingAccount ? "Excluindo conta..." : "Excluir minha conta"}
+              iconBg="rgba(217,45,32,0.09)"
+              iconColor="#D92D20"
+              labelColor="#D92D20"
+              onPress={deletingAccount ? () => {} : confirmDeleteAccount}
               showChevron={false}
             />
           </View>

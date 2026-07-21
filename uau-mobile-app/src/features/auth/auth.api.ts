@@ -41,3 +41,8 @@ export async function changePassword(data: {
   const response = await api.post<ApiEnvelope<{ message: string }>>("/auth/change-password", data);
   return unwrap(response.data);
 }
+
+export async function deleteAccount(): Promise<{ message: string }> {
+  const response = await api.delete<ApiEnvelope<{ message: string }>>("/auth/account");
+  return unwrap(response.data);
+}

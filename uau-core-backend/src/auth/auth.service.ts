@@ -6,7 +6,12 @@ import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { Mailer } from '../third-party/Mailer';
 import * as bcrypt from 'bcrypt';
-import { UserRole } from '@prisma/client';
+import { SubscriptionStatus, UserRole } from '@prisma/client';
+
+// Assinaturas nesses status ainda cobram ou podem voltar a cobrar no Asaas;
+// exigir cancelamento com o suporte antes de excluir evita apagar uma conta
+// com cobrança recorrente em aberto.
+const BLOCKING_SUBSCRIPTION_STATUSES: SubscriptionStatus[] = ['ACTIVE', 'OVERDUE', 'SUSPENDED'];
 
 @Injectable()
 export class AuthService {
@@ -134,5 +139,44 @@ export class AuthService {
       const expiresAt = new Date(payload.exp * 1000);
       await this.prisma.revokedToken.create({ data: { jti: payload.jti, expiresAt } });
     }
+  }
+
+  async deleteAccount(userId: string, jti?: string): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { customer: { include: { subscriptions: true } } },
+    });
+    if (!user) throw new NotFoundException('Usuário não encontrado');
+
+    const hasBlockingSubscription = user.customer?.subscriptions.some((s) =>
+      BLOCKING_SUBSCRIPTION_STATUSES.includes(s.status),
+    );
+    if (hasBlockingSubscription) {
+      throw new BadRequestException(
+        'Você tem uma assinatura ativa. Cancele sua assinatura falando com o suporte antes de excluir sua conta.',
+      );
+    }
+
+    const randomPasswordHash = await bcrypt.hash(randomUUID(), 10);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        name: 'Usuário removido',
+        email: `deleted-${user.id}@removed.uauplus.mobile`,
+        passwordHash: randomPasswordHash,
+        status: 'INACTIVE',
+      },
+    });
+
+    if (user.customer) {
+      await this.prisma.customer.update({
+        where: { id: user.customer.id },
+        data: { phone: null, cpf: null },
+      });
+    }
+
+    if (jti) await this.logout(jti);
+
+    return { message: 'Conta excluída com sucesso' };
   }
 }
