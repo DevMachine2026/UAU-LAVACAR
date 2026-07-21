@@ -67,7 +67,12 @@ jobs:
         timeout-minutes: 5
         run: |
           export PATH="$PATH:$HOME/.maestro/bin"
-          maestro test .maestro/screenshots.yaml
+          # Usa paste em vez de digitar caractere a caractere: a barra de sugestoes
+          # QuickType do teclado do simulador embaralhava o texto digitado pelo Maestro.
+          printf '%s' "teste.fase6@uauteste.com" | xcrun simctl pbcopy "${SIMULATOR_NAME}"
+          maestro test .maestro/01-login-email.yaml
+          printf '%s' "SenhaTeste@123" | xcrun simctl pbcopy "${SIMULATOR_NAME}"
+          maestro test .maestro/02-password-and-navigate.yaml
 
       - name: Upload Maestro debug artifacts
         if: always()

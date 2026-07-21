@@ -1,0 +1,7 @@
+appId: com.uauplus.mobile
+---
+- launchApp:
+    clearState: true
+- takeScreenshot: 01-login
+- tapOn: "voce@email.com"
+- pasteText
