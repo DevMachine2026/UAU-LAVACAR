@@ -1,0 +1,75 @@
+name: iOS Screenshots
+
+on:
+  workflow_dispatch:
+
+jobs:
+  screenshots:
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: uau-mobile-app
+    env:
+      EXPO_PUBLIC_API_URL: https://uau-core-backend.onrender.com/api/v1
+      EXPO_PUBLIC_SENTRY_DSN: https://541bc03b464b599493b98363a0199474@o4511673197133824.ingest.us.sentry.io/4511673284427776
+      SENTRY_DISABLE_AUTO_UPLOAD: "true"
+      SIMULATOR_NAME: iPhone 14 Pro Max
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Prebuild native iOS project
+        run: npx expo prebuild --platform ios --no-install
+
+      - name: Install CocoaPods dependencies
+        run: cd ios && pod install
+
+      - name: Build for iOS Simulator
+        run: |
+          xcodebuild \
+            -workspace ios/UAULavacar.xcworkspace \
+            -scheme UAULavacar \
+            -configuration Release \
+            -destination "platform=iOS Simulator,name=${SIMULATOR_NAME},OS=latest" \
+            -derivedDataPath ios/build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Boot simulator and install app
+        run: |
+          set -e
+          xcrun simctl boot "${SIMULATOR_NAME}"
+          xcrun simctl bootstatus "${SIMULATOR_NAME}" -b
+          APP_PATH=$(find ios/build -name "*.app" -maxdepth 6 | head -1)
+          echo "APP_PATH=$APP_PATH"
+          xcrun simctl install "${SIMULATOR_NAME}" "$APP_PATH"
+
+      - name: Install Maestro
+        run: curl -Ls "https://get.maestro.mobile.dev" | bash
+
+      - name: Run screenshot flow
+        run: |
+          export PATH="$PATH:$HOME/.maestro/bin"
+          maestro test .maestro/screenshots.yaml
+
+      - name: Collect screenshots
+        run: |
+          mkdir -p store-assets/screenshots/ios-simulator
+          # Maestro's takeScreenshot saves PNGs in the current working directory by default;
+          # fall back to ~/.maestro in case that changes between CLI versions.
+          find . -maxdepth 1 -iname "0*.png" -exec cp {} store-assets/screenshots/ios-simulator/ \;
+          find ~/.maestro -iname "0*.png" -exec cp {} store-assets/screenshots/ios-simulator/ \; 2>/dev/null || true
+          ls -la store-assets/screenshots/ios-simulator/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-screenshots
+          path: uau-mobile-app/store-assets/screenshots/ios-simulator/*.png
