@@ -6,6 +6,7 @@ on:
 jobs:
   screenshots:
     runs-on: macos-15
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: uau-mobile-app
@@ -63,6 +64,7 @@ jobs:
         run: curl -Ls "https://get.maestro.mobile.dev" | bash
 
       - name: Run screenshot flow
+        timeout-minutes: 5
         run: |
           export PATH="$PATH:$HOME/.maestro/bin"
           maestro test .maestro/screenshots.yaml
