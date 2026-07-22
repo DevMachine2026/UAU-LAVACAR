@@ -4,4 +4,6 @@ appId: com.uauplus.mobile
     clearState: true
 - takeScreenshot: 01-login
 - tapOn: "voce@email.com"
+- takeScreenshot: debug-after-tap-email
 - pasteText
+- takeScreenshot: debug-after-paste-email
