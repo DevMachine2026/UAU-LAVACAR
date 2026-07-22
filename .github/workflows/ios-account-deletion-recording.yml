@@ -1,0 +1,124 @@
+name: iOS Account Deletion Recording
+
+on:
+  workflow_dispatch:
+
+jobs:
+  record:
+    runs-on: macos-15
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: uau-mobile-app
+    env:
+      EXPO_PUBLIC_API_URL: https://uau-core-backend.onrender.com/api/v1
+      EXPO_PUBLIC_SENTRY_DSN: https://541bc03b464b599493b98363a0199474@o4511673197133824.ingest.us.sentry.io/4511673284427776
+      SENTRY_DISABLE_AUTO_UPLOAD: "true"
+      SIMULATOR_NAME: iPhone 16 Pro Max
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Prebuild native iOS project
+        run: npx expo prebuild --platform ios --no-install
+
+      - name: Install CocoaPods dependencies
+        run: cd ios && pod install
+
+      - name: Build for iOS Simulator
+        run: |
+          xcodebuild \
+            -workspace ios/UauLavaCar.xcworkspace \
+            -scheme UauLavaCar \
+            -configuration Release \
+            -destination "platform=iOS Simulator,name=${SIMULATOR_NAME},OS=latest" \
+            -derivedDataPath ios/build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Boot simulator and install app
+        run: |
+          set -e
+          xcrun simctl boot "${SIMULATOR_NAME}"
+          xcrun simctl bootstatus "${SIMULATOR_NAME}" -b
+          DEVICE_UDID=$(xcrun simctl list devices | grep -F "${SIMULATOR_NAME} (" | grep "(Booted)" | grep -oE '[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}' | head -1)
+          echo "Booted device UDID: $DEVICE_UDID"
+          echo "DEVICE_UDID=$DEVICE_UDID" >> "$GITHUB_ENV"
+          APP_PATH=$(find ios/build -name "*.app" -maxdepth 6 | head -1)
+          echo "APP_PATH=$APP_PATH"
+          xcrun simctl install "$DEVICE_UDID" "$APP_PATH"
+
+      - name: Create disposable test account
+        run: |
+          set -e
+          TS=$(date +%s)
+          TEST_EMAIL="ios-review-demo-${TS}@uauteste.com"
+          TEST_PASSWORD="RevisaoApple@123"
+          TEST_CPF=$(printf '%011d' "$((TS % 100000000000))")
+          TEST_PHONE="8599${TS: -7}"
+          RESPONSE=$(curl -s -w '\n%{http_code}' -X POST "${EXPO_PUBLIC_API_URL}/customers" \
+            -H "Content-Type: application/json" \
+            -d "{\"name\":\"Revisao Apple\",\"email\":\"${TEST_EMAIL}\",\"cpf\":\"${TEST_CPF}\",\"phone\":\"${TEST_PHONE}\",\"password\":\"${TEST_PASSWORD}\"}")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          echo "HTTP $HTTP_CODE"
+          echo "$BODY"
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "::error::Falha ao criar conta de teste descartável (HTTP $HTTP_CODE)"
+            exit 1
+          fi
+          echo "TEST_EMAIL=${TEST_EMAIL}" >> "$GITHUB_ENV"
+          echo "TEST_PASSWORD=${TEST_PASSWORD}" >> "$GITHUB_ENV"
+
+      - name: Install Maestro
+        run: curl -Ls "https://get.maestro.mobile.dev" | bash
+
+      - name: Start screen recording
+        run: |
+          xcrun simctl io "${DEVICE_UDID}" recordVideo --codec=h264 "$(pwd)/account-deletion-demo.mp4" &
+          echo "RECORD_PID=$!" >> "$GITHUB_ENV"
+          sleep 3
+
+      - name: Run login + account deletion flow
+        timeout-minutes: 6
+        run: |
+          export PATH="$PATH:$HOME/.maestro/bin"
+          printf '%s' "${TEST_EMAIL}" | xcrun simctl pbcopy "${DEVICE_UDID}"
+          maestro test .maestro/01-login-email.yaml
+          printf '%s' "${TEST_PASSWORD}" | xcrun simctl pbcopy "${DEVICE_UDID}"
+          maestro test .maestro/02-password-and-navigate.yaml
+          maestro test .maestro/03-delete-account.yaml
+
+      - name: Stop screen recording
+        if: always()
+        run: |
+          kill -INT "${RECORD_PID}" || true
+          sleep 3
+          ls -la account-deletion-demo.mp4
+
+      - name: Upload Maestro debug artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-debug
+          path: /Users/runner/.maestro/tests
+          if-no-files-found: ignore
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: account-deletion-recording
+          path: uau-mobile-app/account-deletion-demo.mp4
+          if-no-files-found: ignore

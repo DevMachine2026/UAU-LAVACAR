@@ -1,0 +1,11 @@
+appId: com.uauplus.mobile
+---
+- tapOn: "Excluir minha conta"
+- extendedWaitUntil:
+    visible: "Excluir conta"
+    timeout: 10000
+- tapOn: "Excluir"
+- extendedWaitUntil:
+    visible: "Bem-vindo de volta"
+    timeout: 15000
+- takeScreenshot: 04-account-deleted-redirect-to-login
