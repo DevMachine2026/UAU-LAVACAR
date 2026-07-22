@@ -15,6 +15,7 @@ jobs:
       EXPO_PUBLIC_SENTRY_DSN: https://541bc03b464b599493b98363a0199474@o4511673197133824.ingest.us.sentry.io/4511673284427776
       SENTRY_DISABLE_AUTO_UPLOAD: "true"
       SIMULATOR_NAME: iPhone 16 Pro Max
+      SIMULATOR_OS: "18.6"
 
     steps:
       - uses: actions/checkout@v4
@@ -45,7 +46,7 @@ jobs:
             -workspace ios/UauLavaCar.xcworkspace \
             -scheme UauLavaCar \
             -configuration Release \
-            -destination "platform=iOS Simulator,name=${SIMULATOR_NAME},OS=latest" \
+            -destination "platform=iOS Simulator,name=${SIMULATOR_NAME},OS=${SIMULATOR_OS}" \
             -derivedDataPath ios/build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
@@ -54,14 +55,14 @@ jobs:
       - name: Boot simulator and install app
         run: |
           set -e
-          xcrun simctl boot "${SIMULATOR_NAME}"
-          xcrun simctl bootstatus "${SIMULATOR_NAME}" -b
           # Varios runtimes de iOS compartilham o mesmo nome de simulador (ex: "iPhone 16 Pro Max"
-          # existe pra iOS 18.5, 18.6, 26.0.1, 26.1, 26.2); pega o UDID exato que ficou Booted
-          # pra usar em comandos que nao resolvem por nome de forma confiavel (ex: pbcopy).
-          DEVICE_UDID=$(xcrun simctl list devices | grep -F "${SIMULATOR_NAME} (" | grep "(Booted)" | grep -oE '[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}' | head -1)
-          echo "Booted device UDID: $DEVICE_UDID"
+          # existe pra iOS 18.5, 18.6, 26.0.1, 26.1, 26.2); resolve o UDID pelo runtime exato que
+          # buildamos (SIMULATOR_OS) em vez de bootar por nome, que e ambiguo entre eles.
+          DEVICE_UDID=$(xcrun simctl list devices "iOS ${SIMULATOR_OS}" | grep -F "${SIMULATOR_NAME} (" | grep -oE '[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}' | head -1)
+          echo "Target device UDID: $DEVICE_UDID"
           echo "DEVICE_UDID=$DEVICE_UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$DEVICE_UDID"
+          xcrun simctl bootstatus "$DEVICE_UDID" -b
           APP_PATH=$(find ios/build -name "*.app" -maxdepth 6 | head -1)
           echo "APP_PATH=$APP_PATH"
           xcrun simctl install "$DEVICE_UDID" "$APP_PATH"
