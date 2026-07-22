@@ -6,7 +6,7 @@ import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { Mailer } from '../third-party/Mailer';
 import * as bcrypt from 'bcrypt';
-import { SubscriptionStatus, UserRole } from '@prisma/client';
+import { SubscriptionStatus } from '@prisma/client';
 
 // Assinaturas nesses status ainda cobram ou podem voltar a cobrar no Asaas;
 // exigir cancelamento com o suporte antes de excluir evita apagar uma conta
@@ -38,10 +38,6 @@ export class AuthService {
 
     if (user.status !== 'ACTIVE') {
       throw new UnauthorizedException('Conta bloqueada ou inativa');
-    }
-
-    if (user.role !== UserRole.SUPER_ADMIN && !user.betaAccess) {
-      throw new UnauthorizedException('Acesso restrito. Entre em contato para liberar seu acesso.');
     }
 
     const jti = randomUUID();
